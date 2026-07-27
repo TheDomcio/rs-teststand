@@ -349,6 +349,21 @@ impl Engine {
         Ok(())
     }
 
+    /// The station's user list, as a file (`Engine.UsersFile`).
+    ///
+    /// The users the engine loaded at startup, and the only route to writing
+    /// them back. [`new_user`](Self::new_user) builds a user in memory; without
+    /// saving through this file the station is unchanged once the process
+    /// exits.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn users_file(&self) -> Result<crate::UsersFile, Error> {
+        Ok(crate::UsersFile::new(
+            self.dispatch.get(dispid::USERS_FILE)?.into_object()?,
+        ))
+    }
+
     /// Whether the host polls for messages (`Engine.UIMessagePollingEnabled`).
     ///
     /// # Errors

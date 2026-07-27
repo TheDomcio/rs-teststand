@@ -62,7 +62,7 @@ pub use station::{
     StationOptions,
 };
 pub use types::{TypeCategory, TypeUsageList};
-pub use users::{User, UserPrivilege};
+pub use users::{User, UserPrivilege, UsersFile};
 pub use watchdog::{
     DialogInfo, DialogPolicy, Raised, Watchdog, find_blocking_dialog, surface_blocking_dialog,
 };

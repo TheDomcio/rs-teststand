@@ -47,6 +47,7 @@ define_dispid_group! {
         UI_MESSAGE_POLLING_ENABLED = 0x017c;
         IS_UI_MESSAGE_QUEUE_EMPTY = 0x017d;
         POST_UI_MESSAGE = 0x0238;
+        USERS_FILE = 0x01a1;
         LOAD_TYPE_PALETTE_FILES = 0x01e2;
         UNLOAD_TYPE_PALETTE_FILES = 0x01e3;
         LOAD_TYPE_PALETTE_FILES_EX = 0x0232;
@@ -214,6 +215,22 @@ pub(crate) mod property_object_file {
     pub(crate) const PATH: i32 = 0x6c;
     /// `Data`, read-only — the file's root property object.
     pub(crate) const DATA: i32 = 0x6e;
+    /// `SaveFileIfModified`, one `VT_BOOL` param, returns `VT_BOOL`.
+    pub(crate) const SAVE_FILE_IF_MODIFIED: i32 = 0x7a;
+}
+
+/// `UsersFile` dispinterface members.
+pub(crate) mod users_file {
+    /// `UserList`, read-only here — an array of `User` objects.
+    pub(crate) const USER_LIST: i32 = 0x1;
+    /// `UserProfileList`, read-only here.
+    pub(crate) const USER_PROFILE_LIST: i32 = 0x2;
+    /// `ReloadFromDisk`, no params.
+    pub(crate) const RELOAD_FROM_DISK: i32 = 0x3;
+    /// `AsPropertyObjectFile`, no params.
+    pub(crate) const AS_PROPERTY_OBJECT_FILE: i32 = 0x4;
+    /// `UserGroupList`, read-only here.
+    pub(crate) const USER_GROUP_LIST: i32 = 0x5;
 }
 
 /// `TypeUsageList` dispinterface members.
