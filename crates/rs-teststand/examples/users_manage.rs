@@ -89,5 +89,42 @@ fn main() -> Result<(), rs_teststand::Error> {
         engine.user_name_exists("operator1")?
     );
 
+    // Where accounts actually live. Everything above this point exists only in
+    // memory: `new_user` builds a User, it does not enrol one. A user becomes
+    // part of the station when it is inserted into this file's list and the
+    // file is written.
+    let users_file = engine.users_file()?;
+    let file = users_file.as_property_object_file()?;
+    println!(
+        "
+Users file:"
+    );
+    println!("  path            {}", file.path()?);
+    println!(
+        "  users           {}",
+        users_file.user_list()?.get_num_elements()?
+    );
+    println!(
+        "  groups          {}",
+        users_file.user_group_list()?.get_num_elements()?
+    );
+    println!(
+        "  profiles        {}",
+        users_file.user_profile_list()?.get_num_elements()?
+    );
+
+    // Deliberately not run: it would edit the station this example is reading.
+    // The two calls a host makes to enrol the user built above are
+    //
+    //     users_file.user_list()?.set_num_elements(count + 1, 0)?;   // then fill
+    //     file.save_file_if_modified(false)?;                        // then write
+    //
+    // `false` matters: with `true` the engine puts a save dialog on screen, and
+    // a host with no operator would wait for an answer that never comes.
+    println!(
+        "
+  (this example does not write; enrolling a user would alter the station)"
+    );
+
     Ok(())
 }

@@ -16,6 +16,17 @@ on:
   push:
     tags: ["v*"]
 
+  # Re-running by hand, without deleting and re-pushing a tag. A release can
+  # fail for reasons that have nothing to do with the commit: an unverified
+  # account, an expired token, crates.io being down. Re-tagging to retry those
+  # would rewrite history to work around a transient problem.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Tag to publish, e.g. v0.0.1"
+        required: true
+        type: string
+
 env:
   CARGO_TERM_COLOR: always
 
@@ -34,6 +45,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          # A manual run publishes the tag it was given, not the branch head.
+          ref: ${{ inputs.tag || github.ref_name }}
 
       - name: Toolchain
         run: |
@@ -47,7 +61,7 @@ jobs:
       - name: Tag and manifests must agree
         shell: pwsh
         run: |
-          $tag = '${{ github.ref_name }}'
+          $tag = '${{ inputs.tag || github.ref_name }}'
           $expected = $tag -replace '^v', ''
           $packages = (cargo metadata --no-deps --format-version 1 | ConvertFrom-Json).packages
           $found = @($packages | ForEach-Object { $_.version } | Sort-Object -Unique)

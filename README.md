@@ -167,7 +167,7 @@ cargo run -p rs-teststand --example execution_run_test_headless
 | `step_insert_from_template`   | Instantiate pre-configured steps from a template file.                     |
 | `template_manage_complex`     | Build a custom step template programmatically and save it.                 |
 | `search_directory_manage`     | Enumerate and modify the engine's search directories.                      |
-| `users_manage`                | Create a new TestStand™ User, assign privileges, and save the user file.   |
+| `users_manage`                | Create a User, assign privileges, and read the station's users file.       |
 | `data_type_manage`            | Query and modify custom data types.                                        |
 | `workspace_create`            | Create a `.tsw` workspace and add a sequence file to it.                   |
 | `result_list_parse`           | Walk an execution's ResultList to extract pass/fail status and step times. |

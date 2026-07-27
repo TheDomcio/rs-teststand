@@ -151,3 +151,60 @@ fn a_user_is_reachable_as_a_property_tree() -> Result<(), Error> {
     println!("  user fields: {}", names.join(", "));
     Ok(())
 }
+
+#[test]
+#[ignore = "requires a live engine"]
+fn the_users_file_exposes_the_lists_the_station_loaded() -> Result<(), Error> {
+    // Read-only on purpose. This suite must never rewrite the station's real
+    // user list, so nothing here saves and nothing is added or removed.
+    let engine = Engine::new()?;
+    let users_file = engine.users_file()?;
+
+    let users = users_file.user_list()?;
+    let groups = users_file.user_group_list()?;
+    let profiles = users_file.user_profile_list()?;
+
+    // Each is an array of objects, which is what makes the property-object API
+    // the way to edit them rather than a typed setter.
+    assert!(
+        users.get_num_elements()? > 0,
+        "a station always has at least one account"
+    );
+    assert!(groups.get_num_elements()? >= 0);
+    assert!(profiles.get_num_elements()? >= 0);
+
+    // The engine's own account lookup and the file's list must describe the
+    // same station; if they disagree, one of them is not the loaded file.
+    let first = users.get_property_object_by_offset(0, 0)?;
+    let login = first.get_val_string("LoginName", 0)?;
+    assert!(
+        engine.user_name_exists(&login)?,
+        "user {login} is in the file but the engine does not know the name"
+    );
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires a live engine"]
+fn the_users_file_knows_where_it_lives_and_saves_without_asking() -> Result<(), Error> {
+    // The route that makes a new user outlive the process: the file view, its
+    // path, and a save that does not stop for a person.
+    let engine = Engine::new()?;
+    let file = engine.users_file()?.as_property_object_file()?;
+
+    let path = file.path()?;
+    assert!(
+        path.to_ascii_lowercase().ends_with(".ini"),
+        "expected the users file to be an .ini, got {path:?}"
+    );
+
+    // Nothing above modified the file, so this writes nothing. That is exactly
+    // what makes it safe to assert here: an unmodified file is a no-op, and
+    // `false` would mean a prompt appeared and was declined, which must not
+    // happen when prompting is off.
+    assert!(
+        file.save_file_if_modified(false)?,
+        "an unmodified save must succeed without a dialog"
+    );
+    Ok(())
+}

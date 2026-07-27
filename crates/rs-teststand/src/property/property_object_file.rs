@@ -22,6 +22,30 @@ impl PropertyObjectFile {
         Self { dispatch }
     }
 
+    /// Writes the file to disk if it has changed
+    /// (`PropertyObjectFile.SaveFileIfModified`).
+    ///
+    /// Does nothing when the file is unmodified. The path written is whatever
+    /// [`path`](Self::path) reports.
+    ///
+    /// **Pass `prompt = false` from a host with no operator.** With `true` the
+    /// engine puts a dialog on screen offering to save, and a headless caller
+    /// would block on a question nobody can answer. The returned `false` means
+    /// only that someone declined at that dialog, so under `prompt = false` a
+    /// `false` should not happen.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn save_file_if_modified(&self, prompt: bool) -> Result<bool, Error> {
+        Ok(self
+            .dispatch
+            .call(
+                property_object_file::SAVE_FILE_IF_MODIFIED,
+                &[Value::Bool(prompt)],
+            )?
+            .as_bool()?)
+    }
+
     /// The types registered in this file (`TypeUsageList`).
     ///
     /// # Errors

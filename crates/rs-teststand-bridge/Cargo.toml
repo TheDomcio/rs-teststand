@@ -16,14 +16,14 @@ readme = "README.md"
 # async runtime and an RPC stack; a caller that only drives the engine in-process
 # pays for none of this.
 [dependencies]
-rs-teststand = { path = "../rs-teststand", version = "0.0.1" }
+rs-teststand = { path = "../rs-teststand", version = "0.0.2" }
 # The message pump: a background thread owning apartment-bound objects has to
 # service its own queue, and that is this crate's job rather than the binding's.
-rs-teststand-sys = { path = "../rs-teststand-sys", version = "0.0.1" }
+rs-teststand-sys = { path = "../rs-teststand-sys", version = "0.0.2" }
 # A COM reference cannot leave the process, so a message's object payload has to
 # become data before it crosses. That conversion belongs here, not in every
 # caller that needs it.
-rs-teststand-serde = { path = "../rs-teststand-serde", version = "0.0.1" }
+rs-teststand-serde = { path = "../rs-teststand-serde", version = "0.0.2" }
 serde_json = "1"
 thiserror = "2.0.18"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time"] }
