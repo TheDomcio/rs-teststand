@@ -1,0 +1,84 @@
+name: Publish
+
+# Publishes all four crates to crates.io when a version tag is pushed.
+#
+# Publishing is permanent. A released version can be yanked, which stops new
+# dependants resolving it, but it can never be replaced or deleted. Everything
+# below runs before the first byte is uploaded, because the failure that matters
+# is not "the release failed" but "two of four crates are published and the
+# other two cannot be".
+#
+# Order is not scripted here: `cargo publish --workspace` resolves it from the
+# dependency graph (sys, then rs-teststand, then serde, then bridge) and waits
+# for each crate to appear in the index before building the next.
+
+on:
+  push:
+    tags: ["v*"]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  publish:
+    name: Publish to crates.io
+    runs-on: windows-latest
+
+    # Windows-only crates: verification compiles them, and `rs-teststand-sys`
+    # links Win32, so no other runner can do this.
+
+    # Add a required reviewer to this environment in the repository settings if
+    # you want a human to confirm before an irreversible upload. Referencing it
+    # here costs nothing if you leave it unprotected.
+    environment: crates-io
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: |
+          rustc --version
+          cargo --version
+
+      # Guards the mistake this layout invites: four crates that must move
+      # together, three inheriting the workspace version and one that used to
+      # hardcode it. A tag that disagrees with the manifests would publish a
+      # version nobody asked for.
+      - name: Tag and manifests must agree
+        shell: pwsh
+        run: |
+          $tag = '${{ github.ref_name }}'
+          $expected = $tag -replace '^v', ''
+          $packages = (cargo metadata --no-deps --format-version 1 | ConvertFrom-Json).packages
+          $found = @($packages | ForEach-Object { $_.version } | Sort-Object -Unique)
+          Write-Host "tag $tag wants $expected"
+          $packages | ForEach-Object { Write-Host ("  {0,-22} {1}" -f $_.name, $_.version) }
+          if ($found.Count -ne 1) {
+            throw "the crates disagree on a version: $($found -join ', '). They are released in lockstep and must match."
+          }
+          if ($found[0] -ne $expected) {
+            throw "tag $tag expects $expected but the manifests say $($found[0])."
+          }
+          Write-Host "agreed on $expected"
+
+      # The same gate CI runs. A tag is rare, so paying for it again is cheaper
+      # than publishing something that does not build.
+      - name: Format
+        run: cargo fmt --all --check
+
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets --all-features
+
+      - name: Test
+        run: cargo test --workspace --all-features
+
+      # Packages and verifies all four without uploading. This is the step that
+      # makes a partial release impossible: a packaging fault in the last crate
+      # is found here, while nothing has been sent yet.
+      - name: Dry run
+        run: cargo publish --workspace --dry-run
+
+      - name: Publish
+        run: cargo publish --workspace
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}

@@ -32,7 +32,7 @@ const SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(10);
 
 /// One message, flattened into something that can cross a thread or a wire.
 ///
-/// The COM objects a [`UIMessage`](rs_teststand::UIMessage) refers to are bound to the
+/// The COM objects a [`UIMessage`] refers to are bound to the
 /// engine's apartment and cannot leave it, so what travels is the data a
 /// consumer actually needs.
 #[derive(Debug, Clone, PartialEq)]
