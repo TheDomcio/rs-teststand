@@ -1,0 +1,4 @@
+# Both crates share one build directory. They pull in the same RPC stack, and
+# building it twice would double the disk cost of a demonstration.
+[build]
+target-dir = "target"

@@ -1,0 +1,101 @@
+[workspace]
+resolver = "3"
+members = [
+    "crates/rs-teststand-sys",
+    "crates/rs-teststand",
+    "crates/rs-teststand-serde",
+    "crates/rs-teststand-bridge",
+]
+exclude = ["tmp", "examples"]
+
+[workspace.package]
+version = "0.0.1"
+edition = "2024"
+license = "MIT"
+authors = ["Dominik Rajchel"]
+repository = "https://github.com/TheDomcio/rs-teststand"
+documentation = "https://docs.rs/rs-teststand"
+rust-version = "1.85"
+keywords = ["teststand", "national-instruments", "ni", "com", "test-automation"]
+categories = ["api-bindings", "os::windows-apis"]
+
+[workspace.lints.rust]
+missing_docs = "deny"
+missing_debug_implementations = "deny"
+# `unsafe` is confined to rs-teststand-sys; make its use maximally explicit.
+unsafe_op_in_unsafe_fn = "deny"
+unreachable_pub = "deny"
+unused_qualifications = "deny"
+trivial_casts = "deny"
+trivial_numeric_casts = "deny"
+rust_2018_idioms = { level = "deny", priority = -1 }
+future_incompatible = { level = "deny", priority = -1 }
+
+[workspace.lints.rustdoc]
+broken_intra_doc_links = "deny"
+private_intra_doc_links = "deny"
+invalid_codeblock_attributes = "deny"
+invalid_html_tags = "deny"
+invalid_rust_codeblocks = "deny"
+bare_urls = "deny"
+
+[workspace.lints.clippy]
+# Group levels first (negative priority so the individual lints below win).
+all = { level = "deny", priority = -1 }
+pedantic = { level = "deny", priority = -1 }
+nursery = { level = "deny", priority = -1 }
+# Direct conflict with rustc's `unreachable_pub`, which we keep: that lint wants
+# `pub(crate)` on items unreachable from outside, this one wants them back to
+# `pub`. Satisfying both is impossible. `unreachable_pub` wins because catching
+# accidentally-public API matters more in a published crate than this nursery
+# lint's cosmetic preference.
+redundant_pub_crate = { level = "allow", priority = 1 }
+# Publish hygiene (missing readme/metadata, wildcard deps).
+cargo = { level = "warn", priority = -1 }
+# Not actionable by us: the duplicate `syn` comes from `thiserror`'s proc-macro
+# dependency tree, not from anything this workspace declares. Left on would be
+# permanent noise that no change here can clear.
+multiple_crate_versions = { level = "allow", priority = 1 }
+
+# --- No panics in library code (mission-critical hosts) ---------------------
+unwrap_used = "deny"
+expect_used = "deny"
+panic = "deny"
+indexing_slicing = "deny"
+integer_division = "deny"
+float_cmp = "deny"
+exit = "deny"
+
+# --- No stubs (PLAN §0 rule 5b, enforced mechanically) ----------------------
+todo = "deny"
+unimplemented = "deny"
+unreachable = "deny"
+
+# --- unsafe discipline (rs-teststand-sys) -----------------------------------
+undocumented_unsafe_blocks = "deny"
+unnecessary_safety_comment = "deny"
+mem_forget = "deny"
+# NOT enabled: `multiple_unsafe_ops_per_block`. A single COM call legitimately
+# performs several unsafe operations governed by one invariant (e.g. reading the
+# active field of a VARIANT union); the lint would force either meaningless
+# block-splitting or an `#[allow]` on nearly every FFI function. The
+# `undocumented_unsafe_blocks` + `// SAFETY:` requirement above is the control
+# that actually carries weight here.
+
+# --- API / docs quality for a public crate ----------------------------------
+doc_markdown = "deny"
+enum_glob_use = "deny"
+wildcard_imports = "deny"
+clone_on_ref_ptr = "deny"
+format_push_string = "deny"
+# NOT enabled: `str_to_string`. Pure style churn (`.to_string()` vs `.to_owned()`
+# on `&str`) with no correctness or performance consequence; it would add noise
+# without protecting anything.
+empty_structs_with_brackets = "deny"
+partial_pub_fields = "deny"
+same_name_method = "deny"
+try_err = "deny"
+lossy_float_literal = "deny"
+fn_to_numeric_cast_any = "deny"
+verbose_file_reads = "deny"
+dbg_macro = "deny"

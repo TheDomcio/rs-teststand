@@ -1,0 +1,83 @@
+# ── clippy.toml ──────────────────────────────────────────────────────
+# Workspace-wide Clippy configuration for rs-teststand.
+# Lint *levels* live in Cargo.toml [workspace.lints.clippy]; this file
+# tunes the *parameters* of individual lints.
+
+# ── MSRV ─────────────────────────────────────────────────────────────
+# Clippy reads rust-version from Cargo.toml by default, but stating it
+# explicitly keeps all MSRV-aware lints honest even when invoked from
+# outside a Cargo context.
+msrv = "1.85"
+
+# ── doc_markdown: domain idents that are not typos ───────────────────
+# Words that appear unbackticked in doc prose and would otherwise trip
+# clippy::doc_markdown.  ".." appends to Clippy's built-in set.
+doc-valid-idents = [
+    "TestStand",
+    "ProgID",
+    "VARIANT",
+    "VARENUM",
+    "HRESULT",
+    "DISPID",
+    "IDispatch",
+    "EXCEPINFO",
+    "BSTR",
+    "CoCreateInstance",
+    "CoInitializeEx",
+    "CoUninitialize",
+    "VariantClear",
+    "SysFreeString",
+    "SysAllocString",
+    "GetIDsOfNames",
+    "InprocServer",
+    "PropertyObject",
+    "StationOptions",
+    "StationGlobals",
+    "SequenceFile",
+    "SearchDirectories",
+    "SearchDirectory",
+    "WorkspaceFile",
+    "WorkspaceObject",
+    "NewSubProperty",
+    "NewExecution",
+    "GetValString",
+    "SetValString",
+    "GetValNumber",
+    "SetValNumber",
+    "GetValBoolean",
+    "SetValBoolean",
+    "GetPropertyObject",
+    "SetPropertyObject",
+    "DeleteSubProperty",
+    "MajorVersion",
+    "VersionString",
+    "PropValType",
+    "PropValTypeFlag",
+    "StepGroup",
+    "ExecRunState",
+    "ExecTermState",
+    "OpenWorkspaceFileOptions",
+    "SaveWorkspaceFileOptions",
+    "SearchDirectoryType",
+    "IWorkspaceObject",
+    "IWorkspaceFile",
+    "IStationOptions",
+    "IPropertyObject",
+    "ISearchDirectories",
+    "ISearchDirectory",
+    "StationID",
+    "..",
+]
+
+# ── Complexity thresholds ────────────────────────────────────────────
+# COM wrappers are shallow (one dispatch call each) so keep complexity
+# ceilings tight to flag any function that outgrows the pattern.
+cognitive-complexity-threshold = 20
+too-many-lines-threshold       = 80
+
+# ── Public API stability ─────────────────────────────────────────────
+# Pre-1.0 crate: the public surface is still evolving.  Suppress lints
+# that would otherwise discourage a breaking signature change.
+avoid-breaking-exported-api = false
+
+

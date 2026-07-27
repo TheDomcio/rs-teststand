@@ -1,0 +1,12 @@
+# Static C runtime. Uncomment to build the fully self-contained binary.
+#
+# Left off by default so that a plain `cargo build --release` here produces the
+# ordinary Rust MSVC result, and the difference is something you can measure
+# rather than take on trust. Turning it on costs about 95 KiB and removes the
+# dependency on the Visual C++ redistributable and the Universal CRT, leaving a
+# single file you can copy onto a locked-down station.
+#
+# See README.md for the measurements.
+
+# [build]
+# rustflags = ["-C", "target-feature=+crt-static"]

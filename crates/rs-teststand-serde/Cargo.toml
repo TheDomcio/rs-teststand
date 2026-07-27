@@ -1,0 +1,31 @@
+[package]
+name = "rs-teststand-serde"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+description = "Serialize a National Instruments TestStand™ PropertyObject tree to and from any serde format"
+documentation = "https://docs.rs/rs-teststand-serde"
+repository.workspace = true
+rust-version.workspace = true
+keywords = ["teststand", "serde", "json", "test-automation", "ni"]
+categories = ["api-bindings", "encoding", "os::windows-apis"]
+readme = "README.md"
+
+# An addition to the binding, not part of it. `rs-teststand` mirrors the COM API
+# and carries no serialization framework; a caller that never serialises a
+# property tree pays for none of this.
+[dependencies]
+rs-teststand = { path = "../rs-teststand", version = "0.0.1" }
+serde = { version = "1", features = ["derive"] }
+
+[features]
+default = []
+# Enables tests and examples that instantiate the live TestStand(TM) Engine.
+live-engine = ["rs-teststand/live-engine"]
+
+[dev-dependencies]
+serde_json = "1"
+
+[lints]
+workspace = true

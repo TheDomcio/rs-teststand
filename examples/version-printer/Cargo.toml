@@ -1,0 +1,30 @@
+[package]
+name = "version-printer"
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.85"
+# Never published. This is a reference application, not a crate: it exists to be
+# read and copied, and it is deliberately outside the workspace so that
+# `cargo publish` in this repository can never pick it up.
+publish = false
+
+# Its own workspace root. Without this it would be a stray package inside the
+# repository workspace, which cargo rejects; with it, this directory builds on
+# its own exactly as a copy of it would on your machine.
+[workspace]
+
+[dependencies]
+# `path` is what makes this build inside the repository against the crate next
+# to it. If you copy this directory somewhere else, delete the `path`; the
+# version alone then resolves from crates.io, and that is the only edit needed.
+rs-teststand = { version = "0.0.1", path = "../../crates/rs-teststand" }
+
+# The part worth copying. A library cannot set these for you: a profile is only
+# honored in the package that is the build root, so these belong to *your*
+# application. Measurements for each are in README.md.
+[profile.release]
+opt-level = "z"   # optimize for size instead of speed
+lto = "fat"       # let the linker inline and drop across crate boundaries
+codegen-units = 1 # one unit, so that optimization sees the whole program
+panic = "abort"   # no unwinding tables, no landing pads
+strip = "symbols" # no symbol table in the shipped file

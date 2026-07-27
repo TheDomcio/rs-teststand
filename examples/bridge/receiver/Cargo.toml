@@ -1,0 +1,24 @@
+[package]
+name = "bridge-receiver"
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.85"
+publish = false
+
+[workspace]
+
+# Look at this list. There is no rs-teststand here, and no COM: the receiver is
+# an ordinary gRPC server that happens to be told about test executions. That is
+# the point being demonstrated, so keep it that way.
+[dependencies]
+prost = "0.14"
+serde_json = "1"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal"] }
+tonic = "0.14"
+tonic-prost = "0.14"
+
+[build-dependencies]
+# Supplies a protoc binary, so this builds on a machine with no protobuf
+# compiler installed. A demonstration nobody can compile proves nothing.
+protoc-bin-vendored = "3"
+tonic-prost-build = "0.14"

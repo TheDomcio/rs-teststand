@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+// A one-way bridge out of a TestStand host.
+//
+// The engine is a single-threaded-apartment COM object, so everything it hands a
+// host is bound to that process. This is the contract for getting the useful
+// part out of it: a message the sequence posted, flattened into data that any
+// process in any language can read.
+package rs_teststand.bridge.v1;
+
+// Where a host pushes what its executions report.
+//
+// The host is the client here, not the server. It owns the engine and the
+// message pump, so it decides when there is something to send; the receiver is
+// a passive sink that a user interface, a logger, or a database writer can sit
+// behind.
+service MessageSink {
+  // Delivers one message. Unary rather than streaming on purpose: the pump
+  // already serializes messages one at a time, and a call per message is the
+  // smallest thing that demonstrates the idea.
+  rpc Publish(UiMessage) returns (Ack);
+}
+
+// One user interface message, as it crosses the process boundary.
+message UiMessage {
+  // Codes at or above 10000 are posted by a sequence; below that they are the
+  // engine's own.
+  int32 code = 1;
+
+  // The numeric payload slot.
+  double numeric = 2;
+
+  // The string payload slot.
+  string text = 3;
+
+  // Whether the posting thread was blocked awaiting acknowledgement. By the
+  // time a receiver sees this, the host has already acknowledged: holding a
+  // message while waiting for the network would stall the sequence.
+  bool synchronous = 4;
+
+  // The execution that posted it, when there was one.
+  optional int32 execution_id = 5;
+
+  // The third payload slot, as JSON.
+  //
+  // In the engine this slot holds an ActiveX reference, and a sequence uses it
+  // to hand over a whole container rather than packing fields into `text`. A
+  // COM interface pointer is only meaningful in the process that received it,
+  // so it cannot be put on a wire: the host walks the container and serializes
+  // it before sending. That is what makes this field the interesting one, and
+  // why a receiver needs no COM, no engine, and no TestStand installation.
+  optional string payload_json = 6;
+}
+
+// Confirms delivery and reports how many messages this receiver has taken.
+message Ack {
+  uint64 received = 1;
+}
