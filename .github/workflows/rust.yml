@@ -1,22 +1,96 @@
 name: Rust
 
+# These are bindings to a Windows COM API. `rs-teststand-sys` links Win32
+# directly, so no Linux runner can compile this repository: an `ubuntu-latest`
+# job fails before it reaches the first test.
+#
+# No TestStand installation is needed. Tests that drive a real engine live
+# behind the `live-engine` feature and are marked `#[ignore]`, so `--all-features`
+# type-checks them on the runner without running any of them.
+
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
 
 env:
   CARGO_TERM_COLOR: always
 
+# A newer push makes an in-flight run pointless; stop it rather than pay for it.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  build:
-
-    runs-on: ubuntu-latest
-
+  gate:
+    name: Format, lint, test, docs
+    runs-on: windows-latest
     steps:
-    - uses: actions/checkout@v4
-    - name: Build
-      run: cargo build --verbose
-    - name: Run tests
-      run: cargo test --verbose
+      - uses: actions/checkout@v4
+
+      # The windows-latest image already ships stable Rust with clippy and
+      # rustfmt, so nothing is downloaded here. Using it, rather than a
+      # third-party setup action, keeps the supply chain for a published crate
+      # down to GitHub's own checkout.
+      - name: Toolchain
+        run: |
+          rustup component add rustfmt clippy
+          rustc --version
+          cargo --version
+
+      - name: Format
+        run: cargo fmt --all --check
+
+      # The deny-wall lives in Cargo.toml `[workspace.lints]`, so this fails on
+      # a warning without needing `-D warnings` here.
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets --all-features
+
+      # Live-engine tests compile and are then skipped as ignored, which is the
+      # point: they stay compilable on every push even though no engine exists
+      # on the runner.
+      - name: Test
+        run: cargo test --workspace --all-features
+
+      - name: Docs
+        run: cargo doc --workspace --no-deps --all-features
+
+  msrv:
+    name: Minimum supported Rust (1.85)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # `rust-version = "1.85"` in Cargo.toml is a promise to anyone running
+      # `cargo add rs-teststand`. Nothing enforces it unless it is checked.
+      - name: Toolchain
+        run: |
+          rustup toolchain install 1.85 --profile minimal --no-self-update
+          rustup run 1.85 rustc --version
+
+      - name: Check
+        run: rustup run 1.85 cargo check --workspace --all-features
+
+  examples:
+    name: Reference applications
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Preinstalled, as above.
+      - name: Toolchain
+        run: rustc --version
+
+      # These live outside the workspace on purpose, so the jobs above never
+      # touch them and they would rot unnoticed. Checked rather than built: the
+      # point is that they still compile against the crates beside them.
+      - name: version-printer
+        run: cargo check --manifest-path examples/version-printer/Cargo.toml
+
+      # Also compiles the protobuf contract, so a broken .proto is caught here.
+      - name: bridge receiver
+        run: cargo check --manifest-path examples/bridge/receiver/Cargo.toml
+
+      - name: bridge transmitter
+        run: cargo check --manifest-path examples/bridge/transmitter/Cargo.toml

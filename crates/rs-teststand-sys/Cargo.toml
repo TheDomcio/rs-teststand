@@ -1,6 +1,6 @@
 [package]
 name = "rs-teststand-sys"
-version = "0.0.1"
+version.workspace = true
 description = "Low-level COM interop layer for the National Instruments TestStand™ COM API. All unsafe code in the rs-teststand workspace lives here"
 edition.workspace = true
 license.workspace = true
