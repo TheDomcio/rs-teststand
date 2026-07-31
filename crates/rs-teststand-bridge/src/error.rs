@@ -37,6 +37,14 @@ pub enum Error {
     /// the rest of the message is still worth delivering.
     #[error("a message payload could not be serialized: {0}")]
     Payload(#[from] serde_json::Error),
+
+    /// The socket carrying events failed.
+    ///
+    /// Separate again from [`Engine`](Self::Engine): the engine is fine and the
+    /// run is unaffected, only the listener is unreachable. A host may well
+    /// choose to keep testing and stop reporting.
+    #[error("the event transport failed: {0}")]
+    Transport(#[from] std::io::Error),
 }
 
 #[cfg(test)]

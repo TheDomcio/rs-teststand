@@ -27,6 +27,8 @@
 
 pub mod error;
 pub mod host;
+pub mod line;
 
 pub use error::Error;
 pub use host::{EngineHost, MessageEvent, PayloadPolicy};
+pub use line::{LineSink, LineSource};

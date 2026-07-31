@@ -16,28 +16,29 @@ readme = "README.md"
 # async runtime and an RPC stack; a caller that only drives the engine in-process
 # pays for none of this.
 [dependencies]
-rs-teststand = { path = "../rs-teststand", version = "0.0.2" }
+rs-teststand = { path = "../rs-teststand", version = "0.0.3" }
 # The message pump: a background thread owning apartment-bound objects has to
 # service its own queue, and that is this crate's job rather than the binding's.
-rs-teststand-sys = { path = "../rs-teststand-sys", version = "0.0.2" }
+rs-teststand-sys = { path = "../rs-teststand-sys", version = "0.0.3" }
 # A COM reference cannot leave the process, so a message's object payload has to
 # become data before it crosses. That conversion belongs here, not in every
 # caller that needs it.
-rs-teststand-serde = { path = "../rs-teststand-serde", version = "0.0.2" }
+rs-teststand-serde = { path = "../rs-teststand-serde", version = "0.0.3" }
 serde_json = "1"
 thiserror = "2.0.18"
 tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time"] }
 tonic = { version = "0.14", optional = true }
 prost = { version = "0.14", optional = true }
-serde = { version = "1", features = ["derive"], optional = true }
+serde = { version = "1", features = ["derive"] }
 
 [features]
 default = []
 # Expose the host over gRPC. The host itself needs no transport, so this is
 # separable from using the crate.
 grpc = ["dep:tonic", "dep:prost"]
-# Make the wire types serialisable in any serde format.
-serde = ["dep:serde"]
+# Kept for compatibility. The wire types are always serde-derived now, because
+# the line transport serializes them; enabling this changes nothing.
+serde = []
 # Enables tests that instantiate the live TestStand(TM) Engine.
 live-engine = ["rs-teststand/live-engine"]
 
