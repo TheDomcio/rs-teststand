@@ -441,6 +441,140 @@ impl Engine {
         Ok(())
     }
 
+    /// The licence the engine is running on (`Engine.LicenseType`).
+    ///
+    /// Reads state; acquires nothing and raises no dialog, so it is safe to
+    /// call first on any station.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails, or [`Error::UnknownLicenseType`] if the
+    /// engine reports a type this build does not name.
+    pub fn license_type(&self) -> Result<crate::LicenseType, Error> {
+        let raw = self.dispatch.get(dispid::LICENSE_TYPE)?.as_i32()?;
+        crate::LicenseType::from_bits(raw).map_err(|bits| Error::UnknownLicenseType { bits })
+    }
+
+    /// Fails unless the station holds a usable licence.
+    ///
+    /// The check a headless host should make before it does anything else. An
+    /// unlicensed engine still constructs, and the failure only shows up later
+    /// as whatever operation happened to need the licence — so a host that does
+    /// not ask up front reports the wrong thing at the wrong time.
+    ///
+    /// Reading the type raises no dialog, which is the point: this turns "no
+    /// licence" into a returned error on any station, attended or not.
+    ///
+    /// # Errors
+    /// [`Error::NoLicense`] when the engine reports no licence,
+    /// [`Error::UnknownLicenseType`] when it reports one this build does not
+    /// name, or [`Error`] if the COM call fails.
+    pub fn require_license(&self) -> Result<crate::LicenseType, Error> {
+        let license = self.license_type()?;
+        if license.is_usable() {
+            Ok(license)
+        } else {
+            Err(Error::NoLicense)
+        }
+    }
+
+    /// A description of the current licence (`Engine.GetLicenseDescription`).
+    ///
+    /// Free text meant for a person, so log it rather than branch on it; use
+    /// [`license_type`](Self::license_type) for decisions.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn get_license_description(&self) -> Result<String, Error> {
+        // The engine declares one reserved parameter, documented as always
+        // zero.
+        Ok(self
+            .dispatch
+            .call(dispid::GET_LICENSE_DESCRIPTION, &[Value::I32(0)])?
+            .into_string()?)
+    }
+
+    /// The licence this application requested (`Engine.ApplicationLicense`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails, or [`Error::UnknownLicenseType`] if the
+    /// engine reports a value this build does not name.
+    pub fn application_license(&self) -> Result<crate::ApplicationLicense, Error> {
+        let raw = self.dispatch.get(dispid::APPLICATION_LICENSE)?.as_i32()?;
+        crate::ApplicationLicense::from_bits(raw).map_err(|bits| Error::UnknownLicenseType { bits })
+    }
+
+    /// Acquires a licence and returns its handle (`Engine.AcquireLicense`).
+    ///
+    /// Release it with [`release_license`](Self::release_license); the licence
+    /// is held until every handle for it is released.
+    ///
+    /// **Pass [`AcquireLicenseOptions::SUPPRESS_STARTUP_DIALOG`] on any station
+    /// without a person at it.** Without it, an engine that cannot acquire the
+    /// licence opens a window offering to evaluate, activate or buy, and waits.
+    /// A headless host stops there until something kills it. With it, the same
+    /// situation returns an error this method propagates.
+    ///
+    /// Ask for the least the host needs.
+    /// [`ApplicationLicense::OperatorInterface`](crate::ApplicationLicense::OperatorInterface)
+    /// is right for a host that runs sequences without editing them; asking for
+    /// an editor licence on a deployment station fails where the smaller
+    /// request would have succeeded.
+    ///
+    /// # Errors
+    /// [`Error::NoLicense`] if the licence was not granted, or [`Error`] if the
+    /// COM call fails.
+    ///
+    /// A handle of zero is treated as refusal. The reference says this member
+    /// returns an error when it cannot acquire the licence; measured against an
+    /// unlicensed station it succeeds and hands back zero instead. A caller
+    /// that trusted the documented behaviour would carry on unlicensed, so the
+    /// zero is turned into the error the caller was promised.
+    pub fn acquire_license(
+        &self,
+        license: crate::ApplicationLicense,
+        options: crate::AcquireLicenseOptions,
+    ) -> Result<i32, Error> {
+        let handle = self
+            .dispatch
+            .call(
+                dispid::ACQUIRE_LICENSE,
+                &[Value::I32(license.bits()), Value::I32(options.bits())],
+            )?
+            .as_i32()?;
+        if handle == 0 {
+            return Err(Error::NoLicense);
+        }
+        Ok(handle)
+    }
+
+    /// Releases a licence handle (`Engine.ReleaseLicense`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn release_license(&self, handle: i32) -> Result<(), Error> {
+        // Second parameter is reserved and documented as zero.
+        self.dispatch.call(
+            dispid::RELEASE_LICENSE,
+            &[Value::I32(handle), Value::I32(0)],
+        )?;
+        Ok(())
+    }
+
+    /// Whether the station licenses an add-on feature
+    /// (`Engine.HasAddonLicense`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn has_addon_license(&self, feature_name: &str) -> Result<bool, Error> {
+        Ok(self
+            .dispatch
+            .call(
+                dispid::HAS_ADDON_LICENSE,
+                &[Value::Str(feature_name.to_owned())],
+            )?
+            .as_bool()?)
+    }
+
     /// Releases every code module the engine has loaded
     /// (`Engine.UnloadAllModules`).
     ///
