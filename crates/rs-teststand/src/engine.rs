@@ -383,6 +383,34 @@ impl Engine {
         Ok(())
     }
 
+    /// Asks every execution to stop (`Engine.TerminateAll`).
+    ///
+    /// Termination, not abort: cleanup groups still run, so hardware is left in
+    /// a safe state. Like [`Execution::terminate`](crate::Execution::terminate)
+    /// it is a request, and returns before the runs have finished unwinding. A
+    /// caller that needs them stopped must then wait for
+    /// [`UIMessageCode::EndExecution`](crate::UIMessageCode::EndExecution).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn terminate_all(&self) -> Result<(), Error> {
+        self.dispatch.call(dispid::TERMINATE_ALL, &[])?;
+        Ok(())
+    }
+
+    /// Stops every execution without running cleanup (`Engine.AbortAll`).
+    ///
+    /// The blunt counterpart to [`terminate_all`](Self::terminate_all). Cleanup
+    /// groups do **not** run, so anything a sequence would have switched off
+    /// stays on. Prefer terminating unless the point is to stop now.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn abort_all(&self) -> Result<(), Error> {
+        self.dispatch.call(dispid::ABORT_ALL, &[])?;
+        Ok(())
+    }
+
     /// The station's user list, as a file (`Engine.UsersFile`).
     ///
     /// The users the engine loaded at startup, and the only route to writing
