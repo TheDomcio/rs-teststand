@@ -445,7 +445,8 @@ pub const DEFAULT_MAX_DEPTH: usize = 64;
 ///
 /// The budget is not defensive programming for its own sake. A live
 /// `SequenceContext` reports `ThisContext` among its own sub-properties, so it
-/// contains itself: NI's own UI-message example posts exactly that object. With
+/// contains itself, and posting one to a user interface is an ordinary thing
+/// for a sequence to do. With
 /// no limit, walking one recursed until the stack was exhausted and the process
 /// died with nothing to catch. Now it returns [`Error::RecursionLimit`] naming
 /// the path, and a caller walks a named subtree instead.

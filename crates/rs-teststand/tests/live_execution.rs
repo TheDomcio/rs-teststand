@@ -495,3 +495,70 @@ fn results_parse_from_a_sequence_file_authored_in_the_editor() -> Result<(), Err
     engine.release_sequence_file_ex(sequence_file, NO_OPTIONS)?;
     Ok(())
 }
+
+#[test]
+#[ignore = "requires a live engine"]
+fn a_running_thread_hands_over_its_sequence_context() -> Result<(), Error> {
+    // Regression. `Thread.GetSequenceContext` declares two parameters: the call
+    // stack index and an `[out]` frame id. Passing only the first is
+    // DISP_E_BADPARAMCOUNT, and nothing exercised this member, so the wrapper
+    // was broken for every caller without a single test noticing.
+    //
+    // Reaching a variable through the context is what proves it: the execution's
+    // own property tree has no `Locals`, so a wrong object would fail here too.
+    let engine = Engine::new()?;
+    engine.set_ui_message_polling_enabled(true)?;
+
+    let sequence_file = engine.new_sequence_file()?;
+    let main_sequence = sequence_file.get_sequence_by_name("MainSequence")?;
+    main_sequence
+        .locals()?
+        .set_val_string("Marker", INSERT_IF_MISSING, "found me")?;
+
+    // A step that waits long enough for the context to be read while it runs.
+    let step = engine.new_step("", "Statement")?;
+    step.set_name("Hold")?;
+    step.as_property_object()?
+        .set_val_string("Expression", INSERT_IF_MISSING, "Locals.Marker")?;
+    main_sequence.insert_step(&step, 0, StepGroup::Main)?;
+
+    let execution = engine.new_execution(&sequence_file, "MainSequence", None, false, 0)?;
+
+    // Poll for a live thread, pumping so the engine can make progress. The
+    // run is allowed to finish before anything is asserted: a panic raised
+    // while an execution is live unwinds through the COM apartment and takes
+    // the process down with STATUS_STACK_BUFFER_OVERRUN, which would destroy
+    // the evidence.
+    let started = Instant::now();
+    let mut reached = None;
+    let mut ended = false;
+    while started.elapsed() < Duration::from_secs(20) && !ended {
+        let _ = pump_thread_messages();
+        while !engine.is_ui_message_queue_empty()? {
+            let message = engine.get_ui_message()?;
+            ended |= matches!(
+                UIMessageCode::from_bits(message.event()?),
+                Ok(UIMessageCode::EndExecution)
+            );
+            message.acknowledge()?;
+        }
+        if reached.is_none() {
+            // The call under test.
+            reached = execution
+                .get_thread(0)
+                .and_then(|thread| thread.get_sequence_context(0))
+                .and_then(|context| context.locals())
+                .and_then(|locals| locals.get_val_string("Marker", NO_OPTIONS))
+                .ok();
+        }
+    }
+    engine.release_sequence_file_ex(sequence_file, NO_OPTIONS)?;
+
+    assert!(ended, "the execution should have finished");
+    assert_eq!(
+        reached.as_deref(),
+        Some("found me"),
+        "the context should resolve a local the sequence owns"
+    );
+    Ok(())
+}

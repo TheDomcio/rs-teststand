@@ -16,17 +16,22 @@ readme = "README.md"
 # async runtime and an RPC stack; a caller that only drives the engine in-process
 # pays for none of this.
 [dependencies]
-rs-teststand = { path = "../rs-teststand", version = "0.0.3" }
+rs-teststand = { path = "../rs-teststand", version = "0.0.4" }
 # The message pump: a background thread owning apartment-bound objects has to
 # service its own queue, and that is this crate's job rather than the binding's.
-rs-teststand-sys = { path = "../rs-teststand-sys", version = "0.0.3" }
+rs-teststand-sys = { path = "../rs-teststand-sys", version = "0.0.4" }
 # A COM reference cannot leave the process, so a message's object payload has to
 # become data before it crosses. That conversion belongs here, not in every
 # caller that needs it.
-rs-teststand-serde = { path = "../rs-teststand-serde", version = "0.0.3" }
+rs-teststand-serde = { path = "../rs-teststand-serde", version = "0.0.4" }
 serde_json = "1"
 thiserror = "2.0.18"
-tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time"] }
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time", "net", "io-util"] }
+# WebSocket, for the front ends that already speak it: a browser panel, or an
+# instrument toolkit. tokio-tungstenite is the tokio binding of tungstenite,
+# which is the crate the ecosystem builds on.
+tokio-tungstenite = { version = "0.28", optional = true }
+futures-util = { version = "0.3", optional = true, default-features = false, features = ["sink"] }
 tonic = { version = "0.14", optional = true }
 prost = { version = "0.14", optional = true }
 serde = { version = "1", features = ["derive"] }
@@ -39,11 +44,17 @@ grpc = ["dep:tonic", "dep:prost"]
 # Kept for compatibility. The wire types are always serde-derived now, because
 # the line transport serializes them; enabling this changes nothing.
 serde = []
+# Serve events to browsers and panel toolkits over WebSocket.
+websocket = ["dep:tokio-tungstenite", "dep:futures-util"]
 # Enables tests that instantiate the live TestStand(TM) Engine.
 live-engine = ["rs-teststand/live-engine"]
 
 [dev-dependencies]
-tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "time", "net"] }
+# A real client, to prove the server speaks the protocol rather than merely
+# compiling against it.
+tokio-tungstenite = "0.28"
+futures-util = { version = "0.3", default-features = false, features = ["sink"] }
 
 [lints]
 workspace = true
