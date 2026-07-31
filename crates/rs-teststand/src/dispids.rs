@@ -70,6 +70,12 @@ define_dispid_group! {
         GET_TEMPLATES_FILE = 0x026e;
         BUILD_VERSION = 0x02d0;
         IS_64BIT = 0x0324;
+        UNLOAD_ALL_MODULES = 0x011f;
+        BREAKPOINTS_ENABLED = 0x0169;
+        PERSIST_BREAKPOINTS = 0x0246;
+        DOT_NET_GARBAGE_COLLECTION_INTERVAL = 0x02be;
+        DO_DOT_NET_GARBAGE_COLLECTION = 0x02bf;
+        DOT_NET_CLR_VERSION = 0x02c3;
     }
 }
 

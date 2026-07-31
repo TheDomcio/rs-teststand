@@ -411,6 +411,136 @@ impl Engine {
         Ok(())
     }
 
+    /// Releases every code module the engine has loaded
+    /// (`Engine.UnloadAllModules`).
+    ///
+    /// Loading a sequence file loads its modules, and they stay loaded until
+    /// that file is closed. That is what makes the second run fast, and also
+    /// what holds a DLL open against the build that wants to replace it.
+    /// Unloading here frees them all at once, without closing anything.
+    ///
+    /// Call it between runs, not during one: a module in use by a live
+    /// execution is not a candidate, and the next run reloads whatever it needs.
+    ///
+    /// **State inside a module does not survive.** Anything a module kept in a
+    /// static or a global is gone once it is unloaded, and the reload starts
+    /// from nothing. A station whose modules carry state between steps that way
+    /// should keep that state in the engine instead, or not call this.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn unload_all_modules(&self) -> Result<(), Error> {
+        self.dispatch.call(dispid::UNLOAD_ALL_MODULES, &[])?;
+        Ok(())
+    }
+
+    /// Whether breakpoints stop an execution (`Engine.BreakpointsEnabled`).
+    ///
+    /// The master switch. With it off, breakpoints stay set but nothing stops
+    /// on them, which is how a station runs unattended without anyone having to
+    /// strip a sequence file of the breakpoints someone left in it.
+    ///
+    /// Distinct from the station option of the same name, which is the setting
+    /// written to disk. This is the engine's live state.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn breakpoints_enabled(&self) -> Result<bool, Error> {
+        Ok(self.dispatch.get(dispid::BREAKPOINTS_ENABLED)?.as_bool()?)
+    }
+
+    /// Turns breakpoints on or off (`Engine.BreakpointsEnabled`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_breakpoints_enabled(&self, enabled: bool) -> Result<(), Error> {
+        self.dispatch
+            .put(dispid::BREAKPOINTS_ENABLED, Value::Bool(enabled))?;
+        Ok(())
+    }
+
+    /// Whether breakpoints survive the file they are set in
+    /// (`Engine.PersistBreakpoints`).
+    ///
+    /// On, the engine remembers them across a close and reopen. A host that
+    /// sets breakpoints on behalf of a remote panel usually wants this off, so
+    /// that a debugging session leaves nothing behind on the station.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn persist_breakpoints(&self) -> Result<bool, Error> {
+        Ok(self.dispatch.get(dispid::PERSIST_BREAKPOINTS)?.as_bool()?)
+    }
+
+    /// Chooses whether breakpoints are remembered (`Engine.PersistBreakpoints`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_persist_breakpoints(&self, persist: bool) -> Result<(), Error> {
+        self.dispatch
+            .put(dispid::PERSIST_BREAKPOINTS, Value::Bool(persist))?;
+        Ok(())
+    }
+
+    /// Runs a .NET garbage collection now
+    /// (`Engine.DoDotNetGarbageCollection`).
+    ///
+    /// Only relevant to a station whose steps call .NET code. Collection is
+    /// otherwise periodic, on the
+    /// [interval](Self::dot_net_garbage_collection_interval); this forces one,
+    /// which is worth doing between runs on a long-lived host rather than
+    /// during a measurement, since collection pauses the runtime.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn do_dot_net_garbage_collection(&self) -> Result<(), Error> {
+        // The engine declares one reserved parameter, optional and defaulting
+        // to zero. Supplying it keeps the call correct if the default ever
+        // stops being applied.
+        self.dispatch
+            .call(dispid::DO_DOT_NET_GARBAGE_COLLECTION, &[Value::I32(0)])?;
+        Ok(())
+    }
+
+    /// How often the engine collects .NET garbage, in milliseconds
+    /// (`Engine.DotNetGarbageCollectionInterval`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn dot_net_garbage_collection_interval(&self) -> Result<i32, Error> {
+        Ok(self
+            .dispatch
+            .get(dispid::DOT_NET_GARBAGE_COLLECTION_INTERVAL)?
+            .as_i32()?)
+    }
+
+    /// Sets the .NET collection interval, in milliseconds
+    /// (`Engine.DotNetGarbageCollectionInterval`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_dot_net_garbage_collection_interval(&self, milliseconds: i32) -> Result<(), Error> {
+        self.dispatch.put(
+            dispid::DOT_NET_GARBAGE_COLLECTION_INTERVAL,
+            Value::I32(milliseconds),
+        )?;
+        Ok(())
+    }
+
+    /// The .NET runtime version the engine loaded (`Engine.DotNetCLRVersion`).
+    ///
+    /// Empty on a station where nothing has pulled the runtime in yet, so treat
+    /// an empty string as "not loaded" rather than as an error.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn dot_net_clr_version(&self) -> Result<String, Error> {
+        Ok(self
+            .dispatch
+            .get(dispid::DOT_NET_CLR_VERSION)?
+            .into_string()?)
+    }
+
     /// The station's user list, as a file (`Engine.UsersFile`).
     ///
     /// The users the engine loaded at startup, and the only route to writing
@@ -914,12 +1044,19 @@ mod tests {
     #[derive(Debug)]
     struct FakeDispatch {
         responses: HashMap<i32, Scripted>,
+        /// Every `put` and `call` in order, so a test can assert what a wrapper
+        /// sent rather than only what it read back.
+        written: Written,
     }
 
+    /// Shared with the test, because `Engine` takes the dispatch by value.
+    type Written = std::rc::Rc<core::cell::RefCell<Vec<(i32, Value)>>>;
+
     impl FakeDispatch {
-        fn new(entries: impl IntoIterator<Item = (i32, Scripted)>) -> Self {
+        fn new(entries: impl IntoIterator<Item = (i32, Scripted)>, written: Written) -> Self {
             Self {
                 responses: entries.into_iter().collect(),
+                written,
             }
         }
     }
@@ -935,17 +1072,60 @@ mod tests {
             }
         }
 
-        fn put(&self, _dispid: i32, _value: Value) -> Result<(), ComError> {
-            Err(ComError::hresult(0, "fake: put not scripted"))
+        fn put(&self, dispid: i32, value: Value) -> Result<(), ComError> {
+            self.written.borrow_mut().push((dispid, value));
+            Ok(())
         }
 
-        fn call(&self, _dispid: i32, _args: &[Value]) -> Result<Value, ComError> {
-            Err(ComError::hresult(0, "fake: call not scripted"))
+        fn call(&self, dispid: i32, args: &[Value]) -> Result<Value, ComError> {
+            let first = match args.first() {
+                Some(Value::I32(value)) => Value::I32(*value),
+                _ => Value::Empty,
+            };
+            self.written.borrow_mut().push((dispid, first));
+            Ok(Value::Empty)
         }
     }
 
     fn engine_with(entries: impl IntoIterator<Item = (i32, Scripted)>) -> Engine {
-        Engine::from_dispatch(Box::new(FakeDispatch::new(entries)))
+        engine_recording(entries).0
+    }
+
+    /// An engine plus the log of everything it writes.
+    fn engine_recording(entries: impl IntoIterator<Item = (i32, Scripted)>) -> (Engine, Written) {
+        let written: Written = std::rc::Rc::default();
+        let dispatch = FakeDispatch::new(entries, std::rc::Rc::clone(&written));
+        (Engine::from_dispatch(Box::new(dispatch)), written)
+    }
+
+    /// What a wrapper sent, reduced to the shapes these members use.
+    ///
+    /// `Value` carries COM payloads that have no meaningful equality, so it does
+    /// not implement `PartialEq`. Comparing the handful of scalar cases here is
+    /// enough and keeps that out of the public type.
+    #[derive(Debug, PartialEq, Eq)]
+    enum Sent {
+        Empty,
+        Bool(bool),
+        I32(i32),
+        Other,
+    }
+
+    impl From<&Value> for Sent {
+        fn from(value: &Value) -> Self {
+            match *value {
+                Value::Empty => Self::Empty,
+                Value::Bool(flag) => Self::Bool(flag),
+                Value::I32(number) => Self::I32(number),
+                _ => Self::Other,
+            }
+        }
+    }
+
+    /// Whether the log holds exactly this one entry.
+    fn wrote(written: &Written, dispid: i32, expected: &Sent) -> bool {
+        let log = written.borrow();
+        matches!(log.as_slice(), [(id, sent)] if *id == dispid && Sent::from(sent) == *expected)
     }
 
     #[test]
@@ -982,6 +1162,91 @@ mod tests {
         assert_eq!(engine.teststand_directory()?, "T:\\TestStand");
         assert_eq!(engine.bin_directory()?, "T:\\TestStand\\Bin");
         assert_eq!(engine.config_directory()?, "T:\\TestStand\\Cfg");
+        Ok(())
+    }
+
+    #[test]
+    fn unload_all_modules_calls_the_method_with_no_arguments() -> Result<(), Error> {
+        let (engine, written) = engine_recording([]);
+        engine.unload_all_modules()?;
+        assert!(
+            wrote(&written, dispid::UNLOAD_ALL_MODULES, &Sent::Empty),
+            "expected one argument-free call, got {written:?}",
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn breakpoints_enabled_round_trips() -> Result<(), Error> {
+        let engine = engine_with([(dispid::BREAKPOINTS_ENABLED, Scripted::Bool(true))]);
+        assert!(engine.breakpoints_enabled()?);
+
+        let (engine, written) = engine_recording([]);
+        engine.set_breakpoints_enabled(false)?;
+        assert!(
+            wrote(&written, dispid::BREAKPOINTS_ENABLED, &Sent::Bool(false)),
+            "expected the flag to be written as a bool, got {written:?}",
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn persist_breakpoints_round_trips() -> Result<(), Error> {
+        let engine = engine_with([(dispid::PERSIST_BREAKPOINTS, Scripted::Bool(false))]);
+        assert!(!engine.persist_breakpoints()?);
+
+        let (engine, written) = engine_recording([]);
+        engine.set_persist_breakpoints(true)?;
+        assert!(
+            wrote(&written, dispid::PERSIST_BREAKPOINTS, &Sent::Bool(true)),
+            "expected the flag to be written as a bool, got {written:?}",
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn dot_net_collection_passes_the_reserved_argument() -> Result<(), Error> {
+        // The engine declares the parameter optional with a zero default. Send
+        // it explicitly so the call stays correct if the default is dropped.
+        let (engine, written) = engine_recording([]);
+        engine.do_dot_net_garbage_collection()?;
+        assert!(
+            wrote(
+                &written,
+                dispid::DO_DOT_NET_GARBAGE_COLLECTION,
+                &Sent::I32(0)
+            ),
+            "expected the reserved argument to be sent as zero, got {written:?}",
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn dot_net_collection_interval_round_trips() -> Result<(), Error> {
+        let engine = engine_with([(
+            dispid::DOT_NET_GARBAGE_COLLECTION_INTERVAL,
+            Scripted::I32(30_000),
+        )]);
+        assert_eq!(engine.dot_net_garbage_collection_interval()?, 30_000);
+
+        let (engine, written) = engine_recording([]);
+        engine.set_dot_net_garbage_collection_interval(5_000)?;
+        assert!(
+            wrote(
+                &written,
+                dispid::DOT_NET_GARBAGE_COLLECTION_INTERVAL,
+                &Sent::I32(5_000)
+            ),
+            "expected the interval to be written as an i4, got {written:?}",
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn dot_net_clr_version_is_empty_when_the_runtime_is_not_loaded() -> Result<(), Error> {
+        // Documented behaviour: empty means "not loaded", not "failed".
+        let engine = engine_with([(dispid::DOT_NET_CLR_VERSION, Scripted::Str(""))]);
+        assert_eq!(engine.dot_net_clr_version()?, "");
         Ok(())
     }
 
