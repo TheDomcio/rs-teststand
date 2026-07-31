@@ -15,7 +15,7 @@ readme = "README.md"
 # On publish, cargo drops the `path` and resolves `rs-teststand-sys` by version
 # from crates.io, so `cargo add rs-teststand` pulls a self-contained crate.
 [dependencies]
-rs-teststand-sys = { path = "../rs-teststand-sys", version = "0.0.6" }
+rs-teststand-sys = { path = "../rs-teststand-sys", version = "0.0.7" }
 thiserror = "2.0.18"
 bitflags = "2.13.1"
 
