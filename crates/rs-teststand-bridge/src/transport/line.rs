@@ -1,10 +1,16 @@
 //! The smallest transport that works: one JSON object per line, over TCP.
 //!
 //! gRPC is the right answer when both ends are yours and you want a schema.
-//! This is the answer when the other end is a technician's Python script, a
-//! `LabVIEW` panel, a shell pipeline, or something written years ago that speaks
+//! This is the answer when the other end is a technician's script, a graphical
+//! test panel, a shell pipeline, or something written years ago that speaks
 //! sockets and nothing else. A line of JSON terminated by CRLF needs no
-//! compiler, no `.proto`, and no code generation on either side.
+//! compiler, no schema file, and no code generation on either side.
+//!
+//! CRLF is not an arbitrary choice: it is the record separator line-oriented
+//! instrument tooling already reads, so a client can take a whole message with
+//! one call. See the transport notes in `examples/line-bridge/README.md` for the
+//! constraints that follow from that, and for what a strictly typed reader on
+//! the far end needs from the JSON.
 //!
 //! Framing is `\r\n` because it is what line-oriented tooling already expects
 //! and what most languages' `readline` returns without configuration. JSON

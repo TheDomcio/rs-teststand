@@ -100,3 +100,31 @@ a raw newline.
 `send` blocks, deliberately. The engine's message has not been acknowledged at
 that point, so back-pressure from a slow reader reaches the sequence instead of
 growing a queue nobody drains.
+
+## Compatibility notes
+
+The framing and the JSON shape are chosen for readers that are not Rust, and in
+particular for line-oriented instrument tooling.
+
+**CRLF is what such tooling reads.** A typical TCP read primitive offers a CRLF
+mode that returns everything up to and including the terminator, which is
+exactly one frame here. It also takes a maximum byte count, and a frame longer
+than that comes back truncated with a timeout error rather than as a whole
+message — so keep payloads bounded. Sending a named subtree instead of a whole
+tree is the practical way to do that, and it is what the transmitter does.
+
+**The JSON avoids what strict readers cannot express.** A client that maps JSON
+onto a type declared in advance accepts booleans, numbers, strings, and arrays
+or objects of those, and nothing else. So:
+
+- No field is ever `null` — absent fields are omitted, and the reader uses its
+  own default.
+- `numeric` is always a number: a non-finite value is written as zero, because
+  JSON cannot spell NaN or infinity and the usual extensions are not portable.
+- Arrays are homogeneous and object keys are always named, never a mix of named
+  and positional.
+
+**Prefer the `WebSocket` transport when the far end can speak it.** It is
+bidirectional, framed by the protocol, and reachable from a browser. See
+`examples/websocket-bridge`. This transport exists for the cases that cannot:
+a shell pipeline, a script, or an older panel with a raw socket and nothing else.

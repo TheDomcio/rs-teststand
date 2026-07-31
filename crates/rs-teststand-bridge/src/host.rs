@@ -6,8 +6,9 @@ use std::time::Duration;
 
 use tokio::sync::{broadcast, oneshot};
 
-use rs_teststand::{Engine, UIMessage, UIMessageCode};
-use rs_teststand_serde::PropertyObjectValue as _;
+use rs_teststand::Engine;
+
+use crate::event::{MessageEvent, PayloadPolicy};
 
 use crate::Error;
 
@@ -29,126 +30,6 @@ const IDLE_POLL_INTERVAL: Duration = Duration::from_millis(20);
 /// Bounded on purpose: a host that cannot be stopped is worse than one that
 /// stops untidily.
 const SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(10);
-
-/// One message, flattened into something that can cross a thread or a wire.
-///
-/// The COM objects a [`UIMessage`] refers to are bound to the
-/// engine's apartment and cannot leave it, so what travels is the data a
-/// consumer actually needs.
-#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-pub struct MessageEvent {
-    /// The raw message code.
-    pub code: i32,
-    /// The numeric payload.
-    pub numeric: f64,
-    /// The string payload.
-    pub text: String,
-    /// The object payload, as JSON.
-    ///
-    /// A message's third slot holds an `ActiveX` reference, which is how a
-    /// sequence hands over a whole container instead of packing fields into
-    /// [`text`](Self::text). That reference is bound to the engine's process and
-    /// cannot be sent anywhere, so what survives here is the tree walked into
-    /// data. `None` means the slot was empty or the policy declined it.
-    pub payload: Option<String>,
-    /// Whether the posting thread was blocked awaiting acknowledgement.
-    ///
-    /// Informational by the time a subscriber sees it: the host has already
-    /// acknowledged the message, because holding it would stall the sequence.
-    pub synchronous: bool,
-    /// The execution that posted it, when there was one.
-    pub execution_id: Option<i32>,
-}
-
-impl MessageEvent {
-    /// Whether a sequence posted this, rather than the engine.
-    #[must_use]
-    pub const fn is_from_sequence(&self) -> bool {
-        UIMessageCode::is_user_message(self.code)
-    }
-
-    /// The engine's name for the code, when it has one.
-    #[must_use]
-    pub fn engine_code(&self) -> Option<UIMessageCode> {
-        UIMessageCode::from_bits(self.code).ok()
-    }
-
-    /// Flattens a live message into something that can leave this process.
-    ///
-    /// This is the boundary. Everything a [`UIMessage`] refers to is bound to
-    /// the engine's apartment; everything on this side of the call is data, and
-    /// can go to another thread, another process, or a socket.
-    ///
-    /// All three payload slots are carried, including the object one, which is
-    /// the slot that makes the difference: a sequence can put a container in it
-    /// and a receiver gets the whole structure without either side agreeing on
-    /// a text format. `policy` decides when that is worth the cost.
-    ///
-    /// # Errors
-    /// [`Error`] if a COM call fails or the object cannot be walked.
-    pub fn from_ui_message(message: &UIMessage, policy: PayloadPolicy) -> Result<Self, Error> {
-        let code = message.event()?;
-        let payload = match message.activex_data()? {
-            Some(container) if policy.admits(code) => match container.to_value() {
-                Ok(value) => Some(serde_json::to_string(&value)?),
-                // A sequence context contains itself, so walking the whole thing
-                // is refused. That is not a reason to lose the message: the code
-                // and text still matter, and a host that wants the data asks for
-                // a named subtree. See `PayloadPolicy`.
-                Err(rs_teststand::Error::RecursionLimit { .. }) => None,
-                Err(error) => return Err(error.into()),
-            },
-            Some(_) | None => None,
-        };
-        Ok(Self {
-            code,
-            numeric: message.numeric_data()?,
-            text: message.string_data()?,
-            payload,
-            synchronous: message.is_synchronous()?,
-            execution_id: message
-                .execution()?
-                .map(|execution| execution.id())
-                .transpose()?,
-        })
-    }
-}
-
-/// Which messages get their object payload serialized.
-///
-/// Walking a property tree is not free, and the engine puts objects in the slot
-/// for its own messages as well as a sequence's, so this is a real choice rather
-/// than a switch nobody needs.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-pub enum PayloadPolicy {
-    /// Serialize only what a sequence posted itself.
-    ///
-    /// The default, and the one to keep unless you know otherwise. The engine
-    /// fills the slot for `UIMsg_StartFileExecution` and `UIMsg_EndFileExecution`
-    /// with the **sequence file**, so serializing those yields the entire file,
-    /// every step and every property, on every run. A host that wants the file
-    /// should ask for it by name rather than have it pushed.
-    #[default]
-    SequenceMessagesOnly,
-    /// Serialize whatever is in the slot, including the engine's own objects.
-    ///
-    /// Useful for diagnosis. Expect large documents.
-    Everything,
-    /// Never serialize. Codes, numbers and text only.
-    Never,
-}
-
-impl PayloadPolicy {
-    /// Whether a message with this code should have its object serialized.
-    #[must_use]
-    pub const fn admits(self, code: i32) -> bool {
-        match self {
-            Self::Everything => true,
-            Self::Never => false,
-            Self::SequenceMessagesOnly => UIMessageCode::is_user_message(code),
-        }
-    }
-}
 
 /// A unit of work to run against the engine, on the engine's own thread.
 type Job = Box<dyn FnOnce(&Engine) + Send>;
@@ -361,7 +242,9 @@ impl Drop for EngineHost {
 
 #[cfg(test)]
 mod tests {
-    use super::{MessageEvent, UIMessageCode};
+    use rs_teststand::UIMessageCode;
+
+    use crate::event::MessageEvent;
 
     fn event(code: i32) -> MessageEvent {
         MessageEvent {

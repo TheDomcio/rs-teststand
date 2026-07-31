@@ -111,8 +111,12 @@ impl Thread {
     /// [`SequenceFile::file_globals_default_values`](crate::SequenceFile::file_globals_default_values)
     /// instead.
     ///
-    /// The engine's second parameter is an optional `[out]` frame id; it is not
-    /// requested here.
+    /// The engine declares **two** parameters: the call stack index, and an
+    /// `[out]` frame id (`VT_BYREF | VT_I4`). Both must be present in the call
+    /// even though only the first carries information — supplying one gives
+    /// `DISP_E_BADPARAMCOUNT`. The second is passed empty, which the engine
+    /// accepts as "no output wanted"; reading the frame id back would need
+    /// byref support this crate does not have yet.
     ///
     /// # Errors
     /// [`Error`] if the index is out of range or the COM call fails.
@@ -124,7 +128,7 @@ impl Thread {
             self.dispatch
                 .call(
                     thread::GET_SEQUENCE_CONTEXT,
-                    &[Value::I32(call_stack_index)],
+                    &[Value::I32(call_stack_index), Value::Empty],
                 )?
                 .into_object()?,
         ))

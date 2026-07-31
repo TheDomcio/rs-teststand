@@ -1,0 +1,219 @@
+<!doctype html>
+<meta charset="utf-8" />
+<title>Station panel</title>
+<!--
+  A test panel with no build step and no dependencies.
+
+  Open this file directly in a browser while the host is running. It connects to
+  the host over WebSocket and renders whatever the run reports: progress, the
+  engine's own notices, custom messages, object payloads and the final results
+  table. Nothing here knows what COM is.
+
+  Kept deliberately plain. It is a worked example of consuming the wire format,
+  not a design to copy.
+-->
+<style>
+  :root { color-scheme: light dark; }
+  body { font: 14px/1.5 system-ui, sans-serif; margin: 0; padding: 1.5rem;
+         max-width: 68rem; margin-inline: auto; }
+  h1 { font-size: 1.15rem; margin: 0 0 .25rem; }
+  .muted { opacity: .65; }
+  .bar { height: .6rem; background: #8883; border-radius: .3rem; overflow: hidden; margin: .75rem 0; }
+  .bar > i { display: block; height: 100%; width: 0; background: #2e7d32; transition: width .25s; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; align-items: start; }
+  @media (max-width: 60rem) { .grid { grid-template-columns: 1fr; } }
+  table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: .25rem .5rem; border-bottom: 1px solid #8883; }
+  th { font-weight: 600; opacity: .7; }
+  #log { max-height: 26rem; overflow-y: auto; font-family: ui-monospace, monospace; font-size: 12px; }
+  #log div { padding: .1rem 0; border-bottom: 1px solid #8881; }
+  .engine { opacity: .55; }
+  .sequence { color: #1565c0; }
+  .pass { color: #2e7d32; font-weight: 600; }
+  .reply { color: #6a1b9a; }
+  #controls { display: flex; gap: .4rem; flex-wrap: wrap; margin: .5rem 0 .25rem; }
+  button { font: inherit; padding: .3rem .7rem; border-radius: .3rem;
+           border: 1px solid #8886; background: #8881; cursor: pointer; }
+  button:hover { background: #8883; }
+  input { font: inherit; padding: .3rem .5rem; border-radius: .3rem;
+          border: 1px solid #8886; background: transparent; color: inherit; flex: 1; min-width: 14rem; }
+  .fail { color: #c62828; font-weight: 600; }
+  pre { background: #8881; padding: .5rem; border-radius: .3rem; overflow-x: auto;
+        font-size: 12px; max-height: 20rem; }
+</style>
+
+<h1>Station panel</h1>
+<div class="muted" id="state">connecting…</div>
+<div id="controls">
+  <button data-command="hello">1. Hello</button>
+  <input id="user" value="administrator" size="14" title="login name" />
+  <input id="password" value="" placeholder="password (blank)" size="14" type="password" />
+  <button data-command="login">2. Log in</button>
+  <button data-command="logout">Log out</button>
+</div>
+<div id="controls">
+  <input id="path" placeholder="sequence file (blank = built-in demo)" size="42" />
+  <button data-command="load">3. Load file</button>
+  <button data-command="start">4. Start</button>
+  <button data-command="read">Read Locals.Result</button>
+  <button data-command="terminate">Terminate</button>
+  <button data-command="shutdown">Shut down host</button>
+</div>
+<div class="bar"><i id="progress"></i></div>
+<div class="muted" id="stage"></div>
+
+<div class="grid">
+  <section>
+    <h2 style="font-size:1rem">Messages</h2>
+    <div id="log"></div>
+  </section>
+  <section>
+    <h2 style="font-size:1rem">Results</h2>
+    <table id="results"><thead><tr><th>Step</th><th>Type</th><th>Status</th></tr></thead><tbody></tbody></table>
+    <h2 style="font-size:1rem; margin-top:1.5rem">Last payload</h2>
+    <pre id="payload">none yet</pre>
+  </section>
+</div>
+
+<script>
+  // Codes at or above this belong to the sequence; below, to the engine.
+  const USER_BASE = 10000;
+  // The engine's documented progress pair.
+  const PROGRESS_PERCENT = 11, PROGRESS_TEXT = 12;
+
+  const el = id => document.getElementById(id);
+  const socket = new WebSocket("ws://127.0.0.1:50751");
+
+  socket.onopen = () => (el("state").textContent = "connected");
+  socket.onclose = () => (el("state").textContent = "host disconnected");
+  socket.onerror = () => (el("state").textContent = "connection failed — is the host running?");
+
+  // The same socket that streams events carries requests back. A panel never
+  // polls and never opens a second connection to ask for something.
+  let execution = null;
+  const send = command => {
+    if (socket.readyState === WebSocket.OPEN) socket.send(JSON.stringify(command));
+    else append("engine", "not connected");
+  };
+
+  // The whole orchestration, in the order a station actually does it:
+  // greet the host, identify the operator, load a file, start it, watch.
+  const commands = {
+    hello: () => ({ command: "hello" }),
+    login: () => ({
+      command: "login",
+      user_name: el("user").value.trim(),
+      password: el("password").value,
+    }),
+    logout: () => ({ command: "logout" }),
+    load: () => ({ command: "load_file", path: el("path").value.trim() }),
+    start: () => ({ command: "start", sequence: "MainSequence" }),
+    read: () => ({
+      command: "read_value",
+      execution_id: execution ?? -1,
+      lookup: "Locals.Result",
+    }),
+    terminate: () => ({ command: "terminate", execution_id: execution ?? -1 }),
+    shutdown: () => ({ command: "shutdown" }),
+  };
+
+  for (const controls of document.querySelectorAll("#controls")) {
+    controls.addEventListener("click", clicked => {
+      const what = clicked.target.dataset.command;
+      if (!what || !commands[what]) return;
+      const command = commands[what]();
+      append("reply", `-> ${command.command}`);
+      send(command);
+    });
+  }
+
+  socket.onmessage = frame => {
+    // One text frame is one whole message. There is no reassembly to do:
+    // WebSocket already framed it, which is why this transport needs no
+    // terminator of its own.
+    let event;
+    try {
+      event = JSON.parse(frame.data);
+    } catch (error) {
+      return append("engine", `unparseable frame: ${error}`);
+    }
+
+    // A reply carries `response`; an event carries `code`. One stream, two
+    // kinds of message, told apart by which discriminant is present.
+    if (event.response !== undefined) return showReply(event);
+
+    if (event.code === PROGRESS_PERCENT) el("progress").style.width = `${event.numeric}%`;
+    if (event.code === PROGRESS_TEXT && event.text) el("stage").textContent = event.text;
+
+    const origin = event.code >= USER_BASE ? "sequence" : "engine";
+    // `payload` and `execution_id` are absent rather than null when they have
+    // no value, so a reader with a fixed schema can use its own defaults.
+    const size = event.payload ? ` (${event.payload.length} B)` : "";
+    append(origin, `${String(event.code).padEnd(6)} ${event.text || ""}${size}`);
+
+    if (event.payload) {
+      let tree;
+      try {
+        tree = JSON.parse(event.payload);
+      } catch {
+        return;
+      }
+      el("payload").textContent = JSON.stringify(tree, null, 2);
+      if (event.execution_id !== undefined) execution = event.execution_id;
+      if (Array.isArray(tree.results)) showResults(tree.results);
+    }
+  };
+
+  function showReply(reply) {
+    if (reply.response === "started") {
+      execution = reply.execution_id;
+      el("progress").style.width = "0%";
+      el("results").querySelector("tbody").replaceChildren();
+    }
+    if (reply.response === "value") {
+      el("payload").textContent = prettyOrRaw(reply.value);
+    }
+    if (reply.response === "logged_in") {
+      el("state").textContent = `logged in as ${reply.full_name || reply.user_name}`;
+    }
+    const detail =
+      reply.reason ??
+      reply.engine ??
+      reply.lookup ??
+      (reply.path !== undefined ? `${reply.path} (${reply.sequences} sequences)` : undefined) ??
+      (reply.user_name !== undefined ? reply.user_name : undefined) ??
+      reply.command ??
+      "";
+    append("reply", `<- ${reply.response} ${detail}`);
+  }
+
+  function prettyOrRaw(text) {
+    try {
+      return JSON.stringify(JSON.parse(text), null, 2);
+    } catch {
+      return text;
+    }
+  }
+
+  function append(origin, text) {
+    const line = document.createElement("div");
+    line.className = origin;
+    line.textContent = text;
+    el("log").append(line);
+    el("log").scrollTop = el("log").scrollHeight;
+  }
+
+  function showResults(results) {
+    const body = el("results").querySelector("tbody");
+    body.replaceChildren();
+    for (const result of results) {
+      const row = body.insertRow();
+      row.insertCell().textContent = result.name ?? "";
+      row.insertCell().textContent = result.type ?? "";
+      const status = row.insertCell();
+      status.textContent = result.status ?? "";
+      status.className = result.status === "Passed" ? "pass"
+                       : result.status === "Failed" ? "fail" : "";
+    }
+  }
+</script>

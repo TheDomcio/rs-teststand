@@ -6,7 +6,7 @@
 //!
 //! Start the receiver first.
 //!
-//! This mirrors the last expression in NI's shipped UI-message example:
+//! The case it covers is a sequence handing its whole context to a listener:
 //!
 //! ```text
 //! PostUIMessageEx(UIMsg_UserMessageBase + 115, 0, "", ThisContext, True)
@@ -122,7 +122,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     let path = std::env::args().nth(1);
     let sequence_file = match &path {
-        // A file on disk, so this can be pointed at NI's own example.
+        // A file on disk, so this can be pointed at a sequence you already have.
         Some(path) => engine.get_sequence_file_ex(
             path,
             GetSeqFileOptions::DO_NOT_RUN_LOAD_CALLBACK,

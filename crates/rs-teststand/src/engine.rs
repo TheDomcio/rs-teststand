@@ -349,6 +349,40 @@ impl Engine {
         Ok(())
     }
 
+    /// Logs a user in, or logs the current one out (`Engine.CurrentUser`).
+    ///
+    /// `Some(user)` makes that user current; `None` clears it, which the engine
+    /// documents as logging out.
+    ///
+    /// **This does not check the password.** Setting the property is the act of
+    /// logging in, not an authentication step: a host that cares must call
+    /// [`User::validate_password`](crate::User::validate_password) first and
+    /// refuse on `false`. Written this way because the engine draws the same
+    /// line, and hiding a check inside a setter would make it unclear which one
+    /// a caller had actually performed.
+    ///
+    /// A host built on the `ActiveX` UI controls should use their own login
+    /// method instead, so the controls raise the event they expect; this is the
+    /// headless path.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails, or if `user` has no COM identity.
+    pub fn set_current_user(&self, user: Option<&crate::users::User>) -> Result<(), Error> {
+        let value = match user {
+            None => Value::NullObject,
+            Some(user) => {
+                user.duplicate_dispatch()
+                    .map(Value::Object)
+                    .ok_or(Error::UnexpectedType {
+                        expected: "a live user",
+                        actual: "a test fake with no COM identity",
+                    })?
+            }
+        };
+        self.dispatch.put(dispid::CURRENT_USER, value)?;
+        Ok(())
+    }
+
     /// The station's user list, as a file (`Engine.UsersFile`).
     ///
     /// The users the engine loaded at startup, and the only route to writing
