@@ -109,19 +109,23 @@ fn unloading_every_module_succeeds_with_nothing_loaded() -> Result<(), Error> {
 fn dot_net_collection_runs_and_its_interval_round_trips() -> Result<(), Error> {
     let engine = Engine::new()?;
 
+    // No assertion on the starting value. Zero or less means automatic
+    // collection is off, and a host that creates no UI control is documented to
+    // read -1, so both a positive interval and -1 are correct here.
     let interval = engine.dot_net_garbage_collection_interval()?;
-    assert!(
-        interval >= 0,
-        "a negative collection interval makes no sense: {interval}"
-    );
 
-    engine.set_dot_net_garbage_collection_interval(interval + 1000)?;
-    assert_eq!(
-        engine.dot_net_garbage_collection_interval()?,
-        interval + 1000,
-        "the engine did not take the new interval"
-    );
+    // Round-trip through a value that is unambiguously a real interval, then
+    // through the sentinel, so both sides of zero are covered.
+    for candidate in [5_000, -1] {
+        engine.set_dot_net_garbage_collection_interval(candidate)?;
+        assert_eq!(
+            engine.dot_net_garbage_collection_interval()?,
+            candidate,
+            "the engine did not take the interval {candidate}"
+        );
+    }
     engine.set_dot_net_garbage_collection_interval(interval)?;
+    assert_eq!(engine.dot_net_garbage_collection_interval()?, interval);
 
     // Must not fail on a station where no .NET step has run.
     engine.do_dot_net_garbage_collection()?;
@@ -134,5 +138,35 @@ fn dot_net_collection_runs_and_its_interval_round_trips() -> Result<(), Error> {
         "unexpected CLR version string: {clr:?}"
     );
 
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires a live TestStand engine"]
+fn a_dialog_raised_while_the_engine_starts_does_not_block_it() -> Result<(), Error> {
+    // The engine can raise a warning during its own construction — most often
+    // that a previous process left sequence files unreleased. No station option
+    // suppresses it, so a host that cannot close it hangs before it has an
+    // engine to configure. Reaching the assertion at all is the real result:
+    // if the dialog were still up, this test would never return.
+    let engine = Engine::new()?;
+
+    let dialogs = engine.startup_dialogs();
+    if dialogs.is_empty() {
+        println!("clean start: no dialog was raised");
+    } else {
+        for dialog in dialogs {
+            println!(
+                "closed during startup: {:?} / {:?}",
+                dialog.title, dialog.body
+            );
+        }
+    }
+
+    // The engine has to be usable afterwards, not merely constructed.
+    assert!(
+        engine.major_version()? >= 16,
+        "engine unusable after the startup sweep"
+    );
     Ok(())
 }

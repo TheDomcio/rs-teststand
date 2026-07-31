@@ -16,10 +16,12 @@
 //! it.
 
 pub(crate) mod dialog;
+pub(crate) mod dismiss;
 pub(crate) mod pump;
 pub(crate) mod raise;
 
 pub use dialog::{DialogInfo, find_blocking_dialog};
+pub use dismiss::{Dismissed, dismiss_blocking_dialog};
 pub use pump::pump_thread_messages;
 pub use raise::Raised;
 

@@ -64,6 +64,7 @@ pub use station::{
 pub use types::{TypeCategory, TypeUsageList};
 pub use users::{User, UserPrivilege, UsersFile};
 pub use watchdog::{
-    DialogInfo, DialogPolicy, Raised, Watchdog, find_blocking_dialog, surface_blocking_dialog,
+    DialogInfo, DialogPolicy, Dismissed, Raised, Watchdog, dismiss_blocking_dialog,
+    find_blocking_dialog, surface_blocking_dialog,
 };
 pub use workspace::{WorkspaceFile, WorkspaceObject};

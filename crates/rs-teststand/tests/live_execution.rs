@@ -326,6 +326,18 @@ fn station_globals_outlive_a_run_but_file_globals_do_not() -> Result<(), Error> 
     Ok(())
 }
 
+// KNOWN ISSUE: this test does not finish on a 2016 SP1 32-bit engine. It was
+// seen aborting the process on one run and hanging on another, and the run had
+// to be stopped by hand both times. Every test before it in this file passes.
+//
+// Two consequences, both worse than a plain failure. A stopped run never
+// reaches its release calls, so it leaks sequence files, and the *next* engine
+// to start warns that files were left unreleased. And a suite that hangs blows
+// the time budget rather than reporting.
+//
+// Not yet diagnosed: which control member it stops on is unknown, so this is
+// deliberately left as it is rather than narrowed on a guess. Run this file
+// with a timeout until it is understood.
 #[test]
 #[ignore = "requires a live engine"]
 fn every_control_member_reaches_the_member_it_names() -> Result<(), Error> {
