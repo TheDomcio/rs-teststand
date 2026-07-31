@@ -263,3 +263,90 @@ fn a_container_posted_by_a_sequence_becomes_transportable_json()
     );
     Ok(())
 }
+
+#[test]
+#[ignore = "requires a live engine"]
+fn a_self_referential_context_is_refused_instead_of_crashing()
+-> Result<(), Box<dyn std::error::Error>> {
+    // A live sequence context lists `ThisContext` among its own sub-properties,
+    // so it contains itself. Walking one with no limit used to recurse until the
+    // stack was gone and the process died with nothing to catch — this asserts
+    // it now comes back as an error naming the path.
+    //
+    // The context is built here rather than taken from a UI message so the test
+    // needs no fixture: `Engine.NewExecution` gives a running thread, and its
+    // sequence context is the same kind of object NI's example posts.
+    use rs_teststand::{StepGroup, UIMessageCode};
+
+    let engine = Engine::new()?;
+    engine.set_ui_message_polling_enabled(true)?;
+
+    let sequence_file = engine.new_sequence_file()?;
+    let main_sequence = sequence_file.get_sequence_by_name("MainSequence")?;
+    let step = engine.new_step("", "Statement")?;
+    step.set_name("Hand over the context")?;
+    step.as_property_object()?.set_val_string(
+        "TS.PostExpr",
+        insert_if_missing(),
+        &format!(
+            r#"RunState.Thread.PostUIMessageEx({}, 0, "", ThisContext, False)"#,
+            UIMessageCode::USER_MESSAGE_BASE + 31
+        ),
+    )?;
+    main_sequence.insert_step(&step, 0, StepGroup::Main)?;
+
+    let execution = engine.new_execution(&sequence_file, "MainSequence", None, false, 0)?;
+
+    let mut outcome = None;
+    let mut ended = false;
+    let started = std::time::Instant::now();
+    while started.elapsed() < std::time::Duration::from_secs(20) && !ended {
+        let _ = rs_teststand::pump_thread_messages();
+        while !engine.is_ui_message_queue_empty()? {
+            let message = engine.get_ui_message()?;
+            let code = message.event()?;
+            if code == UIMessageCode::USER_MESSAGE_BASE + 31 {
+                if let Some(context) = message.activex_data()? {
+                    // The whole context: must be refused, not walked.
+                    let whole = context.to_value().err().map(|error| error.to_string());
+                    // A named subtree of the same context: must succeed.
+                    let subtree = context
+                        .get_property_object("Locals", none())
+                        .and_then(|locals| locals.to_value())
+                        .is_ok();
+                    outcome = Some((whole, subtree));
+                }
+            }
+            if matches!(
+                UIMessageCode::from_bits(code),
+                Ok(UIMessageCode::EndExecution)
+            ) {
+                ended = true;
+            }
+            message.acknowledge()?;
+        }
+    }
+    let status = execution.result_status()?;
+    engine.release_sequence_file_ex(sequence_file, none())?;
+
+    assert!(ended, "the execution should have finished");
+    assert_eq!(status, "Passed");
+    let Some((whole, subtree)) = outcome else {
+        assert!(outcome.is_some(), "the context never reached the host");
+        return Ok(());
+    };
+
+    let Some(message) = whole else {
+        return Err("walking a self-referential context must fail, not succeed".into());
+    };
+    println!("  refused with: {message}");
+    assert!(
+        message.contains("deeper than"),
+        "the failure should name the depth limit, got {message:?}"
+    );
+    assert!(
+        subtree,
+        "a named subtree of the same context must still serialize"
+    );
+    Ok(())
+}

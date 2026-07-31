@@ -27,6 +27,22 @@ use crate::error_codes::code_name;
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum Error {
+    /// A property tree was walked deeper than the caller allowed.
+    ///
+    /// Usually a cycle rather than genuine depth. A live `SequenceContext`
+    /// lists `ThisContext` among its own sub-properties, so it contains itself,
+    /// and a walk with no limit recurses until the stack is gone. `path` is
+    /// where the limit was reached, which is normally enough to see the loop.
+    #[error(
+        "property tree deeper than {limit} levels at {path:?}; a sequence context contains itself, so walk a named subtree instead"
+    )]
+    RecursionLimit {
+        /// The lookup path at which the limit was hit.
+        path: String,
+        /// The limit that was exceeded.
+        limit: usize,
+    },
+
     /// The engine raised a failure it has a name for.
     ///
     /// `code` is the engine's own error code, taken from the raised exception
@@ -71,7 +87,9 @@ impl Error {
         match self {
             Self::Engine { code, .. } => code_name(*code),
             Self::Com { hresult, .. } => code_name(*hresult),
-            Self::UnexpectedType { .. } => None,
+            // Raised by this crate, not by the engine, so there is no engine
+            // name to report.
+            Self::UnexpectedType { .. } | Self::RecursionLimit { .. } => None,
         }
     }
 
@@ -81,7 +99,7 @@ impl Error {
         match self {
             Self::Engine { code, .. } => Some(*code),
             Self::Com { hresult, .. } => Some(*hresult),
-            Self::UnexpectedType { .. } => None,
+            Self::UnexpectedType { .. } | Self::RecursionLimit { .. } => None,
         }
     }
 }

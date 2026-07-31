@@ -16,7 +16,7 @@ readme = "README.md"
 # and carries no serialization framework; a caller that never serialises a
 # property tree pays for none of this.
 [dependencies]
-rs-teststand = { path = "../rs-teststand", version = "0.0.2" }
+rs-teststand = { path = "../rs-teststand", version = "0.0.3" }
 serde = { version = "1", features = ["derive"] }
 
 [features]

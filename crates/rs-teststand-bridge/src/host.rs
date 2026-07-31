@@ -35,8 +35,7 @@ const SHUTDOWN_TIMEOUT: Duration = Duration::from_secs(10);
 /// The COM objects a [`UIMessage`] refers to are bound to the
 /// engine's apartment and cannot leave it, so what travels is the data a
 /// consumer actually needs.
-#[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct MessageEvent {
     /// The raw message code.
     pub code: i32,
@@ -90,9 +89,15 @@ impl MessageEvent {
     pub fn from_ui_message(message: &UIMessage, policy: PayloadPolicy) -> Result<Self, Error> {
         let code = message.event()?;
         let payload = match message.activex_data()? {
-            Some(container) if policy.admits(code) => {
-                Some(serde_json::to_string(&container.to_value()?)?)
-            }
+            Some(container) if policy.admits(code) => match container.to_value() {
+                Ok(value) => Some(serde_json::to_string(&value)?),
+                // A sequence context contains itself, so walking the whole thing
+                // is refused. That is not a reason to lose the message: the code
+                // and text still matter, and a host that wants the data asks for
+                // a named subtree. See `PayloadPolicy`.
+                Err(rs_teststand::Error::RecursionLimit { .. }) => None,
+                Err(error) => return Err(error.into()),
+            },
             Some(_) | None => None,
         };
         Ok(Self {

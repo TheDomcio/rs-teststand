@@ -1,0 +1,14 @@
+[package]
+name = "line-receiver"
+version = "0.0.3"
+edition = "2024"
+rust-version = "1.85"
+publish = false
+
+[workspace]
+
+# Standard library and a JSON parser. No rs-teststand, no COM, no schema
+# compiler, no code generation. Any language with a socket could take its place,
+# which is the reason this transport exists beside the gRPC one.
+[dependencies]
+serde_json = "1"

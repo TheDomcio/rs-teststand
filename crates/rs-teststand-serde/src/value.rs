@@ -192,6 +192,17 @@ pub trait PropertyObjectValue {
     /// [`Error`] if any COM call fails.
     fn to_value(&self) -> Result<PropertyValue, Error>;
 
+    /// Walks this property, refusing to descend past `max_depth` levels.
+    ///
+    /// Use this when the object might contain a cycle and you would rather
+    /// choose the limit yourself. [`to_value`](Self::to_value) is this with
+    /// [`DEFAULT_MAX_DEPTH`].
+    ///
+    /// # Errors
+    /// [`Error::RecursionLimit`] if the tree is deeper than `max_depth`, or
+    /// [`Error`] if any COM call fails.
+    fn to_value_with_depth(&self, max_depth: usize) -> Result<PropertyValue, Error>;
+
     /// Rebuilds this container's contents from a [`PropertyValue`].
     ///
     /// # Errors
@@ -210,44 +221,11 @@ impl PropertyObjectValue for PropertyObject {
     /// # Errors
     /// [`Error`] if any COM call fails.
     fn to_value(&self) -> Result<PropertyValue, Error> {
-        let property_type = self.property_type()?;
-        let value_type = property_type.value_type()?;
+        self.to_value_with_depth(DEFAULT_MAX_DEPTH)
+    }
 
-        // Arrays first: an array of numbers still reports Number as its type.
-        if matches!(value_type, Ok(PropValType::Array)) {
-            let lengths = property_type.array_dimensions()?.lengths()?;
-            return array_to_value(self, &lengths);
-        }
-
-        // A container, or anything that behaves like one (a named type instance
-        // reports its own type but is still a bag of fields).
-        let sub_properties = self.get_num_sub_properties("")?;
-        if matches!(value_type, Ok(PropValType::Container)) || sub_properties > 0 {
-            let mut members = BTreeMap::new();
-            for index in 0..sub_properties {
-                let name = self.get_nth_sub_property_name("", index, NO_OPTIONS)?;
-                let child = self.get_property_object(&name, NO_OPTIONS)?;
-                members.insert(name, child.to_value()?);
-            }
-            return Ok(PropertyValue::Container(members));
-        }
-
-        match value_type {
-            Ok(PropValType::Boolean) => Ok(PropertyValue::Bool(self.get_val_bool("", NO_OPTIONS)?)),
-            Ok(PropValType::Number) => number_to_value(self, &property_type),
-            // Strings read directly. Anything else that is still a leaf —
-            // an object reference, an enumeration — is not a string and
-            // `GetValString` refuses it, so fall back to the formatted value,
-            // which the engine guarantees to produce for any object ("Nothing"
-            // for an empty reference).
-            Ok(PropValType::String) => {
-                Ok(PropertyValue::Text(self.get_val_string("", NO_OPTIONS)?))
-            }
-            _ => Ok(PropertyValue::Text(
-                self.get_val_string("", NO_OPTIONS)
-                    .or_else(|_| self.get_formatted_value("", 0, "", true, ", "))?,
-            )),
-        }
+    fn to_value_with_depth(&self, max_depth: usize) -> Result<PropertyValue, Error> {
+        walk(self, max_depth, "")
     }
 
     /// Rebuilds this container's contents from a [`PropertyValue`].
@@ -455,6 +433,74 @@ fn set_array_member(
         }
     }
     Ok(())
+}
+
+/// How deep [`PropertyObjectValue::to_value`] descends before giving up.
+///
+/// Generous for real data and far short of the stack. Nothing legitimate in a
+/// sequence file nests anywhere near this, so reaching it means a cycle.
+pub const DEFAULT_MAX_DEPTH: usize = 64;
+
+/// Walks one property, carrying the remaining budget and the path reached.
+///
+/// The budget is not defensive programming for its own sake. A live
+/// `SequenceContext` reports `ThisContext` among its own sub-properties, so it
+/// contains itself: NI's own UI-message example posts exactly that object. With
+/// no limit, walking one recursed until the stack was exhausted and the process
+/// died with nothing to catch. Now it returns [`Error::RecursionLimit`] naming
+/// the path, and a caller walks a named subtree instead.
+fn walk(object: &PropertyObject, remaining: usize, path: &str) -> Result<PropertyValue, Error> {
+    // Spend a level before doing anything, so the check runs once per node and
+    // reports the node that exhausted the budget.
+    let Some(remaining) = remaining.checked_sub(1) else {
+        return Err(Error::RecursionLimit {
+            path: path.to_owned(),
+            limit: DEFAULT_MAX_DEPTH,
+        });
+    };
+    let property_type = object.property_type()?;
+    let value_type = property_type.value_type()?;
+
+    // Arrays first: an array of numbers still reports Number as its type.
+    if matches!(value_type, Ok(PropValType::Array)) {
+        let lengths = property_type.array_dimensions()?.lengths()?;
+        return array_to_value(object, &lengths);
+    }
+
+    // A container, or anything that behaves like one (a named type instance
+    // reports its own type but is still a bag of fields).
+    let sub_properties = object.get_num_sub_properties("")?;
+    if matches!(value_type, Ok(PropValType::Container)) || sub_properties > 0 {
+        let mut members = BTreeMap::new();
+        for index in 0..sub_properties {
+            let name = object.get_nth_sub_property_name("", index, NO_OPTIONS)?;
+            let child = object.get_property_object(&name, NO_OPTIONS)?;
+            let child_path = if path.is_empty() {
+                name.clone()
+            } else {
+                format!("{path}.{name}")
+            };
+            let walked = walk(&child, remaining, &child_path)?;
+            members.insert(name, walked);
+        }
+        return Ok(PropertyValue::Container(members));
+    }
+
+    match value_type {
+        Ok(PropValType::Boolean) => Ok(PropertyValue::Bool(object.get_val_bool("", NO_OPTIONS)?)),
+        Ok(PropValType::Number) => number_to_value(object, &property_type),
+        // Strings read directly. Anything else that is still a leaf —
+        // an object reference, an enumeration — is not a string and
+        // `GetValString` refuses it, so fall back to the formatted value,
+        // which the engine guarantees to produce for any object ("Nothing"
+        // for an empty reference).
+        Ok(PropValType::String) => Ok(PropertyValue::Text(object.get_val_string("", NO_OPTIONS)?)),
+        _ => Ok(PropertyValue::Text(
+            object
+                .get_val_string("", NO_OPTIONS)
+                .or_else(|_| object.get_formatted_value("", 0, "", true, ", "))?,
+        )),
+    }
 }
 
 #[cfg(test)]
