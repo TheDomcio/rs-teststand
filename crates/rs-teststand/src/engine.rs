@@ -2,6 +2,11 @@
 
 use rs_teststand_sys::{Dispatch, Value, create_dispatch};
 
+#[path = "engine_startup.rs"]
+mod startup;
+
+use rs_teststand_sys::DialogInfo;
+
 use crate::dispids::engine as dispid;
 use crate::error::Error;
 
@@ -24,6 +29,9 @@ const ENGINE_PROG_ID: &str = "TestStand.Engine";
 #[derive(Debug)]
 pub struct Engine {
     dispatch: Box<dyn Dispatch>,
+    /// Dialogs closed while this engine was being created. See
+    /// [`startup_dialogs`](Engine::startup_dialogs).
+    startup_dialogs: Vec<DialogInfo>,
 }
 
 impl Engine {
@@ -33,12 +41,34 @@ impl Engine {
     /// [`Error::Com`] if COM cannot be initialized or the engine class
     /// cannot be created (e.g. no TestStand™ installation is registered).
     pub fn new() -> Result<Self, Error> {
+        // Creating the engine can itself raise a dialog, before any option can
+        // be set — see the `startup` module. The sweeper has to be running
+        // before the call, because the call is what blocks.
+        let sweeper = startup::Sweeper::start();
+        let dispatch = create_dispatch(ENGINE_PROG_ID);
+        let startup_dialogs = sweeper.stop();
         let engine = Self {
-            dispatch: Box::new(create_dispatch(ENGINE_PROG_ID)?),
+            dispatch: Box::new(dispatch?),
+            startup_dialogs,
         };
         engine.suppress_modal_dialogs();
         engine.load_type_palettes();
         Ok(engine)
+    }
+
+    /// Dialogs that were closed while this engine was being created.
+    ///
+    /// A non-empty list is worth logging: it is the only record that something
+    /// asked a question and was answered by closing the window.
+    ///
+    /// Empty means nothing *owned by this process* was found, which is not the
+    /// same as no dialog having appeared. Detection cannot see another
+    /// process's windows, and whether the engine's unreleased-files warning is
+    /// raised in-process has not been established. Do not treat an empty list
+    /// as proof that startup was clean.
+    #[must_use]
+    pub fn startup_dialogs(&self) -> &[DialogInfo] {
+        &self.startup_dialogs
     }
 
     /// Loads the station's type palettes.
@@ -505,6 +535,15 @@ impl Engine {
     /// How often the engine collects .NET garbage, in milliseconds
     /// (`Engine.DotNetGarbageCollectionInterval`).
     ///
+    /// Zero or less means automatic collection is off. A host built on this
+    /// crate will normally read `-1`, and that is correct rather than broken:
+    /// the three-second default belongs to applications built on the UI
+    /// control, and a headless host does not create one. Nothing collects on a
+    /// timer unless this is set to a positive interval, so a long-lived host
+    /// that runs .NET steps should either set one or call
+    /// [`do_dot_net_garbage_collection`](Self::do_dot_net_garbage_collection)
+    /// between runs.
+    ///
     /// # Errors
     /// [`Error`] if the COM call fails or returns an unexpected type.
     pub fn dot_net_garbage_collection_interval(&self) -> Result<i32, Error> {
@@ -516,6 +555,8 @@ impl Engine {
 
     /// Sets the .NET collection interval, in milliseconds
     /// (`Engine.DotNetGarbageCollectionInterval`).
+    ///
+    /// Zero or less switches automatic collection off.
     ///
     /// # Errors
     /// [`Error`] if the COM call fails.
@@ -1018,7 +1059,11 @@ impl Engine {
     /// for exercising wrapper logic against a fake, with no live COM.
     #[cfg(test)]
     pub(crate) fn from_dispatch(dispatch: Box<dyn Dispatch>) -> Self {
-        Self { dispatch }
+        Self {
+            dispatch,
+            // Nothing was created, so nothing could have asked anything.
+            startup_dialogs: Vec::new(),
+        }
     }
 }
 

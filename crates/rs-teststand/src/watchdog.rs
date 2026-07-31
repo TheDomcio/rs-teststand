@@ -27,7 +27,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::thread;
 use std::time::{Duration, Instant};
 
-pub use rs_teststand_sys::{DialogInfo, Raised};
+pub use rs_teststand_sys::{DialogInfo, Dismissed, Raised};
 
 /// Reports a dialog currently stopping this process, without touching it.
 ///
@@ -53,6 +53,23 @@ pub fn find_blocking_dialog() -> Option<DialogInfo> {
 #[must_use]
 pub fn surface_blocking_dialog() -> Option<(DialogInfo, Raised)> {
     rs_teststand_sys::surface_blocking_dialog()
+}
+
+/// Asks a dialog that is holding up this process to close, and reports what it
+/// was showing.
+///
+/// The opposite choice to [`surface_blocking_dialog`], for a host with nobody
+/// in front of it. Some engine dialogs appear before any caller code runs — the
+/// warning about sequence files left unreleased by a previous process is raised
+/// while the engine object is being created, and no station option turns it
+/// off — so a host that only surfaces them still waits forever.
+///
+/// This answers without reading, which is why it is not the default anywhere a
+/// person might be present. Log the returned [`DialogInfo`]: a host that
+/// dismisses dialogs silently will eventually dismiss one that mattered.
+#[must_use]
+pub fn dismiss_blocking_dialog() -> Option<Dismissed> {
+    rs_teststand_sys::dismiss_blocking_dialog()
 }
 
 /// How often the guard thread wakes to re-check. Small enough that a dialog is

@@ -12,6 +12,13 @@
 use rs_teststand::{AdapterKeyName, Engine, Error, RunMode};
 
 /// Every adapter key this build names.
+///
+/// Naming one is not a claim that the station has it. The crate supports
+/// TestStand 2016 onwards, and adapters have been added since: the Python
+/// adapter and the NXG adapter are both absent from a 2016 engine, verified
+/// against its type library. A station can also simply not have an adapter
+/// installed. So a test that walks this list must treat "this engine does not
+/// have that adapter" as an answer, not a failure.
 const ALL_ADAPTERS: [AdapterKeyName; 12] = [
     AdapterKeyName::NoneAdapter,
     AdapterKeyName::LabViewStdPrototype,
@@ -27,6 +34,25 @@ const ALL_ADAPTERS: [AdapterKeyName; 12] = [
     AdapterKeyName::HtBasic,
 ];
 
+/// Builds an `Action` step on `adapter`, or reports that this engine has no
+/// such adapter.
+///
+/// An engine that does not know the key answers `TS_Err_InvalidAdapterName`,
+/// and only that code is taken as "not installed here" — any other failure is
+/// still a failure. Skipping is deliberately not a pass: the caller records
+/// what was skipped, so a run that silently exercised nothing is visible.
+fn step_on(engine: &Engine, adapter: AdapterKeyName) -> Result<Option<rs_teststand::Step>, Error> {
+    /// `TS_Err_InvalidAdapterName`, the engine's name for a key it does not
+    /// recognise.
+    const INVALID_ADAPTER_NAME: i32 = -17336;
+
+    match engine.new_step(adapter.as_str(), "Action") {
+        Ok(step) => Ok(Some(step)),
+        Err(Error::Engine { code, .. }) if code == INVALID_ADAPTER_NAME => Ok(None),
+        Err(other) => Err(other),
+    }
+}
+
 #[test]
 #[ignore = "requires a live engine"]
 fn every_adapter_key_is_one_the_engine_accepts() -> Result<(), Error> {
@@ -34,12 +60,29 @@ fn every_adapter_key_is_one_the_engine_accepts() -> Result<(), Error> {
     // fail to compile — it would fail here, or worse, silently build a step on
     // the wrong adapter.
     let engine = Engine::new()?;
+    let mut absent = Vec::new();
+    let mut named = 0_u32;
     for adapter in ALL_ADAPTERS {
-        let step = engine.new_step(adapter.as_str(), "Action")?;
-        assert!(
-            step.adapter_key_name()?.is_some(),
-            "{adapter:?} produced a step whose adapter this build cannot name"
-        );
+        match step_on(&engine, adapter)? {
+            None => absent.push(adapter),
+            Some(step) => {
+                assert!(
+                    step.adapter_key_name()?.is_some(),
+                    "{adapter:?} produced a step whose adapter this build cannot name"
+                );
+                named += 1;
+            }
+        }
+    }
+
+    // The None adapter has been there since long before the oldest engine this
+    // crate supports, so an empty result means the test proved nothing.
+    assert!(
+        named > 0,
+        "no adapter on this station was usable; absent: {absent:?}"
+    );
+    if !absent.is_empty() {
+        println!("adapters not installed on this engine: {absent:?}");
     }
     Ok(())
 }
@@ -90,9 +133,10 @@ fn most_adapter_keys_survive_the_round_trip_unchanged() -> Result<(), Error> {
     // this honest on an older engine that does not substitute.
     let engine = Engine::new()?;
     for adapter in ALL_ADAPTERS {
-        let reported = engine
-            .new_step(adapter.as_str(), "Action")?
-            .adapter_key_name()?;
+        let Some(step) = step_on(&engine, adapter)? else {
+            continue;
+        };
+        let reported = step.adapter_key_name()?;
         let acceptable = match adapter {
             AdapterKeyName::LabViewStdPrototype => {
                 vec![AdapterKeyName::LabViewStdPrototype, AdapterKeyName::LabView]
