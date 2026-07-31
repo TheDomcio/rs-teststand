@@ -1,6 +1,6 @@
 [package]
 name = "line-transmitter"
-version = "0.0.4"
+version = "0.0.5"
 edition = "2024"
 rust-version = "1.85"
 publish = false
@@ -8,7 +8,7 @@ publish = false
 [workspace]
 
 [dependencies]
-rs-teststand = { version = "0.0.4", path = "../../../crates/rs-teststand" }
-rs-teststand-bridge = { version = "0.0.4", path = "../../../crates/rs-teststand-bridge" }
-rs-teststand-serde = { version = "0.0.4", path = "../../../crates/rs-teststand-serde" }
+rs-teststand = { version = "0.0.5", path = "../../../crates/rs-teststand" }
+rs-teststand-bridge = { version = "0.0.5", path = "../../../crates/rs-teststand-bridge" }
+rs-teststand-serde = { version = "0.0.5", path = "../../../crates/rs-teststand-serde" }
 serde_json = "1"

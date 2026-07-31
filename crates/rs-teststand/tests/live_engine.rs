@@ -62,3 +62,77 @@ fn engine_reports_directories_of_the_active_installation() -> Result<(), Error> 
 
     Ok(())
 }
+
+#[test]
+#[ignore = "requires a live TestStand engine"]
+fn breakpoint_switches_round_trip_and_are_restored() -> Result<(), Error> {
+    let engine = Engine::new()?;
+
+    // Both are engine state that outlives this test, so each is put back.
+    let breakpoints = engine.breakpoints_enabled()?;
+    let persist = engine.persist_breakpoints()?;
+
+    engine.set_breakpoints_enabled(!breakpoints)?;
+    assert_eq!(
+        engine.breakpoints_enabled()?,
+        !breakpoints,
+        "the engine did not take the new breakpoint setting"
+    );
+
+    engine.set_persist_breakpoints(!persist)?;
+    assert_eq!(
+        engine.persist_breakpoints()?,
+        !persist,
+        "the engine did not take the new persistence setting"
+    );
+
+    engine.set_breakpoints_enabled(breakpoints)?;
+    engine.set_persist_breakpoints(persist)?;
+    assert_eq!(engine.breakpoints_enabled()?, breakpoints);
+    assert_eq!(engine.persist_breakpoints()?, persist);
+
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires a live TestStand engine"]
+fn unloading_every_module_succeeds_with_nothing_loaded() -> Result<(), Error> {
+    // No sequence has run, so there is nothing to unload. The call must still
+    // succeed: a host calls it between runs without knowing what is loaded.
+    let engine = Engine::new()?;
+    engine.unload_all_modules()?;
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires a live TestStand engine"]
+fn dot_net_collection_runs_and_its_interval_round_trips() -> Result<(), Error> {
+    let engine = Engine::new()?;
+
+    let interval = engine.dot_net_garbage_collection_interval()?;
+    assert!(
+        interval >= 0,
+        "a negative collection interval makes no sense: {interval}"
+    );
+
+    engine.set_dot_net_garbage_collection_interval(interval + 1000)?;
+    assert_eq!(
+        engine.dot_net_garbage_collection_interval()?,
+        interval + 1000,
+        "the engine did not take the new interval"
+    );
+    engine.set_dot_net_garbage_collection_interval(interval)?;
+
+    // Must not fail on a station where no .NET step has run.
+    engine.do_dot_net_garbage_collection()?;
+
+    // Empty means the runtime was never pulled in, which is the normal case
+    // here. Any non-empty answer should look like a version.
+    let clr = engine.dot_net_clr_version()?;
+    assert!(
+        clr.is_empty() || clr.chars().any(|character| character.is_ascii_digit()),
+        "unexpected CLR version string: {clr:?}"
+    );
+
+    Ok(())
+}
