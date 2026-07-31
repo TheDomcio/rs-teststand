@@ -12,14 +12,15 @@
 //! All of it on one thread, which owns the engine for its whole life. The
 //! server is elsewhere; only data crosses between them.
 
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use rs_teststand::{
     ConflictHandler, Engine, Execution, GetSeqFileOptions, SequenceFile, UIMessageCode,
     pump_thread_messages,
 };
 use rs_teststand_bridge::{
-    Command, MessageEvent, PayloadPolicy, Request, Response, WebSocketBridge,
+    ClientTimeout, ClientWatch, Command, MessageEvent, PayloadPolicy, Request, Response,
+    WatchState, WebSocketBridge,
 };
 use rs_teststand_serde::PropertyObjectValue as _;
 
@@ -28,6 +29,12 @@ use crate::demo_sequence;
 /// What a panel wants out of a context. "Everything" is the one request that
 /// cannot be served, so the host answers a named list instead.
 const REQUESTED: [&str; 3] = ["Locals", "Parameters", "FileGlobals"];
+
+/// How long the host waits for a run to unwind after it has been called off.
+///
+/// Bounded, because this is the path taken when nobody is left to complain: an
+/// unbounded wait here would leave the very process the timeout exists to end.
+const UNWIND_TIMEOUT: Duration = Duration::from_secs(20);
 
 /// How long the loop sleeps when there is nothing to do.
 ///
@@ -54,6 +61,12 @@ pub struct Orchestrator {
     /// Held between the two commands so a panel can load, see whether it
     /// worked, and only then offer a run button.
     loaded: Option<SequenceFile>,
+    /// The dead-man's switch.
+    ///
+    /// If the orchestrator dies, its socket closes and nothing else happens.
+    /// Without this the host would keep a test running with nobody able to stop
+    /// it, which on a station wired to hardware is the failure that matters.
+    watch: ClientWatch,
 }
 
 impl Orchestrator {
@@ -61,7 +74,7 @@ impl Orchestrator {
     ///
     /// # Errors
     /// Any failure creating the engine or binding the socket.
-    pub fn new(address: &str) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn new(address: &str, timeout: ClientTimeout) -> Result<Self, Box<dyn std::error::Error>> {
         let bridge = WebSocketBridge::bind(address)?;
         let engine = Engine::new()?;
         engine.set_ui_message_polling_enabled(true)?;
@@ -70,6 +83,10 @@ impl Orchestrator {
             bridge,
             running: None,
             loaded: None,
+            // The clock runs from now, not from the first connection: an
+            // orchestrator that dies before it ever connects must not leave the
+            // host waiting for a client that is never coming.
+            watch: ClientWatch::new(timeout, Instant::now()),
         })
     }
 
@@ -102,8 +119,44 @@ impl Orchestrator {
 
             let _ = pump_thread_messages();
             self.forward_messages()?;
+
+            if self
+                .watch
+                .observe(self.bridge.client_count(), Instant::now())
+                == WatchState::Expired
+            {
+                println!("no client for the configured timeout; stopping the station");
+                self.stop_everything()?;
+                return Ok(());
+            }
             std::thread::sleep(IDLE);
         }
+    }
+
+    /// Stops every run and waits for it, so nothing is left mid-operation.
+    ///
+    /// Terminate rather than abort: cleanup groups still run, so a fixture is
+    /// powered down and hardware is left safe. That is the whole point of doing
+    /// this instead of just exiting the process.
+    fn stop_everything(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+        self.engine.terminate_all()?;
+
+        // Wait for the engine to say the runs ended. Releasing a file or
+        // dropping the engine mid-unwind leaves it waiting on a thread nobody
+        // is pumping for, and the process never exits.
+        let deadline = Instant::now() + UNWIND_TIMEOUT;
+        while Instant::now() < deadline && self.running.is_some() {
+            let _ = pump_thread_messages();
+            self.forward_messages()?;
+            std::thread::sleep(IDLE);
+        }
+        if self.running.is_some() {
+            println!("a run did not finish within {UNWIND_TIMEOUT:?}; exiting anyway");
+        }
+        if let Some(file) = self.loaded.take() {
+            let _ = self.engine.release_sequence_file_ex(file, 0);
+        }
+        Ok(())
     }
 
     /// Answers one command, on the engine's own thread.

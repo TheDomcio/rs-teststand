@@ -38,6 +38,7 @@ pub mod event;
 pub mod host;
 pub mod response;
 pub mod transport;
+pub mod watch;
 
 pub use command::Command;
 pub use error::Error;
@@ -47,3 +48,4 @@ pub use response::Response;
 pub use transport::line::{LineSink, LineSource};
 #[cfg(feature = "websocket")]
 pub use transport::websocket::{Request, WebSocketBridge};
+pub use watch::{ClientTimeout, ClientWatch, WatchState};

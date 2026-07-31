@@ -48,6 +48,8 @@ define_dispid_group! {
         IS_UI_MESSAGE_QUEUE_EMPTY = 0x017d;
         POST_UI_MESSAGE = 0x0238;
         USERS_FILE = 0x01a1;
+        TERMINATE_ALL = 0x0072;
+        ABORT_ALL = 0x0070;
         LOAD_TYPE_PALETTE_FILES = 0x01e2;
         UNLOAD_TYPE_PALETTE_FILES = 0x01e3;
         LOAD_TYPE_PALETTE_FILES_EX = 0x0232;
