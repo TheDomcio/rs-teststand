@@ -25,6 +25,7 @@ pub mod error;
 mod error_codes;
 pub mod execution;
 pub mod expression;
+pub mod license;
 pub mod messaging;
 pub mod property;
 pub mod sequence;
@@ -48,6 +49,7 @@ pub use expression::{
     OtherFunction, OtherOperator, PropertyFunction, StringFunction, SwitchingFunction,
     TimeFunction,
 };
+pub use license::{AcquireLicenseOptions, ApplicationLicense, LicenseType};
 pub use messaging::{UIMessage, UIMessageCode, pump_thread_messages};
 pub use property::{
     ArrayDimensions, GetTemplatesFileOptions, PropertyObject, PropertyObjectFile,

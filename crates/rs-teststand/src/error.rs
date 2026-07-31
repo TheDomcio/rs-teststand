@@ -27,6 +27,26 @@ use crate::error_codes::code_name;
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum Error {
+    /// The station holds no licence.
+    ///
+    /// Raised by [`Engine::require_license`](crate::Engine::require_license),
+    /// not by the engine, so that "unlicensed" is reported once and up front
+    /// rather than as whatever operation later happened to need a licence.
+    #[error(
+        "the station holds no TestStand licence; activate one, or check Engine::license_type first"
+    )]
+    NoLicense,
+
+    /// The engine named a licence value this build does not know.
+    ///
+    /// A newer engine may define one this crate predates. The number is carried
+    /// through rather than mapped onto a near neighbour.
+    #[error("engine reported licence value {bits}, which this build does not name")]
+    UnknownLicenseType {
+        /// The value the engine reported.
+        bits: i32,
+    },
+
     /// A property tree was walked deeper than the caller allowed.
     ///
     /// Usually a cycle rather than genuine depth. A live `SequenceContext`
@@ -89,7 +109,10 @@ impl Error {
             Self::Com { hresult, .. } => code_name(*hresult),
             // Raised by this crate, not by the engine, so there is no engine
             // name to report.
-            Self::UnexpectedType { .. } | Self::RecursionLimit { .. } => None,
+            Self::UnexpectedType { .. }
+            | Self::RecursionLimit { .. }
+            | Self::NoLicense
+            | Self::UnknownLicenseType { .. } => None,
         }
     }
 
@@ -99,7 +122,10 @@ impl Error {
         match self {
             Self::Engine { code, .. } => Some(*code),
             Self::Com { hresult, .. } => Some(*hresult),
-            Self::UnexpectedType { .. } | Self::RecursionLimit { .. } => None,
+            Self::UnexpectedType { .. }
+            | Self::RecursionLimit { .. }
+            | Self::NoLicense
+            | Self::UnknownLicenseType { .. } => None,
         }
     }
 }

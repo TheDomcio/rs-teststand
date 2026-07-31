@@ -10,7 +10,7 @@
 
 use std::path::Path;
 
-use rs_teststand::{Engine, Error};
+use rs_teststand::{AcquireLicenseOptions, ApplicationLicense, Engine, Error, LicenseType};
 
 #[test]
 #[ignore = "requires a live TestStand engine"]
@@ -167,6 +167,64 @@ fn a_dialog_raised_while_the_engine_starts_does_not_block_it() -> Result<(), Err
     assert!(
         engine.major_version()? >= 16,
         "engine unusable after the startup sweep"
+    );
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires a live TestStand engine"]
+fn the_licence_state_is_reported_rather_than_asked_about() -> Result<(), Error> {
+    // The whole point of the guard: on a station with no licence the engine
+    // would otherwise open a window offering to evaluate, activate or buy, and
+    // wait for someone. Reaching the end of this test is the result — if a
+    // dialog were raised, it would never return.
+    let engine = Engine::new()?;
+
+    let license = engine.license_type()?;
+    println!(
+        "licence: {license:?} — {}",
+        engine.get_license_description()?
+    );
+
+    // `require_license` must agree with the type it read, either way.
+    match engine.require_license() {
+        Ok(granted) => {
+            assert!(granted.is_usable());
+            assert_eq!(granted, license);
+
+            // Ask for the least a host needs, dialog suppressed.
+            let handle = engine.acquire_license(
+                ApplicationLicense::OperatorInterface,
+                AcquireLicenseOptions::SUPPRESS_STARTUP_DIALOG,
+            )?;
+            engine.release_license(handle)?;
+        }
+        Err(Error::NoLicense) => {
+            assert_eq!(
+                license,
+                LicenseType::NoLicense,
+                "require_license refused a licence the engine considers usable"
+            );
+            // Acquiring must fail rather than prompt. The error is the success
+            // condition; a hang here would be the bug.
+            let refused = engine.acquire_license(
+                ApplicationLicense::OperatorInterface,
+                AcquireLicenseOptions::SUPPRESS_STARTUP_DIALOG,
+            );
+            assert!(
+                matches!(refused, Err(Error::NoLicense)),
+                "an unlicensed station handed out a licence handle: {refused:?}"
+            );
+            println!("unlicensed station refused cleanly: {refused:?}");
+        }
+        Err(other) => return Err(other),
+    }
+
+    // An add-on nobody licenses: must answer, not fail.
+    let addon = engine.has_addon_license("rs-teststand-nonexistent-feature");
+    assert!(
+        matches!(addon, Ok(false) | Err(_)),
+        "unexpected add-on answer: {addon:?}"
     );
     Ok(())
 }
