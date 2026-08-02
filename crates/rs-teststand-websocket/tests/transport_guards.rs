@@ -52,7 +52,7 @@ async fn a_reply_reaches_the_client_as_a_five_field_acknowledgement() {
     let mut client = Client::connect(&address).await.expect("connect");
     await_client(&bridge).await;
 
-    client.send(&Command::Hello).await.expect("send");
+    client.send(&Command::VersionString).await.expect("send");
     let request = loop {
         if let Some(request) = bridge.next_command() {
             break request;
@@ -61,7 +61,7 @@ async fn a_reply_reaches_the_client_as_a_five_field_acknowledgement() {
     };
     bridge.reply(
         &request,
-        &Response::Hello {
+        &Response::VersionString {
             engine: "test".to_owned(),
             is_64bit: true,
         },
@@ -69,7 +69,7 @@ async fn a_reply_reaches_the_client_as_a_five_field_acknowledgement() {
 
     let inbound = client.next().await.expect("read").expect("a message");
     let ack = inbound.as_ack().expect("a reply, not an event");
-    assert_eq!(ack.command, "hello");
+    assert_eq!(ack.command, "version_string");
     assert!(!ack.is_failure());
     // `code` and `description` are present on every acknowledgement, which is
     // what lets a client treat success and failure with one code path.
@@ -124,7 +124,7 @@ async fn a_control_frame_over_the_limit_is_refused_before_it_is_sent() {
         .await
         .expect("a legal ping");
     client
-        .send(&Command::Hello)
+        .send(&Command::VersionString)
         .await
         .expect("socket still usable");
 }

@@ -53,12 +53,16 @@ pub enum ExecutionControl {
 #[serde(tag = "command", rename_all = "snake_case")]
 #[non_exhaustive]
 pub enum Command {
-    /// Confirm the host is alive and report what it is.
+    /// Ask the engine what it is.
     ///
-    /// Cheap, and the first thing a front end should send: it distinguishes
-    /// "the socket connected" from "the engine is actually up", which are not
-    /// the same thing and fail differently.
-    Hello,
+    /// Answers with `Engine.VersionString` and `Engine.Is64Bit`, which are the
+    /// members it reads. Named for them rather than for a greeting: a command
+    /// called `hello` describes the conversation, not the engine operation, and
+    /// somebody reading the vendor documentation would not find it.
+    ///
+    /// Cheap, and worth sending first: it distinguishes "the socket connected"
+    /// from "the engine is up", which are not the same and fail differently.
+    VersionString,
 
     /// Log a user in, by name.
     ///
@@ -156,7 +160,7 @@ impl Command {
     #[must_use]
     pub const fn name(&self) -> &'static str {
         match self {
-            Self::Hello => "hello",
+            Self::VersionString => "version_string",
             Self::Login { .. } => "login",
             Self::Logout => "logout",
             Self::LoadFile { .. } => "load_file",
@@ -244,8 +248,8 @@ mod tests {
     fn the_wire_form_is_tagged_by_a_command_field() {
         // A front end in another language reads this discriminant first, so its
         // spelling is part of the contract rather than an implementation detail.
-        let text = serde_json::to_string(&Command::Hello).unwrap_or_default();
-        assert_eq!(text, r#"{"command":"hello"}"#);
+        let text = serde_json::to_string(&Command::VersionString).unwrap_or_default();
+        assert_eq!(text, r#"{"command":"version_string"}"#);
     }
 
     #[test]
@@ -267,7 +271,7 @@ mod tests {
     #[test]
     fn commands_round_trip() {
         for command in [
-            Command::Hello,
+            Command::VersionString,
             Command::Terminate { execution_id: 1 },
             Command::ReadValue {
                 execution_id: 1,
@@ -276,14 +280,14 @@ mod tests {
             Command::Shutdown,
         ] {
             let text = serde_json::to_string(&command).unwrap_or_default();
-            let back: Command = serde_json::from_str(&text).unwrap_or(Command::Hello);
+            let back: Command = serde_json::from_str(&text).unwrap_or(Command::VersionString);
             assert_eq!(back, command, "round trip failed for {}", command.name());
         }
     }
 
     #[test]
     fn reads_are_not_control_but_runs_are() {
-        assert!(!Command::Hello.is_control());
+        assert!(!Command::VersionString.is_control());
         assert!(
             !Command::ReadValue {
                 execution_id: 1,

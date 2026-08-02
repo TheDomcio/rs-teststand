@@ -22,8 +22,8 @@ use rs_teststand_bridge::{
     ClientTimeout, ClientWatch, Command, ExecutionControl, MessageEvent, PayloadPolicy, Response,
     WatchState,
 };
-use rs_teststand_websocket::{Request, WebSocketBridge};
 use rs_teststand_serde::PropertyObjectValue as _;
+use rs_teststand_websocket::{Request, WebSocketBridge};
 
 use crate::demo_sequence;
 
@@ -53,7 +53,7 @@ struct Running {
 }
 
 /// The host loop.
-pub struct Orchestrator {
+pub(crate) struct Orchestrator {
     engine: Engine,
     bridge: WebSocketBridge,
     running: Option<Running>,
@@ -75,7 +75,10 @@ impl Orchestrator {
     ///
     /// # Errors
     /// Any failure creating the engine or binding the socket.
-    pub fn new(address: &str, timeout: ClientTimeout) -> Result<Self, Box<dyn std::error::Error>> {
+    pub(crate) fn new(
+        address: &str,
+        timeout: ClientTimeout,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
         let bridge = WebSocketBridge::bind(address)?;
         let engine = Engine::new()?;
         engine.set_ui_message_polling_enabled(true)?;
@@ -93,7 +96,7 @@ impl Orchestrator {
 
     /// Where panels should connect.
     #[must_use]
-    pub fn address(&self) -> String {
+    pub(crate) fn address(&self) -> String {
         format!("ws://{}", self.bridge.address())
     }
 
@@ -101,7 +104,7 @@ impl Orchestrator {
     ///
     /// # Errors
     /// Any failure the engine reports that the loop cannot answer locally.
-    pub fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {
+    pub(crate) fn run(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         loop {
             while let Some(request) = self.bridge.next_command() {
                 println!("command: {}", request.command.name());
@@ -164,7 +167,7 @@ impl Orchestrator {
     fn answer(&mut self, request: &Request) -> Response {
         let name = request.command.name().to_owned();
         match &request.command {
-            Command::Hello => self.hello(),
+            Command::VersionString => self.hello(),
             Command::Login {
                 user_name,
                 password,
@@ -198,9 +201,9 @@ impl Orchestrator {
 
     fn hello(&self) -> Response {
         match (self.engine.version_string(), self.engine.is_64bit()) {
-            (Ok(engine), Ok(is_64bit)) => Response::Hello { engine, is_64bit },
+            (Ok(engine), Ok(is_64bit)) => Response::VersionString { engine, is_64bit },
             (Err(error), _) | (_, Err(error)) => Response::Failed {
-                command: "hello".to_owned(),
+                command: "version_string".to_owned(),
                 reason: error.to_string(),
             },
         }
@@ -360,7 +363,7 @@ impl Orchestrator {
         }
     }
 
-    fn terminate(&mut self, execution_id: i32) -> Response {
+    fn terminate(&self, execution_id: i32) -> Response {
         let failed = |reason: String| Response::Failed {
             command: "terminate".to_owned(),
             reason,
@@ -388,7 +391,7 @@ impl Orchestrator {
     /// `Resume` is what releases a breakpoint stop as well as a break. The
     /// thread member of the same name does not: measured against a live engine,
     /// resuming the thread leaves a breakpoint stop exactly where it was.
-    fn control(&mut self, execution_id: Option<i32>, control: ExecutionControl) -> Response {
+    fn control(&self, execution_id: Option<i32>, control: ExecutionControl) -> Response {
         let failed = |reason: String| Response::Failed {
             command: "control".to_owned(),
             reason,
@@ -476,7 +479,7 @@ impl Orchestrator {
         while !self.engine.is_ui_message_queue_empty()? {
             let message = self.engine.get_ui_message()?;
             let code = message.event()?;
-            let event = self.to_event(&message, code)?;
+            let event = Self::to_event(&message, code)?;
             self.bridge.publish(&event);
 
             if matches!(
@@ -496,7 +499,6 @@ impl Orchestrator {
     /// case: it arrives with no payload, because walking it whole is refused
     /// rather than fatal.
     fn to_event(
-        &self,
         message: &rs_teststand::UIMessage,
         code: i32,
     ) -> Result<MessageEvent, Box<dyn std::error::Error>> {
@@ -519,7 +521,7 @@ impl Orchestrator {
                 resolved.insert(name.to_owned(), rendered);
             }
             event.payload = Some(serde_json::to_string(&resolved)?);
-            event.text = "resolved subtrees of the sequence context".to_owned();
+            "resolved subtrees of the sequence context".clone_into(&mut event.text);
         }
         Ok(event)
     }

@@ -110,11 +110,12 @@ impl From<&Response> for Ack {
     /// happened rather than repeating the command name back.
     fn from(response: &Response) -> Self {
         match response {
-            Response::Hello { engine, .. } => {
+            Response::VersionString { engine, .. } => {
                 // The engine's own version string already ends in the process
                 // width, so appending it again reads as "64-bit, 64-bit".
                 // `is_64bit` stays in `data` for a client that wants the flag.
-                Self::ok("hello", format!("engine {engine}")).with_data(serialize(response))
+                Self::ok("version_string", format!("engine {engine}"))
+                    .with_data(serialize(response))
             }
             Response::Started { execution_id } => {
                 Self::ok("start", format!("execution {execution_id} started"))
@@ -183,7 +184,7 @@ mod tests {
     fn hello_does_not_repeat_the_process_width() {
         // Measured against a live engine: the version string already ends in
         // "64-bit", so composing the width in produced "64-bit, 64-bit".
-        let ack = Ack::from(&Response::Hello {
+        let ack = Ack::from(&Response::VersionString {
             engine: "2026 Q1 (26.0.0.49152) 64-bit".to_owned(),
             is_64bit: true,
         });
@@ -250,7 +251,7 @@ mod tests {
 
     #[test]
     fn acknowledgements_round_trip() {
-        let ack = Ack::ok("hello", "engine 2026 Q1, 64-bit").with_data(r#"{"a":1}"#);
+        let ack = Ack::ok("version_string", "engine 2026 Q1, 64-bit").with_data(r#"{"a":1}"#);
         let text = serde_json::to_string(&ack).unwrap_or_default();
         let back: Ack = serde_json::from_str(&text).unwrap_or_else(|_| Ack::ok("", ""));
         assert_eq!(back, ack);

@@ -8,13 +8,13 @@
 use rs_teststand::{Engine, PropValType, PropertyOptions, SequenceFile, StepGroup, UIMessageCode};
 
 /// Custom codes. Anything at or above the user base belongs to the sequence.
-pub const STAGE: i32 = UIMessageCode::USER_MESSAGE_BASE + 10;
-pub const MEASUREMENT: i32 = UIMessageCode::USER_MESSAGE_BASE + 20;
-pub const RESULT_OBJECT: i32 = UIMessageCode::USER_MESSAGE_BASE + 30;
-pub const WHOLE_CONTEXT: i32 = UIMessageCode::USER_MESSAGE_BASE + 40;
-pub const SUMMARY: i32 = UIMessageCode::USER_MESSAGE_BASE + 99;
+pub(crate) const STAGE: i32 = UIMessageCode::USER_MESSAGE_BASE + 10;
+pub(crate) const MEASUREMENT: i32 = UIMessageCode::USER_MESSAGE_BASE + 20;
+pub(crate) const RESULT_OBJECT: i32 = UIMessageCode::USER_MESSAGE_BASE + 30;
+pub(crate) const WHOLE_CONTEXT: i32 = UIMessageCode::USER_MESSAGE_BASE + 40;
+pub(crate) const SUMMARY: i32 = UIMessageCode::USER_MESSAGE_BASE + 99;
 
-fn insert_if_missing() -> i32 {
+const fn insert_if_missing() -> i32 {
     PropertyOptions::INSERT_IF_MISSING.bits()
 }
 
@@ -72,7 +72,7 @@ fn stage(label: &str, percent: i32, text: &str) -> String {
 ///
 /// # Errors
 /// [`rs_teststand::Error`] if the engine refuses any part of the build.
-pub fn build(engine: &Engine) -> Result<SequenceFile, rs_teststand::Error> {
+pub(crate) fn build(engine: &Engine) -> Result<SequenceFile, rs_teststand::Error> {
     let sequence_file = engine.new_sequence_file()?;
     let main_sequence = sequence_file.get_sequence_by_name("MainSequence")?;
     let locals = main_sequence.locals()?;
