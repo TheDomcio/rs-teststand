@@ -96,8 +96,12 @@ const MAX_CLIENTS: usize = 64;
 
 /// What travels out to the panels: an event, or an answer to one of them.
 mod accept;
+mod options;
+mod origin;
 mod page;
 mod session;
+
+pub use options::Options;
 
 use accept::serve;
 
@@ -155,7 +159,7 @@ impl WebSocketBridge {
     /// [`Error::Transport`] if the address cannot be bound, or
     /// [`Error::ThreadNotStarted`] if the server thread cannot be created.
     pub fn bind(address: &str) -> Result<Self, Error> {
-        Self::bind_with_page(address, None)
+        Self::bind_with(address, Options::default())
     }
 
     /// Binds, and also serves `page` to a browser asking for the root.
@@ -172,6 +176,18 @@ impl WebSocketBridge {
     /// [`Error::Transport`] if the address cannot be bound, or
     /// [`Error::ThreadNotStarted`] if the server thread will not start.
     pub fn bind_with_page(address: &str, page: Option<String>) -> Result<Self, Error> {
+        let options = page.map_or_else(Options::default, |html| Options::default().page(html));
+        Self::bind_with(address, options)
+    }
+
+    /// Binds with everything the host wants to decide up front.
+    ///
+    /// The way to reach the origin allowlist. See [`Options`].
+    ///
+    /// # Errors
+    /// [`Error::Transport`] if the address cannot be bound, or
+    /// [`Error::ThreadNotStarted`] if the server thread will not start.
+    pub fn bind_with(address: &str, options: Options) -> Result<Self, Error> {
         let listener = StdListener::bind(address)?;
         listener.set_nonblocking(true)?;
         let address = listener.local_addr()?;
@@ -192,7 +208,7 @@ impl WebSocketBridge {
                 else {
                     return;
                 };
-                runtime.block_on(serve(listener, publisher, command_sender, page));
+                runtime.block_on(serve(listener, publisher, command_sender, options));
             })
             .map_err(|error| Error::ThreadNotStarted {
                 reason: error.to_string(),

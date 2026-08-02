@@ -40,13 +40,27 @@ and which means an engine error code in one and a UI message code in the other.
 | closing handshake on both sides | RFC 6455 section 5.5.1; without the reply the peer waits for a timeout instead of closing |
 | control frames refused above 125 bytes | section 5.5; an oversized ping is *not* rejected on the way out, it reports success and then kills the connection |
 | first reconnect delayed randomly | section 7.2.3; every client of a downed host wakes together, so an immediate retry is a stampede |
+| unknown `Origin` refused with 403 | section 10.2; binding to loopback does not stop a page the operator visits from driving the station |
+
+## Who may connect
+
+A browser always sends `Origin` and a native client never does, so the default
+turns on the check without locking out an orchestrator:
+
+- no `Origin`: served, this is the native caller
+- an origin passed to `Options::allow_origin`: served
+- the address the host serves its own panel from: served, since a host bound to
+  port 0 cannot be told an origin it has not picked yet
+- anything else: refused with 403, rather than dropped, so the caller can tell a
+  refusal from a host that is down
+
+Matching is exact. A different scheme, port, or a longer domain that starts the
+same is a different origin.
 
 ## Status
 
-Early. The server, the client and the RFC 6455 obligations above are in place
-and checked against a running host. Origin verification (section 10.2) is not,
-and matters: binding to loopback does not stop a web page the operator visits
-from driving the station.
+Early, but the RFC 6455 obligations above are in place and checked against a
+running host.
 
 ## License
 
