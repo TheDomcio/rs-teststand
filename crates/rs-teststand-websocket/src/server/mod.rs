@@ -20,9 +20,10 @@
 //!   even by accident.
 //! - **The server thread** — a runtime of its own, accepting panels and moving
 //!   bytes. It never sees the engine; what crosses between the two is
-//!   [`MessageEvent`](rs_teststand_bridge::MessageEvent), [`Command`](rs_teststand_bridge::Command) and [`Response`](rs_teststand_bridge::Response), all plain data.
+//!   `MessageEvent`, `Command` and `Response` from `rs-teststand-bridge`, all
+//!   plain data.
 //!
-//! Replies go out as [`Ack`](rs_teststand_bridge::Ack), a fixed five-field record, rather
+//! Replies go out as an `Ack`, a fixed five-field record, rather
 //! than as the `Response` enum whose fields vary by variant. A client sorts the
 //! two kinds of traffic on `command`: an acknowledgement always carries one and
 //! an event never does.
