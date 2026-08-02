@@ -33,6 +33,27 @@ use std::thread;
 
 use futures_util::{SinkExt as _, StreamExt as _};
 use tokio::net::TcpListener;
+// Four things are easy to get wrong in a tokio websocket server, and each is
+// answered deliberately here rather than by accident. Changing this file means
+// keeping them true.
+//
+// A lagging receiver. `broadcast` drops messages for a receiver that falls
+// behind and reports `Lagged`. That is treated as fatal for the panel rather
+// than ignored: it is disconnected, because silently missing messages is worse
+// than a close it can react to. `EVENT_BACKLOG` bounds what one slow panel can
+// hold open.
+//
+// Cancellation in `select!`. The macro drops the futures it was polling when a
+// branch wins, so a branch future that had consumed something would lose it.
+// Both branches here poll cancel-safe futures. The bodies are safe for a
+// different reason: once a branch is chosen its body runs to completion, so the
+// `send` calls inside are never cut short.
+//
+// Split halves. `split` produces a read and a write half that cannot be
+// recombined, so both stay in this one task rather than being handed out.
+//
+// Locks across await points. There are none. State moves through channels.
+
 use tokio::sync::broadcast;
 use tokio_tungstenite::tungstenite::Message;
 
