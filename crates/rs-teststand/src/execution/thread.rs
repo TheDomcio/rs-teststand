@@ -189,6 +189,59 @@ impl Thread {
         Ok(())
     }
 
+    /// Clears the run-time error sitting on the current step
+    /// (`Thread.ClearCurrentRTE`).
+    ///
+    /// Resets the step's recorded error so the thread carries on as though it
+    /// had not happened. This is how a host answers a run-time error by
+    /// ignoring it, rather than letting the station's configured response
+    /// decide.
+    ///
+    /// Only meaningful while a run-time error is actually outstanding. Called
+    /// on a thread that has none, a live engine answers
+    /// `TS_Err_UnexpectedType` rather than doing nothing, so a host should call
+    /// this in response to a run-time error and not speculatively.
+    ///
+    /// # Errors
+    /// [`Error`] if there is no run-time error to clear, or the COM call fails.
+    pub fn clear_current_rte(&self) -> Result<(), Error> {
+        self.dispatch.call(thread::CLEAR_CURRENT_RTE, &[])?;
+        Ok(())
+    }
+
+    /// Hands whatever results have piled up to the post-results callbacks now
+    /// (`Thread.FlushPostResults`).
+    ///
+    /// Results are normally batched. A host that wants a client to see them
+    /// sooner can force the handover; with nothing accumulated the call does
+    /// nothing, so it is safe to make on a timer.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn flush_post_results(&self) -> Result<(), Error> {
+        self.dispatch.call(thread::FLUSH_POST_RESULTS, &[])?;
+        Ok(())
+    }
+
+    /// Whether the run is about to step into the current step's code module
+    /// (`Thread.WillStepIntoModule`).
+    ///
+    /// Read this only from a pre-step substep. That is the one place it means
+    /// anything: it reports true there when the run will suspend inside the
+    /// module belonging to the step that owns the substep. Read from anywhere
+    /// else, an expression or a step's own code module, the engine answers
+    /// false regardless of what the run is doing, so a false here is not
+    /// evidence that stepping is off.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn will_step_into_module(&self) -> Result<bool, Error> {
+        Ok(self
+            .dispatch
+            .get(thread::WILL_STEP_INTO_MODULE)?
+            .as_bool()?)
+    }
+
     /// Starts this thread running (`Thread.Resume`).
     ///
     /// Two uses. It releases a thread created suspended, which is how a
