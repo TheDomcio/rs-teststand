@@ -242,6 +242,48 @@ impl Thread {
             .as_bool()?)
     }
 
+    /// Waits for this thread to finish (`Thread.WaitForEnd`).
+    ///
+    /// Returns `true` when the thread ended and `false` when the wait ran out
+    /// first. Pass `-1` for `milliseconds` to wait with no limit, which is
+    /// worth avoiding in a host that has to stay answerable.
+    ///
+    /// `process_windows_messages` decides whether the calling thread keeps
+    /// pumping while it waits. A host on a COM apartment should pass `true`:
+    /// stop pumping and the engine cannot deliver into this apartment, so a
+    /// wait meant to end can sit until the timeout instead.
+    ///
+    /// Waiting is not the only obligation. This pumps but does not drain the
+    /// engine's message queue, so a sequence posting a synchronous message
+    /// stays blocked on a host that only waits here. Draining the queue is
+    /// separate work.
+    ///
+    /// The two optional arguments the engine accepts, a step to store results
+    /// in and a calling sequence context, are not exposed. Both take an object
+    /// this crate has no route to from outside a running sequence.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn wait_for_end(
+        &self,
+        milliseconds: i32,
+        process_windows_messages: bool,
+    ) -> Result<bool, Error> {
+        Ok(self
+            .dispatch
+            .call(
+                thread::WAIT_FOR_END,
+                &[
+                    Value::I32(milliseconds),
+                    Value::Bool(process_windows_messages),
+                    // The two optional arguments, left absent.
+                    Value::Empty,
+                    Value::Empty,
+                ],
+            )?
+            .as_bool()?)
+    }
+
     /// How this thread answers a request to terminate its execution
     /// (`Thread.TerminationOption`).
     ///
