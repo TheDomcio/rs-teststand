@@ -29,6 +29,11 @@ pub(super) async fn serve_client<S>(
                     // than a close it can react to.
                     break;
                 };
+                if matches!(message, Outbound::Shutdown) {
+                    // Leaving the loop reaches the `sink.close()` below, which
+                    // sends the Close the peer is owed.
+                    break;
+                }
                 let text = match message {
                     Outbound::Event(event) => serde_json::to_string(&event),
                     // A reply belongs to one panel; the others skip it.
@@ -39,6 +44,8 @@ pub(super) async fn serve_client<S>(
                         serde_json::to_string(&Ack::from(response.as_ref()))
                     }
                     Outbound::Reply { .. } => continue,
+                    // Handled above; the match needs the arm to stay total.
+                    Outbound::Shutdown => break,
                 };
                 let Ok(text) = text else { continue };
                 if sink.send(Message::text(text)).await.is_err() {

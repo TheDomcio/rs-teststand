@@ -111,6 +111,13 @@ enum Outbound {
         /// The answer.
         response: Box<Response>,
     },
+    /// The host is going away, so every session should close.
+    ///
+    /// Sent when the bridge is dropped. Without it the server thread outlives
+    /// the bridge and the sockets it accepted stay open, so a panel keeps
+    /// waiting on a read that will never complete and looks connected to a host
+    /// that no longer exists.
+    Shutdown,
 }
 
 /// A command, with the panel that sent it.
@@ -180,6 +187,14 @@ impl WebSocketBridge {
         })
     }
 
+    /// Tells every session to close when the bridge goes away.
+    ///
+    /// The sessions own the sockets, so this is the only way to reach them.
+    /// A send failure means nobody is listening, which is the same outcome.
+    fn shutdown(&self) {
+        let _ = self.outbound.send(Outbound::Shutdown);
+    }
+
     /// The address actually bound, which resolves a port of `0`.
     #[must_use]
     pub const fn address(&self) -> SocketAddr {
@@ -217,5 +232,16 @@ impl WebSocketBridge {
     #[must_use]
     pub fn next_command(&self) -> Option<Request> {
         self.commands.try_recv().ok()
+    }
+}
+
+impl Drop for WebSocketBridge {
+    /// Closes the sessions rather than abandoning them.
+    ///
+    /// The server runs on its own thread and does not stop when this type is
+    /// dropped. Without telling the sessions to close, a panel is left holding
+    /// a socket to a host that has gone, blocked on a read that never returns.
+    fn drop(&mut self) {
+        self.shutdown();
     }
 }

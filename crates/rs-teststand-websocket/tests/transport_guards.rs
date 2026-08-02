@@ -152,19 +152,14 @@ async fn an_event_is_told_from_a_reply_by_the_command_field() {
 }
 
 #[tokio::test]
-#[ignore = "known gap: dropping the bridge does not close its connections"]
 async fn a_client_notices_when_the_host_goes_away() {
-    // FAILS TODAY, and is kept as the record of why.
+    // Dropping the bridge must tell its sessions to close. Without that the
+    // server thread outlives the bridge, the sockets stay open, and a panel
+    // blocks on a read that never returns while looking connected to a host
+    // that is gone.
     //
-    // Dropping `WebSocketBridge` does not stop its server task or close the
-    // sockets it accepted, so a client stays connected to a host that no longer
-    // exists and blocks on a read that will never complete. A panel would sit
-    // there looking connected.
-    //
-    // Ignored rather than deleted: the assertion is the specification for the
-    // fix, and deleting it would lose the only written evidence that the
-    // behaviour was measured. Remove the ignore once the bridge closes its
-    // connections on drop.
+    // This failed before `Drop` existed, which is what makes it a guard rather
+    // than a restatement of the code.
     let (bridge, address) = bridge();
     let mut client = Client::connect(&address).await.expect("connect");
     await_client(&bridge).await;
