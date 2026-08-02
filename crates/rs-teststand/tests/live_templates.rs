@@ -53,12 +53,11 @@ fn step_id(step: &rs_teststand::Step) -> Result<String, Error> {
     step.as_property_object()?.get_val_string(STEP_ID, none())
 }
 
-#[test]
-#[ignore = "requires a live engine"]
-fn the_station_templates_file_lists_one_array_per_kind_of_template() -> Result<(), Error> {
+fn the_station_templates_file_lists_one_array_per_kind_of_template(
+    engine: &Engine,
+) -> Result<(), Error> {
     // The shape is what a caller has to navigate, and it is not obvious: the
     // categories are array elements under Root, not sub-properties of it.
-    let engine = Engine::new()?;
     let templates_file = engine.get_templates_file(GetTemplatesFileOptions::LOAD_IF_NOT_LOADED)?;
     let root = templates_file.data()?.get_property_object("Root", none())?;
 
@@ -79,15 +78,14 @@ fn the_station_templates_file_lists_one_array_per_kind_of_template() -> Result<(
     Ok(())
 }
 
-#[test]
-#[ignore = "requires a live engine"]
-fn a_stored_template_is_independent_of_the_object_it_came_from() -> Result<(), Error> {
+fn a_stored_template_is_independent_of_the_object_it_came_from(
+    engine: &Engine,
+) -> Result<(), Error> {
     // Storing the object itself instead of a copy would mean that editing the
     // prototype afterwards silently rewrote the stored template.
-    let engine = Engine::new()?;
-    let group = new_template_group(&engine)?;
+    let group = new_template_group(engine)?;
 
-    let original = step_template(&engine, "Original")?;
+    let original = step_template(engine, "Original")?;
     append_template(&group, &original)?;
     original.set_name("Renamed After Storing")?;
 
@@ -96,13 +94,10 @@ fn a_stored_template_is_independent_of_the_object_it_came_from() -> Result<(), E
     Ok(())
 }
 
-#[test]
-#[ignore = "requires a live engine"]
-fn a_template_group_holds_each_kind_and_finds_them_by_name() -> Result<(), Error> {
-    let engine = Engine::new()?;
-    let group = new_template_group(&engine)?;
+fn a_template_group_holds_each_kind_and_finds_them_by_name(engine: &Engine) -> Result<(), Error> {
+    let group = new_template_group(engine)?;
 
-    append_template(&group, &step_template(&engine, "Step_Template")?)?;
+    append_template(&group, &step_template(engine, "Step_Template")?)?;
 
     let sequence = engine.new_sequence()?;
     sequence.set_name("Sequence_Template")?;
@@ -124,13 +119,10 @@ fn a_template_group_holds_each_kind_and_finds_them_by_name() -> Result<(), Error
     Ok(())
 }
 
-#[test]
-#[ignore = "requires a live engine"]
-fn inserting_a_step_template_leaves_the_template_reusable() -> Result<(), Error> {
-    let engine = Engine::new()?;
+fn inserting_a_step_template_leaves_the_template_reusable(engine: &Engine) -> Result<(), Error> {
     let sequence_file = engine.new_sequence_file()?;
     let main_sequence = sequence_file.get_sequence_by_name("MainSequence")?;
-    let template = step_template(&engine, "Prototype")?;
+    let template = step_template(engine, "Prototype")?;
 
     let first = main_sequence.insert_step_from_template(&template, 0, StepGroup::Main)?;
     first.set_name("First Copy")?;
@@ -161,16 +153,15 @@ fn inserting_a_step_template_leaves_the_template_reusable() -> Result<(), Error>
     Ok(())
 }
 
-#[test]
-#[ignore = "requires a live engine"]
-fn every_copy_carries_the_template_step_id_until_it_is_re_identified() -> Result<(), Error> {
+fn every_copy_carries_the_template_step_id_until_it_is_re_identified(
+    engine: &Engine,
+) -> Result<(), Error> {
     // The trap in copying steps: identity is part of what gets copied, so two
     // copies of one template are indistinguishable to anything that refers to a
     // step by ID until each is given a fresh one.
-    let engine = Engine::new()?;
     let sequence_file = engine.new_sequence_file()?;
     let main_sequence = sequence_file.get_sequence_by_name("MainSequence")?;
-    let template = step_template(&engine, "Prototype")?;
+    let template = step_template(engine, "Prototype")?;
     let template_id = template.get_val_string(STEP_ID, none())?;
 
     let first = main_sequence.insert_step_from_template(&template, 0, StepGroup::Main)?;
@@ -194,11 +185,7 @@ fn every_copy_carries_the_template_step_id_until_it_is_re_identified() -> Result
     Ok(())
 }
 
-#[test]
-#[ignore = "requires a live engine"]
-fn a_sequence_template_brings_its_steps_with_it() -> Result<(), Error> {
-    let engine = Engine::new()?;
-
+fn a_sequence_template_brings_its_steps_with_it(engine: &Engine) -> Result<(), Error> {
     let prototype = engine.new_sequence()?;
     prototype.set_name("Measure_Routine")?;
     let inner = engine.new_step(NO_ADAPTER, "Statement")?;
@@ -230,10 +217,7 @@ fn a_sequence_template_brings_its_steps_with_it() -> Result<(), Error> {
     Ok(())
 }
 
-#[test]
-#[ignore = "requires a live engine"]
-fn a_variable_template_lands_in_locals_with_its_default() -> Result<(), Error> {
-    let engine = Engine::new()?;
+fn a_variable_template_lands_in_locals_with_its_default(engine: &Engine) -> Result<(), Error> {
     let template = engine.new_property_object(PropValType::String, false, "", none())?;
     template.set_name("Serial_Number")?;
     template.set_val_string("", none(), "unset")?;
@@ -258,17 +242,14 @@ fn a_variable_template_lands_in_locals_with_its_default() -> Result<(), Error> {
     Ok(())
 }
 
-#[test]
-#[ignore = "requires a live engine"]
-fn templates_applied_to_a_saved_file_survive_a_reload() -> Result<(), Error> {
+fn templates_applied_to_a_saved_file_survive_a_reload(engine: &Engine) -> Result<(), Error> {
     // Templates earn their keep on files a program did not build in this run,
     // so the round trip through disk is the case that matters.
-    let engine = Engine::new()?;
     let path = std::env::temp_dir().join("rs_teststand_template_round_trip.seq");
     let path = path.to_string_lossy().into_owned();
     engine.new_sequence_file()?.save(&path)?;
 
-    let step_prototype = step_template(&engine, "Stamped_Step")?;
+    let step_prototype = step_template(engine, "Stamped_Step")?;
     let sequence_prototype = engine.new_sequence()?;
     sequence_prototype.set_name("Stamped_Sequence")?;
     let variable_prototype = engine.new_property_object(PropValType::String, false, "", none())?;
@@ -318,5 +299,65 @@ fn templates_applied_to_a_saved_file_survive_a_reload() -> Result<(), Error> {
     engine.release_sequence_file_ex(reopened, none())?;
 
     let _ = std::fs::remove_file(&path);
+    Ok(())
+}
+
+/// Every template behaviour, over one engine.
+///
+/// Deliberately one test rather than eight. Each of the steps below used to
+/// build its own engine, and construction plus teardown costs about one and a
+/// half seconds every time — paid eight times over for work that has no reason
+/// to start from a fresh engine. Sharing one is also closer to how a host uses
+/// the API: engines are long-lived, and templates are read and applied against
+/// the same one for the life of the process.
+///
+/// The steps run in order and stop at the first failure, which names itself.
+#[test]
+#[ignore = "requires a live engine"]
+fn templates_behave_as_documented() -> Result<(), Error> {
+    /// One named check, run against a shared engine.
+    type Step = (&'static str, fn(&Engine) -> Result<(), Error>);
+
+    let engine = Engine::new()?;
+    let steps: [Step; 8] = [
+        (
+            "the station templates file lists one array per kind of template",
+            the_station_templates_file_lists_one_array_per_kind_of_template,
+        ),
+        (
+            "a stored template is independent of the object it came from",
+            a_stored_template_is_independent_of_the_object_it_came_from,
+        ),
+        (
+            "a template group holds each kind and finds them by name",
+            a_template_group_holds_each_kind_and_finds_them_by_name,
+        ),
+        (
+            "inserting a step template leaves the template reusable",
+            inserting_a_step_template_leaves_the_template_reusable,
+        ),
+        (
+            "every copy carries the template step id until it is re-identified",
+            every_copy_carries_the_template_step_id_until_it_is_re_identified,
+        ),
+        (
+            "a sequence template brings its steps with it",
+            a_sequence_template_brings_its_steps_with_it,
+        ),
+        (
+            "a variable template lands in locals with its default",
+            a_variable_template_lands_in_locals_with_its_default,
+        ),
+        (
+            "templates applied to a saved file survive a reload",
+            templates_applied_to_a_saved_file_survive_a_reload,
+        ),
+    ];
+
+    for (label, step) in steps {
+        let started = std::time::Instant::now();
+        step(&engine)?;
+        println!("  ok: {label} ({:?})", started.elapsed());
+    }
     Ok(())
 }
