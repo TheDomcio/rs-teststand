@@ -138,8 +138,12 @@
       return append("engine", `unparseable frame: ${error}`);
     }
 
-    // A reply carries `response`; an event carries `code`. One stream, two
-    // kinds of message, told apart by which discriminant is present.
+    // One stream, two kinds of message. Sort on `command`: an acknowledgement
+    // always has one and an event never does. Do not sort on `code`, which both
+    // carry meaning different things, an engine error code against a UI message
+    // code. The older tagged reply is still accepted so a host that has not
+    // moved to acknowledgements yet keeps working.
+    if (event.command !== undefined) return showAck(event);
     if (event.response !== undefined) return showReply(event);
 
     if (event.code === PROGRESS_PERCENT) el("progress").style.width = `${event.numeric}%`;
@@ -163,6 +167,36 @@
       if (Array.isArray(tree.results)) showResults(tree.results);
     }
   };
+
+  function showAck(ack) {
+    // Five fields, always the same five. Everything the command produced is in
+    // `data` as JSON, so only the commands that return something parse it.
+    if (ack.command === "start" && ack.data) {
+      const started = parseOrNull(ack.data);
+      if (started && started.execution_id !== undefined) {
+        execution = started.execution_id;
+        el("progress").style.width = "0%";
+        el("results").querySelector("tbody").replaceChildren();
+      }
+    }
+    if (ack.command === "read_value" && ack.data) {
+      el("payload").textContent = prettyOrRaw(ack.data);
+    }
+    if (ack.command === "login" && ack.state === "ok") {
+      el("state").textContent = ack.description;
+    }
+    const mark = ack.state === "ok" ? "<-" : "!!";
+    const code = ack.state === "ok" ? "" : ` [${ack.code}]`;
+    append(ack.state === "ok" ? "reply" : "engine", `${mark} ${ack.command}${code} ${ack.description}`);
+  }
+
+  function parseOrNull(text) {
+    try {
+      return JSON.parse(text);
+    } catch {
+      return null;
+    }
+  }
 
   function showReply(reply) {
     if (reply.response === "started") {
