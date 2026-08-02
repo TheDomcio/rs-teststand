@@ -444,6 +444,8 @@ pub(crate) mod thread {
     pub(crate) const FLUSH_POST_RESULTS: i32 = 0x3d;
     /// Whether the run will step into the current step's code module.
     pub(crate) const WILL_STEP_INTO_MODULE: i32 = 0x3e;
+    /// How the thread answers a terminate request.
+    pub(crate) const TERMINATION_OPTION: i32 = 0x3c;
     /// `WaitForEnd`, 2 params.
     pub(crate) const WAIT_FOR_END: i32 = 0x9;
     /// `Id`, read-only.

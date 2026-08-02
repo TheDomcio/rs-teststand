@@ -42,7 +42,10 @@ pub use enums::{
     SaveWorkspaceFileOptions, SearchDirectoryType, StepGroup,
 };
 pub use error::Error;
-pub use execution::{Execution, ResultList, ResultValue, SequenceContext, StepResult, Thread};
+pub use execution::{
+    Execution, ResultList, ResultValue, SequenceContext, StepResult, Thread,
+    ThreadTerminationOption,
+};
 pub use expression::{
     ArithmeticOperator, Arity, ArrayFunction, AssignmentOperator, BitwiseOperator, ColorConstant,
     ComparisonOperator, LogicalOperator, NumericFunction, Operator, OperatorClass, OtherConstant,
