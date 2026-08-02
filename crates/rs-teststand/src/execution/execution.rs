@@ -15,6 +15,16 @@ pub struct Execution {
 }
 
 impl Execution {
+    /// This execution as an argument for a member that scopes work to one run.
+    ///
+    /// Returns an absent argument when the dispatch cannot be duplicated, which
+    /// the engine reads as "no execution", meaning the member acts on the step
+    /// itself. Callers that must not fall back that way should check first.
+    pub(crate) fn as_argument(&self) -> Value {
+        self.dispatch
+            .duplicate()
+            .map_or(Value::Empty, Value::Object)
+    }
     /// Wraps a dispatch handle returned by the engine.
     pub(crate) fn new(dispatch: Box<dyn Dispatch>) -> Self {
         Self { dispatch }

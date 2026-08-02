@@ -313,10 +313,15 @@ impl Thread {
 
     /// Starts this thread running (`Thread.Resume`).
     ///
-    /// Two uses. It releases a thread created suspended, which is how a
-    /// sequence call step can hand one back before it runs. It also continues a
-    /// thread that stopped on a breakpoint, and is the second half of a step
+    /// Releases a thread created suspended, which is how a sequence call step
+    /// can hand one back before it runs. It is also the second half of a step,
     /// once `set_step_over`, `set_step_into` or `set_step_out` has armed one.
+    ///
+    /// **This does not continue a run stopped at a breakpoint.** Measured
+    /// against a live engine: after a breakpoint stop, calling this leaves the
+    /// run where it is and the execution never ends. Use
+    /// [`Execution::resume`](crate::Execution::resume) for that, which
+    /// continued the same run in about 200 ms.
     ///
     /// # Errors
     /// [`Error`] if the COM call fails.

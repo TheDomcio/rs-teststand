@@ -531,6 +531,14 @@ pub(crate) mod ui_message {
 pub(crate) mod step {
     /// `AsPropertyObject`, no params.
     pub(crate) const AS_PROPERTY_OBJECT: i32 = 0x1;
+    /// `SetBreakOnStepEx`: sets or clears the breakpoint, optionally for one run.
+    pub(crate) const SET_BREAK_ON_STEP_EX: i32 = 0x6;
+    /// `GetBreakOnStepEx`: reads it back, optionally for one run.
+    pub(crate) const GET_BREAK_ON_STEP_EX: i32 = 0x7;
+    /// `BreakOnStep`: whether the step itself carries a breakpoint.
+    pub(crate) const BREAK_ON_STEP: i32 = 0x16;
+    /// `SetBreakSettings`: pass count and condition alongside the breakpoint.
+    pub(crate) const SET_BREAK_SETTINGS: i32 = 0x96;
     /// `AdapterKeyName`, read/write — a string, not a number.
     pub(crate) const ADAPTER_KEY_NAME: i32 = 0x15;
     /// `RunMode`, read/write — a string, not a number.
