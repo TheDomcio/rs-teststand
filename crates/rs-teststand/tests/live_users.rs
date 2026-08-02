@@ -7,12 +7,11 @@
 
 #![cfg(feature = "live-engine")]
 
+use std::time::Instant;
+
 use rs_teststand::{Engine, Error, UserPrivilege};
 
-#[test]
-#[ignore = "requires a live engine"]
-fn a_new_user_carries_the_names_and_password_set_on_it() -> Result<(), Error> {
-    let engine = Engine::new()?;
+fn a_new_user_carries_the_names_and_password_set_on_it(engine: &Engine) -> Result<(), Error> {
     let user = engine.new_user(None)?;
 
     user.set_login_name("operator1")?;
@@ -30,12 +29,9 @@ fn a_new_user_carries_the_names_and_password_set_on_it() -> Result<(), Error> {
     Ok(())
 }
 
-#[test]
-#[ignore = "requires a live engine"]
-fn a_user_with_no_profile_holds_no_privileges() -> Result<(), Error> {
+fn a_user_with_no_profile_holds_no_privileges(engine: &Engine) -> Result<(), Error> {
     // `new_user(None)` inherits nothing, so every built-in privilege should
     // answer false. That is what makes the profile argument meaningful.
-    let engine = Engine::new()?;
     let user = engine.new_user(None)?;
 
     let mut granted = Vec::new();
@@ -51,13 +47,10 @@ fn a_user_with_no_profile_holds_no_privileges() -> Result<(), Error> {
     Ok(())
 }
 
-#[test]
-#[ignore = "requires a live engine"]
-fn every_built_in_privilege_name_is_accepted_by_the_engine() -> Result<(), Error> {
+fn every_built_in_privilege_name_is_accepted_by_the_engine(engine: &Engine) -> Result<(), Error> {
     // A misspelled privilege does not raise — it quietly answers false. So the
     // check here is that the engine accepts each name at all, which is what the
     // enum exists to guarantee.
-    let engine = Engine::new()?;
     let user = engine.new_user(None)?;
 
     let mut rejected = Vec::new();
@@ -71,13 +64,12 @@ fn every_built_in_privilege_name_is_accepted_by_the_engine() -> Result<(), Error
     Ok(())
 }
 
-#[test]
-#[ignore = "requires a live engine"]
-fn privileges_inherit_from_a_profile_but_group_membership_does_not() -> Result<(), Error> {
+fn privileges_inherit_from_a_profile_but_group_membership_does_not(
+    engine: &Engine,
+) -> Result<(), Error> {
     // The documented contract of the profile argument. Build a source user,
     // grant it something through its own privilege tree, then create a second
     // user from it and see the grant carried across.
-    let engine = Engine::new()?;
     let source = engine.new_user(None)?;
     source.set_login_name("profile-source")?;
 
@@ -108,11 +100,8 @@ fn privileges_inherit_from_a_profile_but_group_membership_does_not() -> Result<(
     Ok(())
 }
 
-#[test]
-#[ignore = "requires a live engine"]
-fn the_station_reports_its_existing_accounts() -> Result<(), Error> {
+fn the_station_reports_its_existing_accounts(engine: &Engine) -> Result<(), Error> {
     // Read-only inspection of the real station: no account is created here.
-    let engine = Engine::new()?;
 
     // A name nobody would have configured.
     assert!(
@@ -133,10 +122,7 @@ fn the_station_reports_its_existing_accounts() -> Result<(), Error> {
     Ok(())
 }
 
-#[test]
-#[ignore = "requires a live engine"]
-fn a_user_is_reachable_as_a_property_tree() -> Result<(), Error> {
-    let engine = Engine::new()?;
+fn a_user_is_reachable_as_a_property_tree(engine: &Engine) -> Result<(), Error> {
     let user = engine.new_user(None)?;
     user.set_login_name("tree-probe")?;
 
@@ -152,12 +138,9 @@ fn a_user_is_reachable_as_a_property_tree() -> Result<(), Error> {
     Ok(())
 }
 
-#[test]
-#[ignore = "requires a live engine"]
-fn the_users_file_exposes_the_lists_the_station_loaded() -> Result<(), Error> {
+fn the_users_file_exposes_the_lists_the_station_loaded(engine: &Engine) -> Result<(), Error> {
     // Read-only on purpose. This suite must never rewrite the station's real
     // user list, so nothing here saves and nothing is added or removed.
-    let engine = Engine::new()?;
     let users_file = engine.users_file()?;
 
     let users = users_file.user_list()?;
@@ -184,12 +167,11 @@ fn the_users_file_exposes_the_lists_the_station_loaded() -> Result<(), Error> {
     Ok(())
 }
 
-#[test]
-#[ignore = "requires a live engine"]
-fn the_users_file_knows_where_it_lives_and_saves_without_asking() -> Result<(), Error> {
+fn the_users_file_knows_where_it_lives_and_saves_without_asking(
+    engine: &Engine,
+) -> Result<(), Error> {
     // The route that makes a new user outlive the process: the file view, its
     // path, and a save that does not stop for a person.
-    let engine = Engine::new()?;
     let file = engine.users_file()?.as_property_object_file()?;
 
     let path = file.path()?;
@@ -206,5 +188,58 @@ fn the_users_file_knows_where_it_lives_and_saves_without_asking() -> Result<(), 
         file.save_file_if_modified(false)?,
         "an unmodified save must succeed without a dialog"
     );
+    Ok(())
+}
+
+/// Every check in this file, over one engine.
+///
+/// A fresh engine costs about three seconds before it is usable, so sharing one
+/// takes this file from 20 seconds to a few.
+#[test]
+#[ignore = "requires a live engine"]
+fn users_behave_as_documented() -> Result<(), Error> {
+    type Step = (&'static str, fn(&Engine) -> Result<(), Error>);
+
+    let engine = Engine::new()?;
+    let steps: [Step; 8] = [
+        (
+            "a new user carries the names and password set on it",
+            a_new_user_carries_the_names_and_password_set_on_it,
+        ),
+        (
+            "a user with no profile holds no privileges",
+            a_user_with_no_profile_holds_no_privileges,
+        ),
+        (
+            "every built in privilege name is accepted by the engine",
+            every_built_in_privilege_name_is_accepted_by_the_engine,
+        ),
+        (
+            "privileges inherit from a profile but group membership does not",
+            privileges_inherit_from_a_profile_but_group_membership_does_not,
+        ),
+        (
+            "the station reports its existing accounts",
+            the_station_reports_its_existing_accounts,
+        ),
+        (
+            "a user is reachable as a property tree",
+            a_user_is_reachable_as_a_property_tree,
+        ),
+        (
+            "the users file exposes the lists the station loaded",
+            the_users_file_exposes_the_lists_the_station_loaded,
+        ),
+        (
+            "the users file knows where it lives and saves without asking",
+            the_users_file_knows_where_it_lives_and_saves_without_asking,
+        ),
+    ];
+
+    for (label, step) in steps {
+        let started = Instant::now();
+        step(&engine)?;
+        println!("  ok: {label} ({:?})", started.elapsed());
+    }
     Ok(())
 }
