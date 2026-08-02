@@ -438,6 +438,12 @@ pub(crate) mod thread {
     pub(crate) const CLEAR_TEMPORARY_BREAKPOINT: i32 = 0x1;
     /// Starts a suspended thread running.
     pub(crate) const RESUME: i32 = 0x2c;
+    /// Clears the run-time error recorded against the current step.
+    pub(crate) const CLEAR_CURRENT_RTE: i32 = 0x6;
+    /// Sends accumulated results to the post-results callbacks now.
+    pub(crate) const FLUSH_POST_RESULTS: i32 = 0x3d;
+    /// Whether the run will step into the current step's code module.
+    pub(crate) const WILL_STEP_INTO_MODULE: i32 = 0x3e;
     /// `WaitForEnd`, 2 params.
     pub(crate) const WAIT_FOR_END: i32 = 0x9;
     /// `Id`, read-only.
