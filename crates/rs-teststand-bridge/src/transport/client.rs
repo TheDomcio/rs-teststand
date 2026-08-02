@@ -12,6 +12,8 @@
 use futures_util::{SinkExt, StreamExt};
 use tokio_tungstenite::tungstenite::Message;
 
+use std::time::Duration;
+
 use crate::{Ack, Command, Error, MessageEvent};
 
 /// Renders a socket failure as the transport error the crate already has.
@@ -66,6 +68,64 @@ impl Inbound {
     }
 }
 
+/// How hard to try when a host is not answering yet.
+///
+/// A host restarts, and every panel connected to it tries to come back. Without
+/// spreading those attempts out they arrive together and knock the host over
+/// again, so the delay grows and carries a random fraction. The growth stops a
+/// dead host being hammered; the randomness stops a live one being hit by a
+/// crowd.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Backoff {
+    /// Wait before the second attempt. Doubles from there.
+    pub first: Duration,
+    /// Ceiling for the wait, before jitter.
+    pub longest: Duration,
+    /// How many attempts in total, including the first.
+    pub attempts: u32,
+}
+
+impl Default for Backoff {
+    /// A second, doubling, capped at thirty, giving up after ten attempts.
+    ///
+    /// Ten attempts spans roughly four minutes, which covers a host restart
+    /// without leaving a caller waiting on one that is never coming back.
+    fn default() -> Self {
+        Self {
+            first: Duration::from_secs(1),
+            longest: Duration::from_secs(30),
+            attempts: 10,
+        }
+    }
+}
+
+impl Backoff {
+    /// How long to wait before attempt `attempt`, counting the first as 0.
+    ///
+    /// Doubling, capped, then up to a quarter added on top. The jitter comes
+    /// from the clock rather than a random number generator, which keeps a
+    /// dependency out for a value that only has to differ between processes.
+    #[must_use]
+    pub fn delay(self, attempt: u32) -> Duration {
+        let doubled = self
+            .first
+            .saturating_mul(1_u32.checked_shl(attempt.min(16)).unwrap_or(u32::MAX));
+        let capped = doubled.min(self.longest);
+
+        let spread = capped / 4;
+        if spread.is_zero() {
+            return capped;
+        }
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or(0, |since| since.subsec_nanos());
+        // `spread` is at most a quarter of `longest`, so it fits a u64 for any
+        // sane ceiling; the fallback keeps that true if one is ever set absurd.
+        let ceiling = u64::try_from(spread.as_nanos()).unwrap_or(u64::MAX);
+        capped + Duration::from_nanos(u64::from(nanos) % ceiling.max(1))
+    }
+}
+
 /// A connection to a host.
 ///
 /// Async because the transport is. A caller that wants blocking behavior runs
@@ -89,6 +149,30 @@ impl Client {
             .await
             .map_err(|error| transport(&error))?;
         Ok(Self { socket })
+    }
+
+    /// Connects, retrying while the host is unreachable.
+    ///
+    /// For a panel meant to survive a host restart. Returns the last failure
+    /// once the attempts run out, rather than looping for ever, so a caller
+    /// still learns that the host is gone.
+    ///
+    /// # Errors
+    /// [`Error::Transport`] carrying the final failure.
+    pub async fn connect_with_backoff(address: &str, backoff: Backoff) -> Result<Self, Error> {
+        let mut last = None;
+        for attempt in 0..backoff.attempts.max(1) {
+            match Self::connect(address).await {
+                Ok(client) => return Ok(client),
+                Err(error) => last = Some(error),
+            }
+            if attempt + 1 < backoff.attempts {
+                tokio::time::sleep(backoff.delay(attempt)).await;
+            }
+        }
+        Err(last.unwrap_or_else(|| {
+            Error::Transport(std::io::Error::other("no connection attempt was made"))
+        }))
     }
 
     /// Sends one command.
@@ -219,7 +303,9 @@ impl Client {
 
 #[cfg(test)]
 mod tests {
-    use super::Inbound;
+    use std::time::Duration;
+
+    use super::{Backoff, Inbound};
     use crate::{Ack, MessageEvent};
 
     #[test]
@@ -251,6 +337,38 @@ mod tests {
             Some(2),
             "{text}"
         );
+    }
+
+    #[test]
+    fn the_delay_grows_and_then_stops_growing() {
+        let backoff = Backoff {
+            first: Duration::from_secs(1),
+            longest: Duration::from_secs(30),
+            attempts: 10,
+        };
+        // Doubling, before jitter: 1, 2, 4, 8.
+        assert!(backoff.delay(0) >= Duration::from_secs(1));
+        assert!(backoff.delay(1) >= Duration::from_secs(2));
+        assert!(backoff.delay(3) >= Duration::from_secs(8));
+
+        // Capped, and the cap holds however far out the attempt is. Without
+        // this a long outage would push the wait into hours.
+        let ceiling = Duration::from_secs(30) + Duration::from_secs(30) / 4;
+        for attempt in 5..40 {
+            assert!(
+                backoff.delay(attempt) <= ceiling,
+                "attempt {attempt} exceeded the cap"
+            );
+        }
+    }
+
+    #[test]
+    fn the_delay_carries_jitter_above_the_plain_doubling() {
+        // The point of the jitter is that clients do not return in lockstep, so
+        // the delay must be able to exceed the bare doubled value.
+        let backoff = Backoff::default();
+        assert!(backoff.delay(2) >= Duration::from_secs(4));
+        assert!(backoff.delay(2) <= Duration::from_secs(5));
     }
 
     #[test]

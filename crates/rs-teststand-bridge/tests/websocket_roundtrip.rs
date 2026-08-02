@@ -271,8 +271,11 @@ async fn a_reply_goes_only_to_the_panel_that_asked() {
 
     // The asker gets the reply first, then the event.
     let first = next_text(&mut asker).await;
+    // Replies go out as the fixed acknowledgement, so the marker is the
+    // `command` field rather than the response tag. That field is also what
+    // separates an acknowledgement from an event on this one socket.
     assert!(
-        first.contains("\"response\":\"hello\""),
+        first.contains("\"command\":\"hello\"") && first.contains("\"state\":\"ok\""),
         "asker got {first}"
     );
     let second = next_text(&mut asker).await;
