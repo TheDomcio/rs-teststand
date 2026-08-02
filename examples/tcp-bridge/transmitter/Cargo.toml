@@ -1,6 +1,6 @@
 [package]
 name = "tcp-transmitter"
-version = "0.0.10"
+version = "0.11.0"
 edition = "2024"
 rust-version = "1.85"
 publish = false
@@ -8,7 +8,7 @@ publish = false
 [workspace]
 
 [dependencies]
-rs-teststand = { version = "0.0.10", path = "../../../crates/rs-teststand" }
-rs-teststand-bridge = { version = "0.0.10", path = "../../../crates/rs-teststand-bridge" }
-rs-teststand-serde = { version = "0.0.10", path = "../../../crates/rs-teststand-serde" }
+rs-teststand = { version = "0.11.0", path = "../../../crates/rs-teststand" }
+rs-teststand-bridge = { version = "0.11.0", path = "../../../crates/rs-teststand-bridge" }
+rs-teststand-serde = { version = "0.11.0", path = "../../../crates/rs-teststand-serde" }
 serde_json = "1"

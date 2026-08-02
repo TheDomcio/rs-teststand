@@ -24,14 +24,14 @@ targets = ["i686-pc-windows-msvc"]
 all-features = true
 
 [dependencies]
-rs-teststand = { path = "../rs-teststand", version = "0.0.10" }
+rs-teststand = { path = "../rs-teststand", version = "0.11.0" }
 # The message pump: a background thread owning apartment-bound objects has to
 # service its own queue, and that is this crate's job rather than the binding's.
-rs-teststand-sys = { path = "../rs-teststand-sys", version = "0.0.10" }
+rs-teststand-sys = { path = "../rs-teststand-sys", version = "0.11.0" }
 # A COM reference cannot leave the process, so a message's object payload has to
 # become data before it crosses. That conversion belongs here, not in every
 # caller that needs it.
-rs-teststand-serde = { path = "../rs-teststand-serde", version = "0.0.10" }
+rs-teststand-serde = { path = "../rs-teststand-serde", version = "0.11.0" }
 serde_json = "1"
 thiserror = "2.0.18"
 # Only the synchronisation primitives. The runtime, sockets and I/O left with

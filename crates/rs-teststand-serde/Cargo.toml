@@ -24,7 +24,7 @@ targets = ["i686-pc-windows-msvc"]
 all-features = true
 
 [dependencies]
-rs-teststand = { path = "../rs-teststand", version = "0.0.10" }
+rs-teststand = { path = "../rs-teststand", version = "0.11.0" }
 serde = { version = "1", features = ["derive"] }
 
 [features]
