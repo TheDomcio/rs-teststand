@@ -32,7 +32,8 @@
 
 #![forbid(unsafe_code)]
 
-pub mod command;
+pub mod ack;
+mod command;
 pub mod error;
 pub mod event;
 pub mod host;
@@ -40,6 +41,7 @@ pub mod response;
 pub mod transport;
 pub mod watch;
 
+pub use ack::{Ack, AckState, CODE_FAILED, CODE_OK};
 pub use command::Command;
 pub use error::Error;
 pub use event::{MessageEvent, PayloadPolicy};
