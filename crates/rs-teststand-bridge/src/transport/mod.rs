@@ -17,6 +17,8 @@
 //!   there is no terminator to agree on, and it is **bidirectional**: the same
 //!   connection that carries progress out carries commands back.
 
+#[cfg(feature = "websocket")]
+pub mod client;
 pub mod line;
 #[cfg(feature = "websocket")]
 pub mod websocket;
