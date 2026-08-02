@@ -4,7 +4,7 @@
 //! raises a modal dialog, the calling thread is stuck *inside* COM: the call
 //! does not return, so there is nothing to time out and no Rust code can stop
 //! it. `Engine::new` disables the dialogs the engine raises on its own, but it
-//! cannot disable the ones a sequence asks for — a `MessagePopup` step exists
+//! cannot disable the ones a sequence asks for, a `MessagePopup` step exists
 //! precisely to stop and ask a person something.
 //!
 //! [`Watchdog`] watches for those dialogs and responds according to a
@@ -15,7 +15,7 @@
 //!   what keeps a host usable alongside a front end: the question reaches the
 //!   operator instead of the run being destroyed for asking it.
 //! - [`Terminate`](DialogPolicy::Terminate) is the blunt backstop for a host
-//!   that genuinely has nobody to answer — a CI job, an unattended service. It
+//!   that genuinely has nobody to answer, a CI job, an unattended service. It
 //!   captures the dialog's text and **ends the process**, because termination is
 //!   the only exit from a wedged apartment. Anything that must survive it should
 //!   run the engine in a worker process and let a supervisor restart it, so the
@@ -31,7 +31,7 @@ pub use rs_teststand_sys::{DialogInfo, Dismissed, Raised};
 
 /// Reports a dialog currently stopping this process, without touching it.
 ///
-/// Plain data — a title, the text of the controls, and the window class — so it
+/// Plain data, a title, the text of the controls, and the window class, so it
 /// crosses no COM boundary and can be logged or sent anywhere. `None` means no
 /// dialog is up.
 ///
@@ -47,7 +47,7 @@ pub fn find_blocking_dialog() -> Option<DialogInfo> {
 /// Brings a blocking dialog to the front and reports what it says.
 ///
 /// What [`Watchdog`] does under [`DialogPolicy::Surface`], exposed for a host
-/// that would rather drive it itself — from its own user interface thread, or
+/// that would rather drive it itself, from its own user interface thread, or
 /// on its own schedule. See [`Raised`] for what "in front" is guaranteed to
 /// mean, since Z-order and focus are not equally strong.
 #[must_use]
@@ -59,10 +59,10 @@ pub fn surface_blocking_dialog() -> Option<(DialogInfo, Raised)> {
 /// was showing.
 ///
 /// The opposite choice to [`surface_blocking_dialog`], for a host with nobody
-/// in front of it. Some engine dialogs appear before any caller code runs — the
+/// in front of it. Some engine dialogs appear before any caller code runs, the
 /// warning about sequence files left unreleased by a previous process is raised
 /// while the engine object is being created, and no station option turns it
-/// off — so a host that only surfaces them still waits forever.
+/// off, so a host that only surfaces them still waits forever.
 ///
 /// This answers without reading, which is why it is not the default anywhere a
 /// person might be present. Log the returned [`DialogInfo`]: a host that
@@ -105,8 +105,7 @@ pub enum DialogPolicy {
 /// Decides whether the guard should end the process.
 ///
 /// Deliberately requires **all** of: the terminating policy, the deadline
-/// passed, and a dialog present. Elapsed time alone is not evidence of a wedge —
-/// a sequence can legitimately sit for many minutes on a long-running test, and
+/// passed, and a dialog present. Elapsed time alone is not evidence of a wedge, /// a sequence can legitimately sit for many minutes on a long-running test, and
 /// killing those would be a false positive.
 ///
 /// Split from the thread body so the rule is testable without ending the test
@@ -114,12 +113,12 @@ pub enum DialogPolicy {
 const fn should_terminate(
     elapsed: Duration,
     timeout: Duration,
-    cancelled: bool,
+    canceled: bool,
     dialog: bool,
     policy: DialogPolicy,
 ) -> bool {
     matches!(policy, DialogPolicy::Terminate)
-        && !cancelled
+        && !canceled
         && dialog
         && elapsed.as_millis() >= timeout.as_millis()
 }
@@ -135,11 +134,11 @@ const fn should_terminate(
 /// // Any popup the sequence raises is brought to the front, not killed.
 /// let guard = Watchdog::start(Duration::from_secs(30), "running MainSequence");
 /// // ... engine call ...
-/// drop(guard); // cancelled; process continues
+/// drop(guard); // canceled; process continues
 /// ```
 #[derive(Debug)]
 pub struct Watchdog {
-    cancelled: Arc<AtomicBool>,
+    canceled: Arc<AtomicBool>,
 }
 
 impl Watchdog {
@@ -159,8 +158,8 @@ impl Watchdog {
     /// blocking forever is the worse outcome; it ends the process.
     #[must_use]
     pub fn start_with(timeout: Duration, context: &'static str, policy: DialogPolicy) -> Self {
-        let cancelled = Arc::new(AtomicBool::new(false));
-        let flag = Arc::clone(&cancelled);
+        let canceled = Arc::new(AtomicBool::new(false));
+        let flag = Arc::clone(&canceled);
         // Detached on purpose: the guard must not be joined, and the thread
         // exits on its own as soon as the flag is set.
         thread::spawn(move || {
@@ -194,7 +193,7 @@ impl Watchdog {
                 thread::sleep(POLL_INTERVAL);
             }
         });
-        Self { cancelled }
+        Self { canceled }
     }
 
     /// Keeps any dialog at the front, announcing each one once.
@@ -267,7 +266,7 @@ impl Watchdog {
             "rs-teststand: '{context}' blocked past {timeout:?} on a modal dialog that cannot \
              be answered in an unattended host."
         );
-        // The dialog's own text is the actual diagnosis — a .NET crash message
+        // The dialog's own text is the actual diagnosis, a .NET crash message
         // or engine error. Losing it would leave only "the process died".
         if let Some(info) = dialog {
             let _ = writeln!(stderr, "  dialog title: {}", info.title);
@@ -289,7 +288,7 @@ impl Watchdog {
 
 impl Drop for Watchdog {
     fn drop(&mut self) {
-        self.cancelled.store(true, Ordering::Relaxed);
+        self.canceled.store(true, Ordering::Relaxed);
     }
 }
 
@@ -377,10 +376,10 @@ mod tests {
     #[test]
     fn dropping_the_guard_disarms_it() {
         let guard = Watchdog::start(Duration::from_secs(3600), "test");
-        let flag = Arc::clone(&guard.cancelled);
+        let flag = Arc::clone(&guard.canceled);
         assert!(
             !flag.load(Ordering::Relaxed),
-            "started guard reports cancelled"
+            "started guard reports canceled"
         );
         drop(guard);
         assert!(flag.load(Ordering::Relaxed), "drop did not cancel");
@@ -390,7 +389,7 @@ mod tests {
     fn explicit_disarm_matches_drop() {
         let guard =
             Watchdog::start_with(Duration::from_secs(3600), "test", DialogPolicy::Terminate);
-        let flag = Arc::clone(&guard.cancelled);
+        let flag = Arc::clone(&guard.canceled);
         guard.cancel();
         assert!(flag.load(Ordering::Relaxed), "cancel did not set the flag");
     }

@@ -27,13 +27,13 @@ pub enum BitwiseOperator {
     ShiftLeft,
     /// Right shift, `>>`.
     ShiftRight,
-    /// Bitwise and, `AND` — the word spelling of [`Self::And`].
+    /// Bitwise and, `AND`, the word spelling of [`Self::And`].
     AndWord,
-    /// Bitwise or, `OR` — the word spelling of [`Self::Or`].
+    /// Bitwise or, `OR`, the word spelling of [`Self::Or`].
     OrWord,
-    /// Bitwise exclusive-or, `XOR` — the word spelling of [`Self::Xor`].
+    /// Bitwise exclusive-or, `XOR`, the word spelling of [`Self::Xor`].
     XorWord,
-    /// Bitwise complement, `NOT` — the word spelling of [`Self::Not`].
+    /// Bitwise complement, `NOT`, the word spelling of [`Self::Not`].
     NotWord,
 }
 

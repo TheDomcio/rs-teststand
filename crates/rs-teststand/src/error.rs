@@ -27,21 +27,21 @@ use crate::error_codes::code_name;
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum Error {
-    /// The station holds no licence.
+    /// The station holds no license.
     ///
     /// Raised by [`Engine::require_license`](crate::Engine::require_license),
     /// not by the engine, so that "unlicensed" is reported once and up front
-    /// rather than as whatever operation later happened to need a licence.
+    /// rather than as whatever operation later happened to need a license.
     #[error(
-        "the station holds no TestStand licence; activate one, or check Engine::license_type first"
+        "the station holds no TestStand license; activate one, or check Engine::license_type first"
     )]
     NoLicense,
 
-    /// The engine named a licence value this build does not know.
+    /// The engine named a license value this build does not know.
     ///
     /// A newer engine may define one this crate predates. The number is carried
     /// through rather than mapped onto a near neighbour.
-    #[error("engine reported licence value {bits}, which this build does not name")]
+    #[error("engine reported license value {bits}, which this build does not name")]
     UnknownLicenseType {
         /// The value the engine reported.
         bits: i32,
@@ -78,7 +78,7 @@ pub enum Error {
         /// first thing worth knowing; this narrows it to one member.
         dispid: i32,
     },
-    /// A COM call failed with a code the engine does not name — a standard
+    /// A COM call failed with a code the engine does not name, a standard
     /// Windows `HRESULT`, or a code newer than the generated table.
     #[error("{}", ComDisplay { hresult: *hresult, dispid: *dispid })]
     Com {
@@ -87,7 +87,7 @@ pub enum Error {
         /// The dispatch id of the member that failed, or `0`.
         dispid: i32,
     },
-    /// A returned value was not the type the wrapper expected — an internal
+    /// A returned value was not the type the wrapper expected, an internal
     /// mismatch between the wrapper and the live object model.
     #[error("unexpected value type: expected {expected}, got {actual}")]
     UnexpectedType {

@@ -29,7 +29,7 @@ impl TypeCategory {
         self as i32
     }
 
-    /// Reads a raw value, returning it unchanged when unrecognised.
+    /// Reads a raw value, returning it unchanged when unrecognized.
     ///
     /// # Errors
     /// The raw value, when it matches no known category.

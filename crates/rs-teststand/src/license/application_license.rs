@@ -1,8 +1,8 @@
-//! Which licence an application is asking for.
+//! Which license an application is asking for.
 
-/// The kind of licence an application requests (`ApplicationLicenses`).
+/// The kind of license an application requests (`ApplicationLicenses`).
 ///
-/// A host asks for the least it needs. Requesting an editor licence on a
+/// A host asks for the least it needs. Requesting an editor license on a
 /// station that only has a deployment one fails, so asking high "to be safe"
 /// is how a station that would have worked refuses to start.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -65,7 +65,7 @@ mod tests {
     #[test]
     fn the_values_are_not_ordinals() {
         // Spaced by hundreds in the type library. Treating them as 0..3 would
-        // request the wrong licence and fail on a correctly licensed station.
+        // request the wrong license and fail on a correctly licensed station.
         assert_eq!(ApplicationLicense::OperatorInterface.bits(), 100);
         assert_eq!(ApplicationLicense::SequenceEditor.bits(), 300);
         assert_eq!(ApplicationLicense::from_bits(1), Err(1));

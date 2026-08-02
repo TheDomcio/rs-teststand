@@ -11,7 +11,7 @@
 //! so a thread holding COM objects has to dispatch them
 //! ([`pump_thread_messages`]) or it cannot hear the calls it is waiting for.
 //! And when a sequence raises a modal dialog, the evidence is a visible window
-//! owned by this process ([`find_blocking_dialog`]) — which a host can then put
+//! owned by this process ([`find_blocking_dialog`]), which a host can then put
 //! in front of the operator ([`surface_blocking_dialog`]) instead of dying on
 //! it.
 
@@ -29,7 +29,7 @@ pub use raise::Raised;
 ///
 /// The alternative to killing the process. A message-popup step is a question,
 /// not a fault, so the useful response is to make sure the question is visible
-/// above whatever else is on the desktop and let it be answered — by an
+/// above whatever else is on the desktop and let it be answered, by an
 /// operator, or by a front end driving the same station.
 ///
 /// `None` means no dialog is up. See [`Raised`] for what "in front" is

@@ -85,8 +85,8 @@ async fn an_error_from_the_engine_reaches_the_caller() -> Result<(), Error> {
     // bad request from one client would take the host down for everyone.
     let host = EngineHost::start()?;
 
-    // The step itself cannot cross the thread — the compiler refuses, which is
-    // the apartment rule being enforced rather than trusted — so only the
+    // The step itself cannot cross the thread, the compiler refuses, which is
+    // the apartment rule being enforced rather than trusted, so only the
     // outcome comes back.
     let refused = host
         .with_engine(|engine| engine.new_step(NO_ADAPTER, "NoSuchStepTypeExists").is_err())
@@ -212,7 +212,7 @@ async fn every_subscriber_sees_the_same_stream() -> Result<(), Error> {
 async fn messages_are_acknowledged_even_with_nobody_listening() -> Result<(), Error> {
     // A synchronous message blocks the sequence until acknowledged. The host
     // must acknowledge regardless of subscribers, or an unobserved run would
-    // stall forever — which is the failure a naive forwarder would ship.
+    // stall forever, which is the failure a naive forwarder would ship.
     let host = EngineHost::start()?;
     assert_eq!(host.subscriber_count(), 0, "deliberately nobody listening");
 

@@ -11,8 +11,8 @@ use crate::property::PropertyObject;
 ///
 /// A running sequence reports what it is doing by posting these: stage
 /// descriptions, progress, results. A graphical host receives them through the
-/// UI controls; a headless one — a service, a test runner, anything speaking to
-/// another process — polls the queue instead.
+/// UI controls; a headless one, a service, a test runner, anything speaking to
+/// another process, polls the queue instead.
 ///
 /// **Every message must be acknowledged.** See
 /// [`acknowledge`](Self::acknowledge): skipping it blocks a synchronous poster
@@ -41,7 +41,7 @@ impl UIMessage {
     /// The message's code, resolved.
     ///
     /// `Err` carries the raw number for a message a sequence posted, or one
-    /// newer than this build knows — both of which are ordinary, not failures.
+    /// newer than this build knows, both of which are ordinary, not failures.
     ///
     /// # Errors
     /// [`Error`] if the COM call fails or returns an unexpected type.
@@ -120,7 +120,7 @@ impl UIMessage {
     /// The execution that posted this, when there is one
     /// (`UIMessage.Execution`).
     ///
-    /// Returns `None` for a message not tied to an execution — engine notices
+    /// Returns `None` for a message not tied to an execution, engine notices
     /// about the station rather than about a run.
     ///
     /// This is an [`Execution`](crate::Execution), not a property tree: its identifier comes from
@@ -168,7 +168,7 @@ impl UIMessage {
     ///
     /// Two things depend on it. A synchronous message blocks the thread that
     /// posted it until this is called, and the engine treats it as the signal
-    /// that the host is ready for the next message — so a queue that stops
+    /// that the host is ready for the next message, so a queue that stops
     /// delivering is usually one that was not acknowledged.
     ///
     /// # Errors

@@ -38,7 +38,7 @@ impl RunMode {
         }
     }
 
-    /// Recognises a run mode read back from a step.
+    /// Recognizes a run mode read back from a step.
     ///
     /// `None` means a value this build does not name rather than a failure.
     #[must_use]
@@ -85,7 +85,7 @@ mod tests {
     }
 
     #[test]
-    fn an_unrecognised_mode_is_reported_rather_than_guessed() {
+    fn an_unrecognized_mode_is_reported_rather_than_guessed() {
         // A caller that passed a number would land here, not on a valid mode.
         assert_eq!(RunMode::from_value("0"), None);
         assert_eq!(RunMode::from_value("normal"), None);

@@ -38,12 +38,12 @@ const ALL_ADAPTERS: [AdapterKeyName; 12] = [
 /// such adapter.
 ///
 /// An engine that does not know the key answers `TS_Err_InvalidAdapterName`,
-/// and only that code is taken as "not installed here" — any other failure is
+/// and only that code is taken as "not installed here", any other failure is
 /// still a failure. Skipping is deliberately not a pass: the caller records
 /// what was skipped, so a run that silently exercised nothing is visible.
 fn step_on(engine: &Engine, adapter: AdapterKeyName) -> Result<Option<rs_teststand::Step>, Error> {
     /// `TS_Err_InvalidAdapterName`, the engine's name for a key it does not
-    /// recognise.
+    /// recognize.
     const INVALID_ADAPTER_NAME: i32 = -17336;
 
     match engine.new_step(adapter.as_str(), "Action") {
@@ -57,7 +57,7 @@ fn step_on(engine: &Engine, adapter: AdapterKeyName) -> Result<Option<rs_teststa
 #[ignore = "requires a live engine"]
 fn every_adapter_key_is_one_the_engine_accepts() -> Result<(), Error> {
     // The keys are strings taken from the type library. A typo in one would not
-    // fail to compile — it would fail here, or worse, silently build a step on
+    // fail to compile, it would fail here, or worse, silently build a step on
     // the wrong adapter.
     let engine = Engine::new()?;
     let mut absent = Vec::new();
@@ -93,7 +93,7 @@ fn an_empty_adapter_key_lets_the_step_type_choose() -> Result<(), Error> {
     // Not "no code module", which is the natural assumption and is wrong. The
     // step type decides; only when it designates nothing does the station's
     // default apply. These two types designate, so they are the same on any
-    // station — unlike Action, whose answer depends on the station.
+    // station, unlike Action, whose answer depends on the station.
     let engine = Engine::new()?;
 
     assert_eq!(

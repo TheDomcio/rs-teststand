@@ -1,4 +1,4 @@
-//! Guards for behaviour that was proven against a live host and would otherwise
+//! Guards for behavior that was proven against a live host and would otherwise
 //! only exist in a commit message.
 //!
 //! Each of these was measured by hand during development, and each is a failure
@@ -8,7 +8,7 @@
 //!
 //! No engine is needed. A real bridge is bound to a real port and a real client
 //! connects to it, so the protocol is exercised rather than simulated. Only the
-//! engine-facing behaviour lives in a `live-engine` test.
+//! engine-facing behavior lives in a `live-engine` test.
 
 #![allow(
     clippy::expect_used,

@@ -11,7 +11,7 @@ use windows::Win32::UI::WindowsAndMessaging::{
 ///
 /// A single-threaded COM apartment delivers cross-apartment calls as window
 /// messages, so a thread that owns apartment objects and never pumps starves
-/// them. On a background thread — where nothing pumps by default — an engine
+/// them. On a background thread, where nothing pumps by default, an engine
 /// running an execution will abort the process rather than fail cleanly, so
 /// this must be called regularly from any loop that owns such a thread.
 ///

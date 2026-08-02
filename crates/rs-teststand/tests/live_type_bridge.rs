@@ -1,8 +1,8 @@
 //! Live-engine audit of the value-type bridge.
 //!
 //! Walks the file globals of a sequence file that deliberately contains one
-//! variable per value type — scalars, every array flavour, a reference, a custom
-//! enumeration and a custom container — and requires that each one is reachable
+//! variable per value type, scalars, every array flavour, a reference, a custom
+//! enumeration and a custom container, and requires that each one is reachable
 //! and classifiable through the wrapper.
 //!
 //! The fixture is `tests/fixtures/TypesPlayground.seq`, saved as XML. The test skips when
@@ -140,8 +140,7 @@ fn nested_container_members_are_reachable() -> Result<(), Error> {
 
 /// `FileGlobals.Numbers` holds one number per display format.
 ///
-/// Two separate facts are proven here. `NumericFormat` is presentation only —
-/// it changes how a value renders, not what is stored. And the engine matches
+/// Two separate facts are proven here. `NumericFormat` is presentation only, /// it changes how a value renders, not what is stored. And the engine matches
 /// representation **strictly**: an integer format code applied to a value stored
 /// as `Float64` is refused rather than silently coerced.
 #[test]
@@ -295,7 +294,7 @@ fn each_representation_reads_through_its_own_accessor() -> Result<(), Error> {
 /// Writing then reading back at the extremes proves no precision is lost.
 ///
 /// A double cannot hold the full 64-bit integer range exactly, which is the
-/// whole reason the integer representations exist — so the boundary values are
+/// whole reason the integer representations exist, so the boundary values are
 /// the cases that matter.
 #[test]
 #[ignore = "requires a live engine"]

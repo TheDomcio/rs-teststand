@@ -3,7 +3,7 @@
 //! No engine is involved: the bridge carries [`MessageEvent`]s and
 //! [`Command`]s, which are plain data by the time they reach it, so the
 //! transport can be proven on any machine. That separation is the design, not a
-//! testing convenience — the engine never crosses into the server.
+//! testing convenience, the engine never crosses into the server.
 //!
 //! `cargo test -p rs-teststand-bridge --features websocket`
 

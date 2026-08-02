@@ -10,8 +10,8 @@
 //!
 //! Builds two types:
 //!
-//! * `DigitalMultimeter` — a container; its field defaults define the fields.
-//! * `Coupling` — a strict enumeration (`AC = 0`, `DC = 1`).
+//! * `DigitalMultimeter`, a container; its field defaults define the fields.
+//! * `Coupling`, a strict enumeration (`AC = 0`, `DC = 1`).
 
 use rs_teststand::{Engine, PropValType, PropertyObject, TypeCategory, TypeUsageList};
 
@@ -39,7 +39,7 @@ fn build_multimeter_type(engine: &Engine) -> Result<PropertyObject, rs_teststand
 ///
 /// One container per enumerator, each carrying `EnumeratorName` and
 /// `EnumeratorValue`. Strictness is an attribute of the array, not a member of
-/// it — a strict enumeration refuses values outside the declared set.
+/// it, a strict enumeration refuses values outside the declared set.
 fn enumerator_array(
     engine: &Engine,
     named_values: &[(&str, f64)],

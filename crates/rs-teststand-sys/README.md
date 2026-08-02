@@ -2,7 +2,7 @@
 
 The low-level COM interop layer for the National Instruments TestStand™ Engine API.
 
-This crate is an implementation detail of [`rs-teststand`][parent] — it holds the
+This crate is an implementation detail of [`rs-teststand`][parent], it holds the
 `unsafe` so the public crate does not. **Use [`rs-teststand`][parent] instead**
 unless you specifically need the raw dispatch layer.
 

@@ -8,7 +8,7 @@ use crate::dispids::execution;
 /// A running sequence (`Execution`).
 ///
 /// Created by [`Engine::new_execution`](crate::Engine::new_execution), which
-/// starts it immediately — there is no separate "run" step.
+/// starts it immediately, there is no separate "run" step.
 #[derive(Debug)]
 pub struct Execution {
     dispatch: Box<dyn Dispatch>,
@@ -59,7 +59,7 @@ impl Execution {
     /// [`UIMessageCode::EndExecution`](crate::UIMessageCode::EndExecution) on
     /// the queue instead, which is how a front end knows an execution finished.
     ///
-    /// This is for synchronising *between* executions — waiting from a step for
+    /// This is for synchronising *between* executions, waiting from a step for
     /// another execution to finish.
     ///
     /// # Errors
@@ -130,7 +130,7 @@ impl Execution {
 
     /// The overall result so far (`Execution.ResultStatus`).
     ///
-    /// A string the engine owns — `"Passed"`, `"Failed"`, `"Terminated"`,
+    /// A string the engine owns, `"Passed"`, `"Failed"`, `"Terminated"`,
     /// `"Error"`, `"Running"` and others. Deliberately not narrowed to an enum:
     /// a sequence may set a status of its own, and folding an unknown one into
     /// a fixed set would lose it.
@@ -217,7 +217,7 @@ impl Execution {
     ///
     /// **Call this only from inside a running step.** The reference is explicit
     /// that calling it from an application's main thread, or from a step type's
-    /// edit substep, deadlocks — and it does: measured from a test thread, the
+    /// edit substep, deadlocks, and it does: measured from a test thread, the
     /// call never returns and the process has to be killed, which then leaves
     /// sequence files unreleased.
     ///
@@ -271,7 +271,7 @@ impl Execution {
 
     /// The sequence file this execution is running (`Execution.GetSequenceFile`).
     ///
-    /// Distinct from `GetModelSequenceFile`, which is the process model — a
+    /// Distinct from `GetModelSequenceFile`, which is the process model, a
     /// neighbouring identifier, and mixing the two is silent.
     ///
     /// # Errors

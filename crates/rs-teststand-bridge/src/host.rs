@@ -57,7 +57,7 @@ type Job = Box<dyn FnOnce(&Engine) + Send>;
 /// ```
 ///
 /// The same thread polls the message queue and broadcasts what it finds, so a
-/// host can serve requests and forward progress at once — which is what an IPC
+/// host can serve requests and forward progress at once, which is what an IPC
 /// layer needs and what a single-threaded caller cannot do.
 #[derive(Debug)]
 pub struct EngineHost {

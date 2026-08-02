@@ -7,7 +7,7 @@
 //! Scope: apartment (STA) initialization, late-bound `IDispatch` invocation,
 //! `VARIANT` conversion, HRESULT extraction, and the Win32 window and message
 //! facilities a COM apartment depends on (`os`). No TestStand™ semantics live
-//! here — the public `rs-teststand` crate builds the object model on top of the
+//! here, the public `rs-teststand` crate builds the object model on top of the
 //! [`Dispatch`] seam.
 
 mod dispatch;

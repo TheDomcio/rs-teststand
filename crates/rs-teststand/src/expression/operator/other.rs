@@ -2,35 +2,35 @@
 //!
 //! These are syntax: they group, select, index and separate. None of them takes
 //! two operands and returns a value the way an arithmetic operator does, so
-//! they carry no precedence here — where they bind is a property of the grammar
+//! they carry no precedence here, where they bind is a property of the grammar
 //! rather than of a level in a table.
 
 /// A structural element of the expression language.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum OtherOperator {
-    /// Parentheses, `()` — force evaluation order.
+    /// Parentheses, `()`, force evaluation order.
     Parentheses,
-    /// Dot, `.` — separates a property from its field.
+    /// Dot, `.`, separates a property from its field.
     FieldSeparator,
-    /// Double dot, `..` — a range of indexes inside a subscript, selecting
+    /// Double dot, `..`, a range of indexes inside a subscript, selecting
     /// several elements and yielding a subarray.
     IndexRange,
-    /// Brackets, `[]` — array subscript.
+    /// Brackets, `[]`, array subscript.
     ///
     /// The subscript is normally numeric. Arrays of steps or sequences also
     /// accept the element's name as a string.
     Subscript,
-    /// Comma, `,` — separates or terminates expressions.
+    /// Comma, `,`, separates or terminates expressions.
     Separator,
-    /// Conditional, `?:` — picks one of two expressions from a boolean.
+    /// Conditional, `?:`, picks one of two expressions from a boolean.
     Conditional,
-    /// Braces, `{}` — an array constant.
+    /// Braces, `{}`, an array constant.
     ArrayConstant,
-    /// `//` — a comment running to the end of the line.
+    /// `//`, a comment running to the end of the line.
     LineComment,
-    /// `'` — a comment running to the end of the line, in the Basic style.
+    /// `'`, a comment running to the end of the line, in the Basic style.
     LineCommentBasic,
-    /// `/* */` — a comment spanning any amount of text.
+    /// `/* */`, a comment spanning any amount of text.
     BlockComment,
 }
 

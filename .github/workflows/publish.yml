@@ -1,6 +1,6 @@
 name: Publish
 
-# Publishes all four crates to crates.io when a version tag is pushed.
+# Publishes every crate in the workspace to crates.io when a version tag is pushed.
 #
 # Publishing is permanent. A released version can be yanked, which stops new
 # dependants resolving it, but it can never be replaced or deleted. Everything
@@ -55,7 +55,7 @@ jobs:
           cargo --version
 
       # Guards the mistake this layout invites: four crates that must move
-      # together, three inheriting the workspace version and one that used to
+      # together, all inheriting the workspace version except one that used to
       # hardcode it. A tag that disagrees with the manifests would publish a
       # version nobody asked for.
       - name: Tag and manifests must agree

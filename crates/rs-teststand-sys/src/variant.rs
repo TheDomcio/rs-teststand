@@ -1,10 +1,10 @@
-//! `OwnedVariant` — a `VARIANT` that frees itself.
+//! `OwnedVariant`, a `VARIANT` that frees itself.
 //!
 //! Windows' `VARIANT` is a raw union with **no `Drop` impl**: letting one go out
 //! of scope frees nothing, so a `VT_BSTR` variant leaks its string and a
 //! `VT_DISPATCH` variant leaks a COM reference (which in turn keeps the engine
 //! alive and blocks shutdown). Every code path that creates one must call
-//! `VariantClear`, including early returns — which is exactly the kind of
+//! `VariantClear`, including early returns, which is exactly the kind of
 //! obligation that gets missed.
 //!
 //! [`OwnedVariant`] makes that obligation the compiler's job: it owns the
@@ -32,7 +32,7 @@ pub(crate) struct OwnedVariant(VARIANT);
 
 impl std::fmt::Debug for OwnedVariant {
     /// Reports the discriminant only. `VARIANT` has no `Debug` of its own, and
-    /// formatting the payload would mean interpreting the union — which is what
+    /// formatting the payload would mean interpreting the union, which is what
     /// [`OwnedVariant::to_value`] is for.
     fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // SAFETY: `vt` is a plain `u16` discriminant present in every
@@ -152,7 +152,7 @@ impl OwnedVariant {
                 // back from members declared to carry an arbitrary reference
                 // rather than an automation object: `UIMessage.ActiveXData` is
                 // the one that matters here, and without this arm reading it
-                // fails as an unmodelled VARIANT type.
+                // fails as an unmodeled VARIANT type.
                 //
                 // Everything above this layer speaks `IDispatch`, so the
                 // reference is asked for that interface. Refusing is legitimate

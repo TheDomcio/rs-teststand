@@ -7,18 +7,18 @@
 //!
 //! Everything is JSON in `WebSocket` **text** frames, opcode `0x1` in RFC 6455.
 //! The protocol frames each message itself, so there is no terminator to agree
-//! on — unlike the line transport in `rs-teststand-bridge`, where CRLF exists precisely because a
+//! on, unlike the line transport in `rs-teststand-bridge`, where CRLF exists precisely because a
 //! raw socket has no record boundary.
 //!
 //! # Threads
 //!
 //! Two, and the split is the point:
 //!
-//! - **The engine thread** — whichever thread called [`WebSocketBridge::bind`]
+//! - **The engine thread**, whichever thread called [`WebSocketBridge::bind`]
 //!   and owns the engine. It publishes events and drains commands. Engine
 //!   wrappers are neither [`Send`] nor [`Sync`], so nothing here can take one
 //!   even by accident.
-//! - **The server thread** — a runtime of its own, accepting panels and moving
+//! - **The server thread**, a runtime of its own, accepting panels and moving
 //!   bytes. It never sees the engine; what crosses between the two is
 //!   `MessageEvent`, `Command` and `Response` from `rs-teststand-bridge`, all
 //!   plain data.

@@ -10,20 +10,19 @@ use crate::dispids::sequence_context;
 ///
 /// This is what an expression calls `ThisContext`, obtained from
 /// [`Thread::get_sequence_context`](crate::Thread::get_sequence_context). It is
-/// the door to the variable scopes — `Locals`, `Parameters`, `FileGlobals`,
-/// `StationGlobals` — and to `RunState`.
+/// the door to the variable scopes, `Locals`, `Parameters`, `FileGlobals`,
+/// `StationGlobals`, and to `RunState`.
 ///
 /// # Lifetimes: what may outlive the run, and what may not
 ///
 /// A host holding the wrong reference after an execution ends keeps a COM
 /// object alive on a finished run. The documentation draws the line explicitly:
-/// these exist before, and persist after, the execution —
-///
-/// * [`station_globals`](Self::station_globals) — shared by the whole session,
+/// these exist before, and persist after, the execution, ///
+/// * [`station_globals`](Self::station_globals), shared by the whole session,
 ///   and modifications from one execution are seen by all of them
 /// * [`sequence_file`](Self::sequence_file)
 ///
-/// — while everything else belongs to the run, [`file_globals`](Self::file_globals)
+///, while everything else belongs to the run, [`file_globals`](Self::file_globals)
 /// most notably: it is the execution's own copy, and writing to it does not
 /// touch the file's stored defaults.
 ///
@@ -59,7 +58,7 @@ impl SequenceContext {
 
     /// The running sequence's local variables (`SequenceContext.Locals`).
     ///
-    /// The run's own copy — it does not outlive the execution.
+    /// The run's own copy, it does not outlive the execution.
     ///
     /// # Errors
     /// [`Error`] if the COM call fails or returns an unexpected type.
@@ -140,7 +139,7 @@ impl SequenceContext {
 
     /// The file the running sequence came from (`SequenceContext.SequenceFile`).
     ///
-    /// **Outlives the run** — it is the loaded file, not a copy.
+    /// **Outlives the run**, it is the loaded file, not a copy.
     ///
     /// # Errors
     /// [`Error`] if the COM call fails or returns an unexpected type.
@@ -233,7 +232,7 @@ impl SequenceContext {
     /// The step being run right now (`SequenceContext.Step`).
     ///
     /// **Fallible by nature.** The engine documents this property as existing
-    /// only while a step executes — between steps, and at a breakpoint, there
+    /// only while a step executes, between steps, and at a breakpoint, there
     /// is no current step. An error here is a legitimate state, not a defect,
     /// which is why it is not reported as an empty value.
     ///

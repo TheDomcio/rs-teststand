@@ -147,8 +147,8 @@ pub(crate) fn build(engine: &Engine) -> Result<SequenceFile, rs_teststand::Error
 
     // Last, and that placement is load-bearing. This measurement is outside its
     // limits, so the run ends Failed and the panel has something other than a
-    // wall of green to render. A failing step stops the sequence — measured, by
-    // watching the later messages never arrive — so anything after it would be
+    // wall of green to render. A failing step stops the sequence, measured, by
+    // watching the later messages never arrive, so anything after it would be
     // built and never run.
     add_measurement(engine, &main_sequence, "Bias Current", 12.4, 0.0, 10.0)?;
     Ok(sequence_file)

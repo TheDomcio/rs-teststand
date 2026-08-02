@@ -48,7 +48,7 @@ fn a_user_with_no_profile_holds_no_privileges(engine: &Engine) -> Result<(), Err
 }
 
 fn every_built_in_privilege_name_is_accepted_by_the_engine(engine: &Engine) -> Result<(), Error> {
-    // A misspelled privilege does not raise — it quietly answers false. So the
+    // A misspelled privilege does not raise, it quietly answers false. So the
     // check here is that the engine accepts each name at all, which is what the
     // enum exists to guarantee.
     let user = engine.new_user(None)?;
@@ -74,7 +74,7 @@ fn privileges_inherit_from_a_profile_but_group_membership_does_not(
     source.set_login_name("profile-source")?;
 
     // The privilege tree is a property tree, but its members are not plain
-    // booleans — writing one as a bool is refused — so discover the layout
+    // booleans, writing one as a bool is refused, so discover the layout
     // rather than assume it.
     let privileges = source.privileges()?;
     let count = privileges.get_num_sub_properties("")?;

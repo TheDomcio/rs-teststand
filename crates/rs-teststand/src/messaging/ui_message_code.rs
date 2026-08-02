@@ -39,16 +39,16 @@ pub enum UIMessageCode {
     EndInteractiveExecution = 14,
     /// `UIMsg_TerminatingInteractiveExecution`.
     TerminatingInteractiveExecution = 15,
-    /// `UIMsg_TerminationCancelled`.
-    TerminationCancelled = 16,
+    /// `UIMsg_TerminationCanceled`.
+    TerminationCanceled = 16,
     /// `UIMsg_ResumeFromBreak`.
     ResumeFromBreak = 17,
     /// `UIMsg_StartFileExecution`.
     StartFileExecution = 18,
     /// `UIMsg_EndFileExecution`.
     EndFileExecution = 19,
-    /// `UIMsg_ShutDownCancelled`.
-    ShutDownCancelled = 20,
+    /// `UIMsg_ShutDownCanceled`.
+    ShutDownCanceled = 20,
     /// `UIMsg_LocalizationSettingChanged`.
     LocalizationSettingChanged = 21,
     /// `UIMsg_OpenWindows`.
@@ -119,11 +119,11 @@ impl UIMessageCode {
         Self::StartInteractiveExecution,
         Self::EndInteractiveExecution,
         Self::TerminatingInteractiveExecution,
-        Self::TerminationCancelled,
+        Self::TerminationCanceled,
         Self::ResumeFromBreak,
         Self::StartFileExecution,
         Self::EndFileExecution,
-        Self::ShutDownCancelled,
+        Self::ShutDownCanceled,
         Self::LocalizationSettingChanged,
         Self::OpenWindows,
         Self::TileWindows,
@@ -190,11 +190,11 @@ impl UIMessageCode {
             13 => Self::StartInteractiveExecution,
             14 => Self::EndInteractiveExecution,
             15 => Self::TerminatingInteractiveExecution,
-            16 => Self::TerminationCancelled,
+            16 => Self::TerminationCanceled,
             17 => Self::ResumeFromBreak,
             18 => Self::StartFileExecution,
             19 => Self::EndFileExecution,
-            20 => Self::ShutDownCancelled,
+            20 => Self::ShutDownCanceled,
             21 => Self::LocalizationSettingChanged,
             22 => Self::OpenWindows,
             23 => Self::TileWindows,
@@ -249,7 +249,7 @@ mod tests {
     }
 
     #[test]
-    fn a_sequence_posted_code_is_recognised() {
+    fn a_sequence_posted_code_is_recognized() {
         assert!(UIMessageCode::is_user_message(
             UIMessageCode::USER_MESSAGE_BASE
         ));
@@ -264,7 +264,7 @@ mod tests {
 
     #[test]
     fn shutdown_complete_keeps_the_value_the_watchdog_relies_on() {
-        // Engine shutdown is signalled by this code; the graceful-shutdown
+        // Engine shutdown is signaled by this code; the graceful-shutdown
         // path waits for it, so the number is load-bearing.
         assert_eq!(UIMessageCode::ShutDownComplete.bits(), 9);
     }

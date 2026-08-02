@@ -1,4 +1,4 @@
-//! A serialisable mirror of a `PropertyObject` tree.
+//! A serializable mirror of a `PropertyObject` tree.
 
 use std::collections::BTreeMap;
 
@@ -21,16 +21,16 @@ const RADIX_CONVERSIONS: [char; 4] = ['x', 'X', 'o', 'b'];
 
 /// One value from a `PropertyObject` tree, in a form serde can handle.
 ///
-/// The representation is untagged, so the serialized form is ordinary data — a
+/// The representation is untagged, so the serialized form is ordinary data, a
 /// container becomes an object, an array becomes a list, a scalar becomes a
-/// scalar — rather than something carrying wrapper keys.
+/// scalar, rather than something carrying wrapper keys.
 ///
 /// The engine distinguishes three numeric storages and matches them strictly,
 /// so they are separate variants here: collapsing them to one would lose the
 /// exactness that [`Integer`](Self::Integer) and [`Unsigned`](Self::Unsigned)
 /// exist to provide.
 ///
-/// Variant order matters for deserialisation: serde tries untagged variants top
+/// Variant order matters for deserialization: serde tries untagged variants top
 /// to bottom, so an integral JSON number is read as [`Integer`](Self::Integer)
 /// and only a value too large for `i64` falls through to
 /// [`Unsigned`](Self::Unsigned), with fractional values reaching
@@ -38,8 +38,7 @@ const RADIX_CONVERSIONS: [char; 4] = ['x', 'X', 'o', 'b'];
 ///
 /// # Representation is not round-trip stable through plain JSON
 ///
-/// JSON has one number type, so a value that fits both signed and unsigned —
-/// `0`, or anything up to `i64::MAX` — comes back as [`Integer`](Self::Integer)
+/// JSON has one number type, so a value that fits both signed and unsigned, /// `0`, or anything up to `i64::MAX`, comes back as [`Integer`](Self::Integer)
 /// even if it left as [`Unsigned`](Self::Unsigned). The *number* is preserved
 /// exactly; only the engine's choice of storage is not.
 ///
@@ -56,12 +55,12 @@ pub enum PropertyValue {
     /// No value.
     ///
     /// Produced for any non-finite number. The engine names three of these:
-    /// `NAN` (not a number), `IND` (indeterminate — a special quiet NaN, from
+    /// `NAN` (not a number), `IND` (indeterminate, a special quiet NaN, from
     /// operations such as `Sqrt(-1)`, which the engine treats as equivalent to
     /// `NAN` in comparisons), and `INF`.
     ///
     /// JSON cannot write any of them, and inventing an encoding would force
-    /// every consumer to learn it, so they all serialize as `null` — which any
+    /// every consumer to learn it, so they all serialize as `null`, which any
     /// language already understands. An empty object reference is *not* null
     /// here: it round-trips as the string `"Nothing"`, so a reference stays
     /// distinguishable from a missing number.
@@ -126,7 +125,7 @@ fn column_major_offset(lengths: &[i32], indices: &[i32]) -> i32 {
 
 /// Parses a radix-prefixed string back into a number.
 ///
-/// Recognises what the engine emits: `0x` for hexadecimal, `0b` for binary and
+/// Recognizes what the engine emits: `0x` for hexadecimal, `0b` for binary and
 /// the engine's own `0c` for octal. Anything else is a genuine string and is
 /// left alone, so a value that merely begins with `0` is not mangled.
 fn parse_radix(text: &str) -> Option<f64> {
@@ -174,8 +173,8 @@ fn is_radix_format(format: &str) -> bool {
 /// An extension trait rather than inherent methods, because this is an addition
 /// to the COM API rather than part of it: `PropertyObject` is defined in
 /// [`rs_teststand`], and only its own crate may add inherent methods to it. The
-/// split is deliberate — the binding mirrors TestStand™ and nothing else, so a
-/// consumer that never serialises anything carries no serde dependency.
+/// split is deliberate, the binding mirrors TestStand™ and nothing else, so a
+/// consumer that never serializes anything carries no serde dependency.
 ///
 /// ```no_run
 /// use rs_teststand::Engine;
@@ -214,7 +213,7 @@ impl PropertyObjectValue for PropertyObject {
     /// Walks this property into a [`PropertyValue`].
     ///
     /// Arrays are read element by element, containers are recursed into, and a
-    /// scalar is read through the accessor its representation requires — an
+    /// scalar is read through the accessor its representation requires, an
     /// `Int64` property is read as an integer rather than being forced through
     /// the floating-point accessor, which the engine would refuse.
     ///
@@ -310,10 +309,10 @@ fn nest(
 ///
 /// Three cases the plain accessor cannot express:
 ///
-/// * `NAN`, `INF` and `-INF` become [`PropertyValue::Null`] — JSON cannot
+/// * `NAN`, `INF` and `-INF` become [`PropertyValue::Null`], JSON cannot
 ///   write them.
 /// * A value whose format selects a radix (`%x`, `%o`, `%b`) becomes the
-///   formatted string, so `10` under `%#x` serialises as `"0xa"` and the
+///   formatted string, so `10` under `%#x` serializes as `"0xa"` and the
 ///   author's chosen base survives the round trip.
 /// * `Int64` and `UInt64` use their own accessors, which the engine
 ///   requires.
@@ -490,8 +489,7 @@ fn walk(object: &PropertyObject, remaining: usize, path: &str) -> Result<Propert
     match value_type {
         Ok(PropValType::Boolean) => Ok(PropertyValue::Bool(object.get_val_bool("", NO_OPTIONS)?)),
         Ok(PropValType::Number) => number_to_value(object, &property_type),
-        // Strings read directly. Anything else that is still a leaf —
-        // an object reference, an enumeration — is not a string and
+        // Strings read directly. Anything else that is still a leaf, // an object reference, an enumeration, is not a string and
         // `GetValString` refuses it, so fall back to the formatted value,
         // which the engine guarantees to produce for any object ("Nothing"
         // for an empty reference).
@@ -521,7 +519,7 @@ mod tests {
     }
 
     #[test]
-    fn scalars_serialise_as_plain_json() -> JsonResult<()> {
+    fn scalars_serialize_as_plain_json() -> JsonResult<()> {
         // Untagged: no wrapper keys, so the output is ordinary data.
         assert_eq!(json(&PropertyValue::Bool(true))?, "true");
         assert_eq!(
@@ -545,7 +543,7 @@ mod tests {
     #[test]
     fn a_value_beyond_i64_falls_through_to_unsigned() -> JsonResult<()> {
         // u64::MAX does not fit in i64, so Integer must fail and Unsigned catch
-        // it — exactly the case a double would corrupt.
+        // it, exactly the case a double would corrupt.
         assert_eq!(
             parse("18446744073709551615")?,
             PropertyValue::Unsigned(u64::MAX)

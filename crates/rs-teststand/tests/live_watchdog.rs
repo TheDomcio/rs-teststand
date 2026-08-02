@@ -2,7 +2,7 @@
 //!
 //! Two halves, and both matter. A dialog-free call must be left alone however
 //! long it takes, and a real message popup must be *found*, put in front of the
-//! operator, and survived — the run called off without the process dying.
+//! operator, and survived, the run called off without the process dying.
 //!
 //! Requires a registered engine: `cargo test --features live-engine -- --ignored`.
 //! Run single-threaded: two live engines in one process do not coexist.
@@ -169,7 +169,7 @@ fn a_message_popup_is_found_raised_and_survived() -> Result<(), Error> {
 
     // Not asserted as "Terminated", and the reference says why. Terminating
     // while a step module is active waits for that module to return, and the
-    // execution state changes before the *next* step runs — but the popup is
+    // execution state changes before the *next* step runs, but the popup is
     // the last step, so there is no next step to change it before. The run then
     // completes normally and reports the status it would have had.
     //

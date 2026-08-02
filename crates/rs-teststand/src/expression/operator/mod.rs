@@ -3,12 +3,12 @@
 //! Each family is its own file and its own type, so a caller can reach for
 //! exactly the set they mean and nothing here grows into one long list:
 //!
-//! * [`ArithmeticOperator`] — `+ - * / % MOD ++ --`
-//! * [`AssignmentOperator`] — `=` and the compound forms
-//! * [`BitwiseOperator`] — `& | ^ ~ << >>` and the word spellings
-//! * [`ComparisonOperator`] — `== != < > <= >=`
-//! * [`LogicalOperator`] — `&& || !`
-//! * [`OtherOperator`] — grouping, indexing, separators, comments
+//! * [`ArithmeticOperator`], `+ - * / % MOD ++ --`
+//! * [`AssignmentOperator`], `=` and the compound forms
+//! * [`BitwiseOperator`], `& | ^ ~ << >>` and the word spellings
+//! * [`ComparisonOperator`], `== != < > <= >=`
+//! * [`LogicalOperator`], `&& || !`
+//! * [`OtherOperator`], grouping, indexing, separators, comments
 //!
 //! [`Operator`] wraps all six when a single type is wanted.
 //!

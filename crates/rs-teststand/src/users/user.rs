@@ -128,7 +128,7 @@ impl User {
 
     /// The privilege settings held on the user itself (`User.Privileges`).
     ///
-    /// This is not the answer to "can this user do X" — group membership is not
+    /// This is not the answer to "can this user do X", group membership is not
     /// reflected here. Use [`has_privilege`](Self::has_privilege) for that.
     ///
     /// # Errors

@@ -5,8 +5,7 @@
 //! ```
 //!
 //! A sequence reports what it is doing by posting user-interface messages. A
-//! graphical front end receives them through the UI controls; a headless host —
-//! a service, a test runner, anything forwarding to another process — polls the
+//! graphical front end receives them through the UI controls; a headless host, //! a service, a test runner, anything forwarding to another process, polls the
 //! engine's queue instead. That polling is what this shows.
 
 use std::time::{Duration, Instant};

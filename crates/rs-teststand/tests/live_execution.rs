@@ -1,7 +1,7 @@
 //! Live-engine tests for observing and controlling a running execution.
 //!
 //! This is the layer a host service reports from. A front end does not poll an
-//! engine object — it is handed updates keyed by execution id — so what matters
+//! engine object, it is handed updates keyed by execution id, so what matters
 //! here is that the identity, status and control members behave predictably
 //! while a sequence is actually running.
 //!
@@ -47,7 +47,7 @@ fn runnable_file(engine: &Engine) -> Result<SequenceFile, Error> {
 /// Two obligations, and missing either one hangs: **pump** the thread's Windows
 /// messages so COM can deliver into this apartment, and **drain** the engine's
 /// queue so a synchronous poster is released. Spinning on the queue alone burns
-/// a core and never sees `EndExecution` — measured, not theorised.
+/// a core and never sees `EndExecution`, measured, not theorised.
 ///
 /// Deliberately not `WaitForEnd`, which pumps but does not drain.
 fn run_to_end(engine: &Engine, deadline: Duration) -> Result<bool, Error> {
@@ -74,8 +74,8 @@ fn run_to_end(engine: &Engine, deadline: Duration) -> Result<bool, Error> {
 }
 
 fn an_execution_identifies_itself_the_way_a_front_end_needs(engine: &Engine) -> Result<(), Error> {
-    // A host keys everything by execution id — that is how the reference user
-    // interfaces route updates — so identity has to be readable immediately,
+    // A host keys everything by execution id, that is how the reference user
+    // interfaces route updates, so identity has to be readable immediately,
     // not only once the run finishes.
     engine.set_ui_message_polling_enabled(true)?;
     let sequence_file = runnable_file(engine)?;
@@ -112,7 +112,7 @@ fn the_result_status_settles_once_the_run_is_over(engine: &Engine) -> Result<(),
     // to set a status this crate has never heard of.
     assert!(
         ["Passed", "Done", "Failed", "Terminated", "Error"].contains(&status.as_str()),
-        "unexpected status {status:?} — worth reading, not a failure of the API"
+        "unexpected status {status:?}, worth reading, not a failure of the API"
     );
 
     engine.release_sequence_file_ex(sequence_file, NO_OPTIONS)?;
@@ -306,7 +306,7 @@ fn station_globals_outlive_a_run_but_file_globals_do_not(engine: &Engine) -> Res
 fn every_control_member_reaches_the_member_it_names(engine: &Engine) -> Result<(), Error> {
     // This test exists because four Execution dispatch identifiers were once
     // guessed rather than read from the type library, and two of them landed on
-    // the wrong member — `abort` invoked CancelTermination, `cancel_termination`
+    // the wrong member, `abort` invoked CancelTermination, `cancel_termination`
     // invoked ClearExtraResultList. Neither failed loudly. Calling each control
     // member on a real execution is what makes such a mix-up visible.
     engine.set_ui_message_polling_enabled(true)?;
@@ -351,7 +351,7 @@ fn aborting_stops_a_run_without_its_cleanup(engine: &Engine) -> Result<(), Error
 fn suspending_takes_effect_before_a_resume_is_safe(engine: &Engine) -> Result<(), Error> {
     // Every control member is a request, not an action. Suspending and then
     // resuming straight away races: the resume can be processed before the
-    // suspend takes hold, and the run then stays stopped for ever — which is
+    // suspend takes hold, and the run then stays stopped for ever, which is
     // exactly how this test first failed. Waiting for the engine to confirm is
     // what makes the pair safe, and ExternallySuspended is the confirmation.
     engine.set_ui_message_polling_enabled(true)?;
@@ -508,7 +508,7 @@ fn a_running_thread_hands_over_its_sequence_context(engine: &Engine) -> Result<(
     Ok(())
 }
 
-/// Every execution behaviour, over one engine.
+/// Every execution behavior, over one engine.
 ///
 /// One engine, not fourteen. A fresh engine costs about three seconds before it
 /// is usable, so sharing one takes this file from 43 seconds to a few.

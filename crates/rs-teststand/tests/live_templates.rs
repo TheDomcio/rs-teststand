@@ -302,11 +302,11 @@ fn templates_applied_to_a_saved_file_survive_a_reload(engine: &Engine) -> Result
     Ok(())
 }
 
-/// Every template behaviour, over one engine.
+/// Every template behavior, over one engine.
 ///
 /// Deliberately one test rather than eight. Each of the steps below used to
 /// build its own engine, and construction plus teardown costs about one and a
-/// half seconds every time — paid eight times over for work that has no reason
+/// half seconds every time, paid eight times over for work that has no reason
 /// to start from a fresh engine. Sharing one is also closer to how a host uses
 /// the API: engines are long-lived, and templates are read and applied against
 /// the same one for the life of the process.

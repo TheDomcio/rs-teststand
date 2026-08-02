@@ -4,7 +4,7 @@
 //! cargo run --example execution_run_subsequence
 //! ```
 //!
-//! `MainSequence` is only a convention — an execution can start at any sequence
+//! `MainSequence` is only a convention, an execution can start at any sequence
 //! in the file. Starting at a subsequence is how a host runs one part of a test
 //! program on its own: a diagnostic routine, a calibration step, a single
 //! fixture check.
@@ -12,7 +12,7 @@
 //! A subsequence usually takes parameters, and this shows the honest way to
 //! supply one. The engine's own argument-passing route needs a sequence-call
 //! step; running a subsequence *directly* has no caller, so its parameters keep
-//! their default values — which means the value must be written into the
+//! their default values, which means the value must be written into the
 //! sequence's parameter defaults before the run starts.
 //!
 //! Runs both ways so the difference is visible: `MainSequence` first, then the
@@ -148,7 +148,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     run(&engine, &sequence_file, "MainSequence")?;
 
     // A subsequence run on its own has no caller, so nothing supplies its
-    // parameters — they keep whatever default the sequence carries. Setting
+    // parameters, they keep whatever default the sequence carries. Setting
     // that default is therefore how a direct run is given its input.
     let diagnostics = sequence_file.get_sequence_by_name(SUBSEQUENCE)?;
     diagnostics

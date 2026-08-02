@@ -3,7 +3,7 @@
 //! A blocked host and a legitimately slow one look identical from a timer: a
 //! sequence can sit for many minutes on a real message-popup step or a long
 //! test. What distinguishes them is a *visible window owned by this process*,
-//! so that is what is checked — and its text is captured, because "the engine
+//! so that is what is checked, and its text is captured, because "the engine
 //! stopped" is far less useful than the question it stopped to ask.
 //!
 //! The match is deliberately broad: any visible, non-minimised, captioned
@@ -47,7 +47,7 @@ pub struct DialogInfo {
 
 /// Returns the first visible dialog owned by this process, if any.
 ///
-/// `None` means no dialog is up — the operation is slow, not wedged, and a
+/// `None` means no dialog is up, the operation is slow, not wedged, and a
 /// caller should keep waiting rather than terminate.
 #[must_use]
 pub fn find_blocking_dialog() -> Option<DialogInfo> {

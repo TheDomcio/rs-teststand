@@ -1,4 +1,4 @@
-//! Live-engine acceptance test — requires a registered TestStand™ installation.
+//! Live-engine acceptance test, requires a registered TestStand™ installation.
 //!
 //! Double-gated: compiled only with `--features live-engine`, and `#[ignore]`d
 //! so a plain `cargo test` never touches COM. Run deliberately:
@@ -23,7 +23,7 @@ fn engine_reports_a_plausible_version() -> Result<(), Error> {
     let major = engine.major_version()?;
     assert!(major >= 16, "unexpected major version: {major}");
 
-    // Human-readable, e.g. "2026 Q1 (26.0.0.49152) 64-bit" — it embeds the
+    // Human-readable, e.g. "2026 Q1 (26.0.0.49152) 64-bit", it embeds the
     // numeric version parenthesized as "(<major>.".
     let version = engine.version_string()?;
     assert!(
@@ -144,7 +144,7 @@ fn dot_net_collection_runs_and_its_interval_round_trips() -> Result<(), Error> {
 #[test]
 #[ignore = "requires a live TestStand engine"]
 fn a_dialog_raised_while_the_engine_starts_does_not_block_it() -> Result<(), Error> {
-    // The engine can raise a warning during its own construction — most often
+    // The engine can raise a warning during its own construction, most often
     // that a previous process left sequence files unreleased. No station option
     // suppresses it, so a host that cannot close it hangs before it has an
     // engine to configure. Reaching the assertion at all is the real result:
@@ -173,21 +173,21 @@ fn a_dialog_raised_while_the_engine_starts_does_not_block_it() -> Result<(), Err
 
 #[test]
 #[ignore = "requires a live TestStand engine"]
-fn a_licence_is_acquired_before_it_can_be_reported() -> Result<(), Error> {
+fn a_license_is_acquired_before_it_can_be_reported() -> Result<(), Error> {
     // Ordering is the whole point. A fresh engine has acquired nothing, so it
-    // reports using no licence even on a fully licensed station.
+    // reports using no license even on a fully licensed station.
     let engine = Engine::new()?;
     assert_eq!(
         engine.license_type()?,
         LicenseType::NoLicense,
-        "a freshly created engine should be using no licence yet"
+        "a freshly created engine should be using no license yet"
     );
 
     match engine.require_license() {
         Ok(held) => {
             // The handle is the grant. The type is whatever the engine says it
             // is using, which an unspecified request need not change.
-            assert_ne!(held.handle(), 0, "a granted licence never has handle zero");
+            assert_ne!(held.handle(), 0, "a granted license never has handle zero");
             assert_eq!(engine.license_type()?, held.kind());
             println!(
                 "granted handle {}, engine using {:?}",
@@ -199,7 +199,7 @@ fn a_licence_is_acquired_before_it_can_be_reported() -> Result<(), Error> {
         Err(Error::NoLicense) => {
             // An unlicensed station: must refuse, never prompt. Reaching here
             // at all means no dialog was raised.
-            println!("station holds no licence; refused cleanly");
+            println!("station holds no license; refused cleanly");
         }
         Err(other) => return Err(other),
     }
@@ -208,7 +208,7 @@ fn a_licence_is_acquired_before_it_can_be_reported() -> Result<(), Error> {
 
 #[test]
 #[ignore = "requires a live TestStand engine"]
-fn naming_a_licence_kind_is_a_constraint_not_a_preference() -> Result<(), Error> {
+fn naming_a_license_kind_is_a_constraint_not_a_preference() -> Result<(), Error> {
     // Measured on a development-system station: an unspecified request is
     // granted while an operator-interface one is refused. So "ask for the least
     // you need" is wrong advice, and the docs say so.
@@ -224,7 +224,7 @@ fn naming_a_licence_kind_is_a_constraint_not_a_preference() -> Result<(), Error>
             engine.release_license(handle)?;
         }
         Err(Error::NoLicense) => {
-            println!("station holds no licence; nothing further to check");
+            println!("station holds no license; nothing further to check");
             return Ok(());
         }
         Err(other) => return Err(other),
@@ -246,10 +246,10 @@ fn naming_a_licence_kind_is_a_constraint_not_a_preference() -> Result<(), Error>
 
 #[test]
 #[ignore = "requires a live TestStand engine"]
-fn a_held_licence_is_given_back_when_dropped() -> Result<(), Error> {
+fn a_held_license_is_given_back_when_dropped() -> Result<(), Error> {
     let engine = Engine::new()?;
     let Ok(held) = engine.require_license() else {
-        println!("station holds no licence; nothing to drop");
+        println!("station holds no license; nothing to drop");
         return Ok(());
     };
 
@@ -265,7 +265,7 @@ fn a_held_licence_is_given_back_when_dropped() -> Result<(), Error> {
 
 #[test]
 #[ignore = "requires a live TestStand engine"]
-fn licence_description_and_addons_answer_on_any_station() -> Result<(), Error> {
+fn license_description_and_addons_answer_on_any_station() -> Result<(), Error> {
     let engine = Engine::new()?;
     assert!(!engine.get_license_description()?.is_empty());
     let addon = engine.has_addon_license("rs-teststand-nonexistent-feature");

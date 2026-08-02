@@ -43,14 +43,14 @@ range of engine versions.
 ## Status
 
 Early. `EngineHost` and the message stream exist; the gRPC services are not
-written yet. See the workspace `TODO.md`.
+written yet.
 
 ## Features
 
 | feature       | effect                                               |
 | ------------- | ---------------------------------------------------- |
 | `grpc`        | the gRPC transport (`tonic`, `prost`)                |
-| `serde`       | make the wire types serialisable in any serde format |
+| `serde`       | make the wire types serializable in any serde format |
 | `live-engine` | enable tests that instantiate a real engine          |
 
 ## License

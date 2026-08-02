@@ -5,7 +5,7 @@ use super::Arity;
 /// A logical operator, working on truth values.
 ///
 /// These are the symbol forms only. The word forms `AND`, `OR`, `XOR` and `NOT`
-/// are **bitwise** — see [`BitwiseOperator`](super::BitwiseOperator) — which is
+/// are **bitwise**, see [`BitwiseOperator`](super::BitwiseOperator), which is
 /// the single most common misreading of the expression language.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum LogicalOperator {

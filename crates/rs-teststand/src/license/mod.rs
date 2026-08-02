@@ -1,7 +1,7 @@
 //! Licensing: what the engine is running on, and how to ask for it without a
 //! dialog.
 //!
-//! This matters to a headless host for one reason. Asking for a licence that
+//! This matters to a headless host for one reason. Asking for a license that
 //! cannot be granted makes the engine put up a window offering to evaluate,
 //! activate or buy, and that window waits for a person. On a station with
 //! nobody at it the process stops there. Passing
