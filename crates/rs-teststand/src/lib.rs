@@ -49,7 +49,7 @@ pub use expression::{
     OtherFunction, OtherOperator, PropertyFunction, StringFunction, SwitchingFunction,
     TimeFunction,
 };
-pub use license::{AcquireLicenseOptions, ApplicationLicense, LicenseType};
+pub use license::{AcquireLicenseOptions, ApplicationLicense, HeldLicense, LicenseType};
 pub use messaging::{UIMessage, UIMessageCode, pump_thread_messages};
 pub use property::{
     ArrayDimensions, GetTemplatesFileOptions, PropertyObject, PropertyObjectFile,

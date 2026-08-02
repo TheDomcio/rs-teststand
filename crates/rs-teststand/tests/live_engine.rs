@@ -173,54 +173,101 @@ fn a_dialog_raised_while_the_engine_starts_does_not_block_it() -> Result<(), Err
 
 #[test]
 #[ignore = "requires a live TestStand engine"]
-fn the_licence_state_is_reported_rather_than_asked_about() -> Result<(), Error> {
-    // The whole point of the guard: on a station with no licence the engine
-    // would otherwise open a window offering to evaluate, activate or buy, and
-    // wait for someone. Reaching the end of this test is the result — if a
-    // dialog were raised, it would never return.
+fn a_licence_is_acquired_before_it_can_be_reported() -> Result<(), Error> {
+    // Ordering is the whole point. A fresh engine has acquired nothing, so it
+    // reports using no licence even on a fully licensed station.
     let engine = Engine::new()?;
-
-    let license = engine.license_type()?;
-    println!(
-        "licence: {license:?} — {}",
-        engine.get_license_description()?
+    assert_eq!(
+        engine.license_type()?,
+        LicenseType::NoLicense,
+        "a freshly created engine should be using no licence yet"
     );
 
-    // `require_license` must agree with the type it read, either way.
     match engine.require_license() {
-        Ok(granted) => {
-            assert!(granted.is_usable());
-            assert_eq!(granted, license);
+        Ok(held) => {
+            // The handle is the grant. The type is whatever the engine says it
+            // is using, which an unspecified request need not change.
+            assert_ne!(held.handle(), 0, "a granted licence never has handle zero");
+            assert_eq!(engine.license_type()?, held.kind());
+            println!(
+                "granted handle {}, engine using {:?}",
+                held.handle(),
+                held.kind()
+            );
+            held.release()?;
+        }
+        Err(Error::NoLicense) => {
+            // An unlicensed station: must refuse, never prompt. Reaching here
+            // at all means no dialog was raised.
+            println!("station holds no licence; refused cleanly");
+        }
+        Err(other) => return Err(other),
+    }
+    Ok(())
+}
 
-            // Ask for the least a host needs, dialog suppressed.
-            let handle = engine.acquire_license(
-                ApplicationLicense::OperatorInterface,
-                AcquireLicenseOptions::SUPPRESS_STARTUP_DIALOG,
-            )?;
+#[test]
+#[ignore = "requires a live TestStand engine"]
+fn naming_a_licence_kind_is_a_constraint_not_a_preference() -> Result<(), Error> {
+    // Measured on a development-system station: an unspecified request is
+    // granted while an operator-interface one is refused. So "ask for the least
+    // you need" is wrong advice, and the docs say so.
+    let engine = Engine::new()?;
+    let unspecified = engine.acquire_license(
+        ApplicationLicense::Unspecified,
+        AcquireLicenseOptions::SUPPRESS_STARTUP_DIALOG,
+    );
+
+    match unspecified {
+        Ok(handle) => {
+            assert_ne!(handle, 0);
             engine.release_license(handle)?;
         }
         Err(Error::NoLicense) => {
-            assert_eq!(
-                license,
-                LicenseType::NoLicense,
-                "require_license refused a licence the engine considers usable"
-            );
-            // Acquiring must fail rather than prompt. The error is the success
-            // condition; a hang here would be the bug.
-            let refused = engine.acquire_license(
-                ApplicationLicense::OperatorInterface,
-                AcquireLicenseOptions::SUPPRESS_STARTUP_DIALOG,
-            );
-            assert!(
-                matches!(refused, Err(Error::NoLicense)),
-                "an unlicensed station handed out a licence handle: {refused:?}"
-            );
-            println!("unlicensed station refused cleanly: {refused:?}");
+            println!("station holds no licence; nothing further to check");
+            return Ok(());
         }
         Err(other) => return Err(other),
     }
 
-    // An add-on nobody licenses: must answer, not fail.
+    // A named kind may be refused on a licensed station. Either answer is
+    // legitimate; what must not happen is a dialog or a hang.
+    let named = engine.acquire_license(
+        ApplicationLicense::OperatorInterface,
+        AcquireLicenseOptions::SUPPRESS_STARTUP_DIALOG,
+    );
+    println!("operator-interface request answered {named:?}");
+    if let Ok(handle) = named {
+        assert_ne!(handle, 0);
+        engine.release_license(handle)?;
+    }
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires a live TestStand engine"]
+fn a_held_licence_is_given_back_when_dropped() -> Result<(), Error> {
+    let engine = Engine::new()?;
+    let Ok(held) = engine.require_license() else {
+        println!("station holds no licence; nothing to drop");
+        return Ok(());
+    };
+
+    // Dropping must give the handle back without panicking.
+    drop(held);
+
+    // Re-acquiring proves the release landed rather than leaking the handle.
+    let again = engine.require_license()?;
+    assert_ne!(again.handle(), 0);
+    again.release()?;
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires a live TestStand engine"]
+fn licence_description_and_addons_answer_on_any_station() -> Result<(), Error> {
+    let engine = Engine::new()?;
+    assert!(!engine.get_license_description()?.is_empty());
     let addon = engine.has_addon_license("rs-teststand-nonexistent-feature");
     assert!(
         matches!(addon, Ok(false) | Err(_)),
