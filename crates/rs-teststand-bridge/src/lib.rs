@@ -17,7 +17,7 @@
 //! Those three types are shared by every transport, so a front end written
 //! against one can move to another without its message handling changing:
 //!
-//! - [`transport::websocket`] — bidirectional, framed by the protocol, and what
+//! - `rs-teststand-websocket` — bidirectional, framed by the protocol, and what
 //!   a browser or a modern panel should use. **Start here.**
 //! - [`transport::line`] — one JSON object per line over raw TCP, CRLF-framed,
 //!   for a script or an older tool that speaks nothing else.
@@ -47,9 +47,5 @@ pub use error::Error;
 pub use event::{MessageEvent, PayloadPolicy};
 pub use host::EngineHost;
 pub use response::Response;
-#[cfg(feature = "websocket")]
-pub use transport::client::{Backoff, Client, Inbound, MAX_CONTROL_PAYLOAD};
 pub use transport::line::{LineSink, LineSource};
-#[cfg(feature = "websocket")]
-pub use transport::websocket::{Request, WebSocketBridge};
 pub use watch::{ClientTimeout, ClientWatch, WatchState};

@@ -1,0 +1,44 @@
+[package]
+name = "rs-teststand-websocket"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+authors.workspace = true
+description = "Serve the National Instruments TestStand™ Engine to a browser or another process over WebSocket"
+documentation = "https://docs.rs/rs-teststand-websocket"
+keywords = ["teststand", "websocket", "ipc", "test-automation", "ni"]
+categories = ["api-bindings", "network-programming", "os::windows-apis"]
+readme = "README.md"
+
+[package.metadata.docs.rs]
+# This crate wraps a Windows COM API and does not build for Linux, which is what
+# docs.rs targets by default. Point it at Windows so the documentation builds.
+default-target = "x86_64-pc-windows-msvc"
+# `default-target` is built as well as these, so it is not repeated here.
+targets = ["i686-pc-windows-msvc"]
+all-features = true
+
+[dependencies]
+rs-teststand-bridge = { path = "../rs-teststand-bridge", version = "0.0.9" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# The transport. tokio-tungstenite is the tokio binding of tungstenite, which is
+# the protocol implementation this crate deliberately does not reimplement.
+tokio = { version = "1", features = [
+    "rt-multi-thread",
+    "macros",
+    "sync",
+    "time",
+    "net",
+    "io-util",
+] }
+tokio-tungstenite = "0.28"
+futures-util = { version = "0.3", default-features = false, features = ["sink"] }
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "time", "net"] }
+
+[lints]
+workspace = true

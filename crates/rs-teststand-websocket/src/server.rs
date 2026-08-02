@@ -7,7 +7,7 @@
 //!
 //! Everything is JSON in `WebSocket` **text** frames, opcode `0x1` in RFC 6455.
 //! The protocol frames each message itself, so there is no terminator to agree
-//! on — unlike [`crate::transport::line`], where CRLF exists precisely because a
+//! on — unlike the line transport in `rs-teststand-bridge`, where CRLF exists precisely because a
 //! raw socket has no record boundary.
 //!
 //! # Threads
@@ -22,7 +22,7 @@
 //!   bytes. It never sees the engine; what crosses between the two is
 //!   [`MessageEvent`], [`Command`] and [`Response`], all plain data.
 //!
-//! Replies go out as [`Ack`](crate::Ack), a fixed five-field record, rather
+//! Replies go out as [`Ack`], a fixed five-field record, rather
 //! than as the `Response` enum whose fields vary by variant. A client sorts the
 //! two kinds of traffic on `command`: an acknowledgement always carries one and
 //! an event never does.
@@ -57,7 +57,7 @@ use tokio::net::TcpListener;
 use tokio::sync::broadcast;
 use tokio_tungstenite::tungstenite::Message;
 
-use crate::{Command, Error, MessageEvent, Response};
+use rs_teststand_bridge::{Ack, Command, Error, MessageEvent, Response};
 
 /// How many events the fan-out holds before the slowest panel misses some.
 ///
@@ -284,7 +284,7 @@ async fn serve_client<S>(
                         // Converted at the wire boundary, so a host keeps
                         // building `Response` while every client receives the
                         // fixed five-field acknowledgement.
-                        serde_json::to_string(&crate::Ack::from(response.as_ref()))
+                        serde_json::to_string(&Ack::from(response.as_ref()))
                     }
                     Outbound::Reply { .. } => continue,
                 };

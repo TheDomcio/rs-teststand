@@ -12,13 +12,9 @@
 //! - [`line`](mod@line) is a raw TCP stream, one JSON object per line, terminated by
 //!   CRLF. It needs no schema, no code generation and no library on the far
 //!   side, which makes it the one a script or an older panel can consume.
-//! - [`websocket`](mod@websocket) is the one a browser can reach and the one to reach for when
-//!   the far end is a user interface. It is framed by the protocol itself, so
-//!   there is no terminator to agree on, and it is **bidirectional**: the same
-//!   connection that carries progress out carries commands back.
+//!
+//! The `WebSocket` transport lives in its own crate, `rs-teststand-websocket`.
+//! Keeping it there is why this module needs no async runtime: a caller that
+//! only wants a line-framed stream pulls none of one.
 
-#[cfg(feature = "websocket")]
-pub mod client;
 pub mod line;
-#[cfg(feature = "websocket")]
-pub mod websocket;

@@ -18,10 +18,8 @@ use rs_teststand::{
     ConflictHandler, Engine, Execution, GetSeqFileOptions, SequenceFile, UIMessageCode,
     pump_thread_messages,
 };
-use rs_teststand_bridge::{
-    ClientTimeout, ClientWatch, Command, MessageEvent, PayloadPolicy, Request, Response,
-    WatchState, WebSocketBridge,
-};
+use rs_teststand_bridge::{ClientTimeout, ClientWatch, Command, MessageEvent, PayloadPolicy, Response, WatchState};
+use rs_teststand_websocket::{Request, WebSocketBridge};
 use rs_teststand_serde::PropertyObjectValue as _;
 
 use crate::demo_sequence;

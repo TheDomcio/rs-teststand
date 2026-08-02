@@ -5,6 +5,7 @@ members = [
     "crates/rs-teststand",
     "crates/rs-teststand-serde",
     "crates/rs-teststand-bridge",
+    "crates/rs-teststand-websocket",
 ]
 exclude = ["tmp", "examples"]
 
