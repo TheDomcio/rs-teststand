@@ -28,4 +28,4 @@ pub mod client;
 pub mod server;
 
 pub use client::{Backoff, Client, Inbound, MAX_CONTROL_PAYLOAD};
-pub use server::{Request, WebSocketBridge};
+pub use server::{Options, Request, WebSocketBridge};
