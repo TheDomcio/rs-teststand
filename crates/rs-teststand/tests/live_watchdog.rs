@@ -111,7 +111,12 @@ fn a_message_popup_is_found_raised_and_survived() -> Result<(), Error> {
     let sequence_file = engine.get_sequence_file_ex(
         &popup_fixture().to_string_lossy(),
         GetSeqFileOptions::DO_NOT_RUN_LOAD_CALLBACK,
-        ConflictHandler::Error,
+        // The fixture was saved by one engine version and is opened by another, so
+        // its types can differ from the ones the station already has loaded.
+        // `UseGlobalType` converts to the station's type, which is the documented
+        // non-interactive resolution: `Prompt` raises a dialog and `Error` refuses
+        // the file outright.
+        ConflictHandler::UseGlobalType,
     )?;
     let execution = engine.new_execution(&sequence_file, "MainSequence", None, false, 0)?;
 
