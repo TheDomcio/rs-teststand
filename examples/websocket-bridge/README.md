@@ -83,13 +83,19 @@ frames each message, so there is no terminator — unlike the raw-TCP transport 
 `examples/tcp-bridge`, where CRLF exists precisely because a byte stream has no
 record boundary.
 
-One stream carries two kinds of message, told apart by which discriminant is
-present:
+One stream carries two kinds of message. Tell them apart by whether `command`
+is present: an acknowledgement always carries one, an event never does. Do not
+sort on `code`, which both have and which means different things in each.
 
 ```json
 {"code":10020,"numeric":50.0,"text":"measure","synchronous":false,"execution_id":1}
-{"response":"started","execution_id":1}
+{"command":"start","state":"ok","code":0,"description":"execution 1 started","data":"{\"response\":\"started\",\"execution_id\":1}"}
 ```
+
+Every acknowledgement is those same five fields whatever the command did, so a
+reader with a fixed record never meets a different shape. Anything produced sits
+in `data` as JSON, which a client that only wants to know whether a command
+worked never has to parse.
 
 Commands go the other way on the same socket:
 
@@ -113,6 +119,38 @@ left to the example:
 Arrays stay homogeneous and object keys are always named, which is what such
 readers require. Graphical test tooling that offers a "convert JSON to a typed
 value" primitive will consume this without special handling.
+
+## What the transport does for you
+
+None of this is in the example. It is in `rs-teststand-bridge`, so a host you
+write yourself inherits it.
+
+**Size limits.** A message or frame above a megabyte is refused at the
+handshake, before any of it is read. Without that, one frame can make a host
+allocate until it dies, and a client with a loop bug gets there as surely as a
+hostile one. Checked against a running host: a two megabyte frame was answered
+with a close, and the host kept serving everyone else.
+
+**A cap on panels.** Sixty-four at once. Nothing else stops a client that
+reconnects in a loop from consuming every socket the host has, and a station
+that has stopped answering is worse than one that refused a connection. A
+refused panel can back off and return; one left queueing cannot tell a busy host
+from a dead one.
+
+**A real closing handshake.** RFC 6455 section 5.5.1 requires an endpoint that
+receives a close to send one back, echoing the status code. Both sides do. Skip
+it and the peer waits for a reply that never comes, then gives up on a timeout,
+so a clean shutdown looks like an abandoned one.
+
+**Ping.** `Client::ping` sends one and the peer must answer, per section 5.5.2.
+That is the difference between knowing a socket is open and knowing the peer is
+answering. The dead man's switch counts connections, which is presence, not
+liveness.
+
+**Reconnection.** `Client::connect_with_backoff` doubles from a second, caps at
+thirty, and gives up after ten attempts. The delay carries a random fraction,
+which is the part that matters: every panel of a restarting host wakes together,
+and without jitter they all return at once and knock it over again.
 
 ## Where the code lives
 
