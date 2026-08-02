@@ -25,3 +25,5 @@ rustc-ice-*.txt
 #.idea/
 
 Cargo.lock
+# Visual Studio local state; holds locked index files.
+.vs/
