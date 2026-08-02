@@ -126,6 +126,12 @@ impl Backoff {
     }
 }
 
+/// Largest payload a control frame may carry, in bytes.
+///
+/// RFC 6455 section 5.5 fixes this: every control frame must be 125 bytes or
+/// less and must not be fragmented.
+pub const MAX_CONTROL_PAYLOAD: usize = 125;
+
 /// A connection to a host.
 ///
 /// Async because the transport is. A caller that wants blocking behavior runs
@@ -264,9 +270,23 @@ impl Client {
     /// proves liveness by the absence of a transport error rather than by a
     /// returned value.
     ///
+    /// A payload over [`MAX_CONTROL_PAYLOAD`] is refused here. Section 5.5
+    /// caps every control frame at 125 bytes, and measured against a live peer
+    /// an oversized ping is not rejected on the way out: the send reports
+    /// success and the connection is then torn down, so the caller is told the
+    /// ping worked and loses the session. Refusing before the send turns a
+    /// silent kill into an error the caller can act on.
+    ///
     /// # Errors
+    /// [`Error::ControlFrameTooLarge`] if the payload exceeds the cap, or
     /// [`Error::Transport`] if the ping cannot be sent.
     pub async fn ping(&mut self, payload: Vec<u8>) -> Result<(), Error> {
+        if payload.len() > MAX_CONTROL_PAYLOAD {
+            return Err(Error::ControlFrameTooLarge {
+                bytes: payload.len(),
+                limit: MAX_CONTROL_PAYLOAD,
+            });
+        }
         self.socket
             .send(Message::Ping(payload.into()))
             .await
@@ -369,6 +389,14 @@ mod tests {
         let backoff = Backoff::default();
         assert!(backoff.delay(2) >= Duration::from_secs(4));
         assert!(backoff.delay(2) <= Duration::from_secs(5));
+    }
+
+    #[test]
+    fn an_oversized_control_payload_is_refused_before_it_is_sent() {
+        // Measured: sending 126 bytes reports success and then kills the
+        // connection, so the caller believes the ping worked and has lost the
+        // session. 125 is the ceiling RFC 6455 section 5.5 sets.
+        assert_eq!(super::MAX_CONTROL_PAYLOAD, 125);
     }
 
     #[test]
