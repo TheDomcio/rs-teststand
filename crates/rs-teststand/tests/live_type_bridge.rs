@@ -60,7 +60,12 @@ fn every_value_type_in_the_playground_resolves() -> Result<(), Error> {
     let sequence_file = engine.get_sequence_file_ex(
         &path.to_string_lossy(),
         GetSeqFileOptions::DO_NOT_RUN_LOAD_CALLBACK,
-        ConflictHandler::Error,
+        // The fixture was saved by one engine version and is opened by another, so
+        // its types can differ from the ones the station already has loaded.
+        // `UseGlobalType` converts to the station's type, which is the documented
+        // non-interactive resolution: `Prompt` raises a dialog and `Error` refuses
+        // the file outright.
+        ConflictHandler::UseGlobalType,
     )?;
 
     let globals = sequence_file.file_globals_default_values()?;
@@ -102,7 +107,7 @@ fn nested_container_members_are_reachable() -> Result<(), Error> {
     let sequence_file = engine.get_sequence_file_ex(
         &path.to_string_lossy(),
         GetSeqFileOptions::DO_NOT_RUN_LOAD_CALLBACK,
-        ConflictHandler::Error,
+        ConflictHandler::UseGlobalType,
     )?;
     let globals = sequence_file.file_globals_default_values()?;
 
@@ -152,7 +157,7 @@ fn numeric_format_is_presentation_and_representation_is_strict() -> Result<(), E
     let sequence_file = engine.get_sequence_file_ex(
         &path.to_string_lossy(),
         GetSeqFileOptions::DO_NOT_RUN_LOAD_CALLBACK,
-        ConflictHandler::Error,
+        ConflictHandler::UseGlobalType,
     )?;
     let globals = sequence_file.file_globals_default_values()?;
     let numbers = globals.get_property_object("Numbers", 0)?;
@@ -223,7 +228,7 @@ fn each_representation_reads_through_its_own_accessor() -> Result<(), Error> {
     let sequence_file = engine.get_sequence_file_ex(
         &path.to_string_lossy(),
         GetSeqFileOptions::DO_NOT_RUN_LOAD_CALLBACK,
-        ConflictHandler::Error,
+        ConflictHandler::UseGlobalType,
     )?;
     let globals = sequence_file.file_globals_default_values()?;
     let numbers = globals.get_property_object("Numbers", 0)?;
@@ -305,7 +310,7 @@ fn sixty_four_bit_extremes_round_trip_without_loss() -> Result<(), Error> {
     let sequence_file = engine.get_sequence_file_ex(
         &path.to_string_lossy(),
         GetSeqFileOptions::DO_NOT_RUN_LOAD_CALLBACK,
-        ConflictHandler::Error,
+        ConflictHandler::UseGlobalType,
     )?;
     let globals = sequence_file.file_globals_default_values()?;
     let numbers = globals.get_property_object("Numbers", 0)?;
