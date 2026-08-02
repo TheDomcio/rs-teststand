@@ -242,6 +242,33 @@ impl Thread {
             .as_bool()?)
     }
 
+    /// How this thread answers a request to terminate its execution
+    /// (`Thread.TerminationOption`).
+    ///
+    /// The inner [`Result`] carries the raw number when the engine names an
+    /// option this build does not, rather than mapping it onto a neighbour.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn termination_option(&self) -> Result<Result<crate::ThreadTerminationOption, i32>, Error> {
+        let raw = self.dispatch.get(thread::TERMINATION_OPTION)?.as_i32()?;
+        Ok(crate::ThreadTerminationOption::from_bits(raw))
+    }
+
+    /// Chooses how this thread answers a terminate request
+    /// (`Thread.TerminationOption`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_termination_option(
+        &self,
+        option: crate::ThreadTerminationOption,
+    ) -> Result<(), Error> {
+        self.dispatch
+            .put(thread::TERMINATION_OPTION, Value::I32(option.bits()))?;
+        Ok(())
+    }
+
     /// Starts this thread running (`Thread.Resume`).
     ///
     /// Two uses. It releases a thread created suspended, which is how a
