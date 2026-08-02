@@ -14,9 +14,11 @@
 //! before it commits to anything.
 
 mod application_license;
+mod held;
 mod license_type;
 mod options;
 
 pub use application_license::ApplicationLicense;
+pub use held::HeldLicense;
 pub use license_type::LicenseType;
 pub use options::AcquireLicenseOptions;

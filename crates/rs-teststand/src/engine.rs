@@ -441,10 +441,16 @@ impl Engine {
         Ok(())
     }
 
-    /// The licence the engine is running on (`Engine.LicenseType`).
+    /// The licence the engine is currently using (`Engine.LicenseType`).
     ///
-    /// Reads state; acquires nothing and raises no dialog, so it is safe to
-    /// call first on any station.
+    /// **Using, not holding.** A freshly created engine has acquired nothing
+    /// and reports [`LicenseType::NoLicense`](crate::LicenseType::NoLicense)
+    /// even on a fully licensed station; the answer only becomes meaningful
+    /// after something acquires. Use
+    /// [`require_license`](Self::require_license) to ask whether the station
+    /// can license this host.
+    ///
+    /// Reads state, so it acquires nothing and raises no dialog.
     ///
     /// # Errors
     /// [`Error`] if the COM call fails, or [`Error::UnknownLicenseType`] if the
@@ -454,27 +460,74 @@ impl Engine {
         crate::LicenseType::from_bits(raw).map_err(|bits| Error::UnknownLicenseType { bits })
     }
 
-    /// Fails unless the station holds a usable licence.
+    /// Acquires a licence, or fails if the station cannot grant one.
     ///
-    /// The check a headless host should make before it does anything else. An
-    /// unlicensed engine still constructs, and the failure only shows up later
-    /// as whatever operation happened to need the licence — so a host that does
-    /// not ask up front reports the wrong thing at the wrong time.
+    /// The check a headless host should make before anything else, and the
+    /// object it should keep alive while it runs.
     ///
-    /// Reading the type raises no dialog, which is the point: this turns "no
-    /// licence" into a returned error on any station, attended or not.
+    /// Acquiring is what makes a licence real.
+    /// [`license_type`](Self::license_type) reports the licence the engine is
+    /// *using*, and a freshly created engine is using none — measured on a
+    /// station with a valid development system licence, it reads `NoLicense`
+    /// until something acquires. So reading before acquiring answers the wrong
+    /// question, and this method acquires first.
+    ///
+    /// The request is [`ApplicationLicense::Unspecified`](crate::ApplicationLicense), which lets the engine
+    /// grant whatever it has. Naming a kind can be refused even when the
+    /// station is properly licensed: on a development system station,
+    /// [`ApplicationLicense::OperatorInterface`](crate::ApplicationLicense) is turned down while
+    /// unspecified succeeds. Ask for a specific kind through
+    /// [`acquire_license`](Self::acquire_license) only when the host genuinely
+    /// requires that one.
+    ///
+    /// The startup dialog is suppressed, so an unlicensed station returns an
+    /// error rather than opening a window nobody will close.
+    ///
+    /// **Refusal is retried for a few seconds before it is believed.** The
+    /// licensing subsystem is not ready the instant the engine object exists:
+    /// measured on a properly licensed station, acquiring immediately after
+    /// construction is refused, while the same call half a second later
+    /// succeeds. A host that trusted the first answer would report an
+    /// unlicensed station to its operator and stop. So a refusal is retried
+    /// until it stops changing, which costs an unlicensed station a few seconds
+    /// once, at startup.
+    ///
+    /// Success is the handle, not the type.
+    /// [`HeldLicense::kind`](crate::HeldLicense::kind) reports what the engine
+    /// says it is using and can still read
+    /// [`NoLicense`](crate::LicenseType::NoLicense) after an unspecified
+    /// request was granted, so treat it as information rather than as the
+    /// verdict.
     ///
     /// # Errors
-    /// [`Error::NoLicense`] when the engine reports no licence,
-    /// [`Error::UnknownLicenseType`] when it reports one this build does not
-    /// name, or [`Error`] if the COM call fails.
-    pub fn require_license(&self) -> Result<crate::LicenseType, Error> {
-        let license = self.license_type()?;
-        if license.is_usable() {
-            Ok(license)
-        } else {
-            Err(Error::NoLicense)
-        }
+    /// [`Error::NoLicense`] if no licence can be acquired, or [`Error`] if the
+    /// COM call fails.
+    pub fn require_license(&self) -> Result<crate::HeldLicense<'_>, Error> {
+        /// Longest to keep asking before calling the station unlicensed.
+        const PATIENCE: core::time::Duration = core::time::Duration::from_secs(3);
+        /// Gap between attempts.
+        const RETRY_INTERVAL: core::time::Duration = core::time::Duration::from_millis(100);
+
+        let started = std::time::Instant::now();
+        let handle = loop {
+            match self.acquire_license(
+                crate::ApplicationLicense::Unspecified,
+                crate::AcquireLicenseOptions::SUPPRESS_STARTUP_DIALOG,
+            ) {
+                Ok(handle) => break handle,
+                Err(Error::NoLicense) if started.elapsed() < PATIENCE => {
+                    std::thread::sleep(RETRY_INTERVAL);
+                }
+                Err(other) => return Err(other),
+            }
+        };
+        // The grant is the handle. `LicenseType` is informational and does not
+        // always follow an unspecified request: measured on a licensed station,
+        // acquiring unspecified returns a handle while the type still reads
+        // `NoLicense`, and only a named request such as a sequence editor makes
+        // it report `DevelopmentSystem`. So the type is recorded, not gated on.
+        let kind = self.license_type()?;
+        Ok(crate::HeldLicense::new(self, handle, kind))
     }
 
     /// A description of the current licence (`Engine.GetLicenseDescription`).
@@ -508,17 +561,23 @@ impl Engine {
     /// Release it with [`release_license`](Self::release_license); the licence
     /// is held until every handle for it is released.
     ///
-    /// **Pass [`AcquireLicenseOptions::SUPPRESS_STARTUP_DIALOG`] on any station
+    /// **Pass [`AcquireLicenseOptions::SUPPRESS_STARTUP_DIALOG`](crate::AcquireLicenseOptions) on any station
     /// without a person at it.** Without it, an engine that cannot acquire the
     /// licence opens a window offering to evaluate, activate or buy, and waits.
     /// A headless host stops there until something kills it. With it, the same
     /// situation returns an error this method propagates.
     ///
-    /// Ask for the least the host needs.
-    /// [`ApplicationLicense::OperatorInterface`](crate::ApplicationLicense::OperatorInterface)
-    /// is right for a host that runs sequences without editing them; asking for
-    /// an editor licence on a deployment station fails where the smaller
-    /// request would have succeeded.
+    /// Prefer
+    /// [`ApplicationLicense::Unspecified`](crate::ApplicationLicense),
+    /// which lets the engine grant whatever it has. Naming a kind is a
+    /// constraint, not a preference, and a smaller request is not a safer one:
+    /// on a station licensed for a development system,
+    /// [`OperatorInterface`](crate::ApplicationLicense::OperatorInterface) is
+    /// refused while unspecified succeeds. Name a kind only when the host truly
+    /// requires it.
+    ///
+    /// Most callers want [`require_license`](Self::require_license) instead,
+    /// which acquires and hands back a guard that releases on drop.
     ///
     /// # Errors
     /// [`Error::NoLicense`] if the licence was not granted, or [`Error`] if the
