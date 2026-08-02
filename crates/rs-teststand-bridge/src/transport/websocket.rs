@@ -84,6 +84,18 @@ const MAX_MESSAGE_BYTES: usize = 1024 * 1024;
 /// before the total is known.
 const MAX_FRAME_BYTES: usize = MAX_MESSAGE_BYTES;
 
+/// Most panels served at once.
+///
+/// A host serves an orchestrator and the few panels a person has open, so this
+/// is far above normal use. It exists because nothing else stops a client that
+/// reconnects in a loop from opening sockets until the host runs out of them,
+/// and a station that has stopped answering is worse than one that refused a
+/// connection.
+///
+/// Refusing is deliberate rather than queueing: a panel told no can back off
+/// and return, while one left waiting cannot tell a busy host from a dead one.
+const MAX_CLIENTS: usize = 64;
+
 /// What travels out to the panels: an event, or an answer to one of them.
 #[derive(Debug, Clone)]
 enum Outbound {
@@ -216,6 +228,14 @@ async fn serve(
     };
     let mut next_client = 0_u64;
     while let Ok((stream, _)) = listener.accept().await {
+        // Counted before subscribing, since subscribing is what makes a panel
+        // count. Dropping the stream closes it, so the client learns at once
+        // instead of holding a socket that will never be served.
+        if outbound.receiver_count() >= MAX_CLIENTS {
+            drop(stream);
+            continue;
+        }
+
         next_client += 1;
         let client = next_client;
         let subscription = outbound.subscribe();
