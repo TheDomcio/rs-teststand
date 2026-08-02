@@ -100,6 +100,25 @@ impl Default for Backoff {
 }
 
 impl Backoff {
+    /// How long to wait before the very first attempt.
+    ///
+    /// RFC 6455 section 7.2.3 asks for a random delay here specifically, and
+    /// suggests somewhere between zero and five seconds. This uses that range
+    /// rather than [`first`](Self::first), because the point is to scatter a
+    /// crowd of clients that all woke at once, not to pace one client's
+    /// retries.
+    #[must_use]
+    pub fn first_delay() -> Duration {
+        /// The upper end the specification suggests.
+        const SPREAD: Duration = Duration::from_secs(5);
+
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .map_or(0, |since| since.subsec_nanos());
+        let ceiling = u64::try_from(SPREAD.as_nanos()).unwrap_or(u64::MAX);
+        Duration::from_nanos(u64::from(nanos) % ceiling.max(1))
+    }
+
     /// How long to wait before attempt `attempt`, counting the first as 0.
     ///
     /// Doubling, capped, then up to a quarter added on top. The jitter comes
@@ -166,6 +185,13 @@ impl Client {
     /// # Errors
     /// [`Error::Transport`] carrying the final failure.
     pub async fn connect_with_backoff(address: &str, backoff: Backoff) -> Result<Self, Error> {
+        // RFC 6455 section 7.2.3: "The first reconnect attempt SHOULD be
+        // delayed by a random amount of time." Not the second one, the first.
+        // Every client of a host that dropped out wakes at the same instant, so
+        // an immediate first attempt puts the whole crowd on the doorstep
+        // together, which is the denial of service that section describes.
+        tokio::time::sleep(Backoff::first_delay()).await;
+
         let mut last = None;
         for attempt in 0..backoff.attempts.max(1) {
             match Self::connect(address).await {
@@ -380,6 +406,17 @@ mod tests {
                 "attempt {attempt} exceeded the cap"
             );
         }
+    }
+
+    #[test]
+    fn the_first_attempt_is_delayed_by_a_random_amount() {
+        // Section 7.2.3 asks for this on the first attempt specifically. Zero
+        // would put every client of a restarting host on the doorstep at once.
+        let first = Backoff::first_delay();
+        assert!(
+            first <= Duration::from_secs(5),
+            "{first:?} exceeds the range"
+        );
     }
 
     #[test]
