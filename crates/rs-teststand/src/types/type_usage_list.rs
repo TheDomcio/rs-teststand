@@ -15,7 +15,7 @@ use crate::types::TypeCategory;
 /// Registering a type takes two steps that are easy to conflate: insert the
 /// definition, then fetch it back with
 /// [`get_type_definition`](Self::get_type_definition). Members that change a
-/// type — adding an enumerator, for instance — only take effect on the
+/// type, adding an enumerator, for instance, only take effect on the
 /// registered definition, not on the loose object that was inserted.
 #[derive(Debug)]
 pub struct TypeUsageList {
@@ -66,7 +66,7 @@ impl TypeUsageList {
 
     /// Registers a type in the file (`InsertType`).
     ///
-    /// The object must already carry a name — an unnamed one is refused. Pass
+    /// The object must already carry a name, an unnamed one is refused. Pass
     /// [`num_types`](Self::num_types) as `index` to append.
     ///
     /// # Errors

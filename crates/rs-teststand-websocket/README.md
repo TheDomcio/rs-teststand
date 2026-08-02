@@ -33,7 +33,7 @@ and which means an engine error code in one and a UI message code in the other.
 
 ## What the transport guarantees
 
-| behaviour | why |
+| behavior | why |
 | --- | --- |
 | messages and frames capped at 1 MB | one frame can otherwise make a host allocate until it dies; a client with a loop bug gets there as surely as a hostile one |
 | at most 64 panels | nothing else stops a client reconnecting in a loop from taking every socket |
@@ -46,7 +46,7 @@ and which means an engine error code in one and a UI message code in the other.
 Early. The server, the client and the RFC 6455 obligations above are in place
 and checked against a running host. Origin verification (section 10.2) is not,
 and matters: binding to loopback does not stop a web page the operator visits
-from driving the station. See the workspace `TODO.md`.
+from driving the station.
 
 ## License
 

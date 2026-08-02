@@ -11,8 +11,8 @@
 //! Two things make a test step runnable without a code module:
 //!
 //! * Build it with [`AdapterKeyName::NoneAdapter`]. An **empty** adapter key
-//!   does not mean "no code module" — it lets the step type choose, falling
-//!   back to the station default — and a step that ends up on a real adapter
+//!   does not mean "no code module", it lets the step type choose, falling
+//!   back to the station default, and a step that ends up on a real adapter
 //!   fails at run time with "module has not yet been specified".
 //! * Set `DataSource`, the expression the step reads its measurement from. It
 //!   defaults to `Step.Result.Numeric`, which is `0` with no code module, so a
@@ -24,7 +24,7 @@
 //! Expect **fewer results than tests**: a failing step ends the run early on a
 //! station configured to go to Cleanup on failure, so the steps after it never
 //! execute and record nothing. That is normal, and a headless host must not
-//! read a short result list as a complete one — which is why this prints how
+//! read a short result list as a complete one, which is why this prints how
 //! many of the defined tests actually reported.
 //!
 //! Waiting is done by draining the message queue rather than by

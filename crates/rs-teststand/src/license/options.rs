@@ -1,14 +1,14 @@
-//! Options for acquiring a licence.
+//! Options for acquiring a license.
 
 bitflags::bitflags! {
-    /// How to behave when a licence cannot be acquired (`AcquireLicenseOptions`).
+    /// How to behave when a license cannot be acquired (`AcquireLicenseOptions`).
     ///
     /// The default is to ask a person. A host with nobody in front of it must
     /// say otherwise, or it stops on a window it cannot answer.
     #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
     pub struct AcquireLicenseOptions: i32 {
-        /// Take the engine's default behaviour, which raises a dialog offering
-        /// to evaluate, activate or buy when the licence is not available.
+        /// Take the engine's default behavior, which raises a dialog offering
+        /// to evaluate, activate or buy when the license is not available.
         const NONE = 0;
         /// Never raise that dialog: fail the call instead.
         ///
@@ -18,7 +18,7 @@ bitflags::bitflags! {
         /// [`Error`]: crate::Error
         const SUPPRESS_STARTUP_DIALOG = 1;
         /// Suppress the dialog only when another running process has already
-        /// shown it and a licence was chosen there. If not, the dialog still
+        /// shown it and a license was chosen there. If not, the dialog still
         /// appears, so this is not a substitute for
         /// [`SUPPRESS_STARTUP_DIALOG`](Self::SUPPRESS_STARTUP_DIALOG) on an
         /// unattended station.

@@ -8,7 +8,7 @@ use crate::types::TypeUsageList;
 
 /// A file holding property objects (`PropertyObjectFile`).
 ///
-/// The file view of something that also has a richer identity — a sequence file
+/// The file view of something that also has a richer identity, a sequence file
 /// reached through `as_property_object_file`, or a workspace's options file.
 /// This is where a file's registered types live.
 #[derive(Debug)]
@@ -74,7 +74,7 @@ impl PropertyObjectFile {
     /// The root of the file's property tree (`Data`).
     ///
     /// Everything a file stores hangs off here, which is how a file with no
-    /// richer identity — the templates file, for one — is read at all.
+    /// richer identity, the templates file, for one, is read at all.
     ///
     /// # Errors
     /// [`Error`] if the COM call fails or returns an unexpected type.

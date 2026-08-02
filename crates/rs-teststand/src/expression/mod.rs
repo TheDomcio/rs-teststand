@@ -1,8 +1,8 @@
 //! The engine's expression language.
 //!
 //! Expressions are how a sequence computes: preconditions, limits, and any
-//! value written into a step. This module models the language itself — what the
-//! operators are and how they bind — separately from the object model, so
+//! value written into a step. This module models the language itself, what the
+//! operators are and how they bind, separately from the object model, so
 //! nothing about expressions is bolted onto `Engine` or `PropertyObject`.
 //!
 //! To *evaluate* an expression, use

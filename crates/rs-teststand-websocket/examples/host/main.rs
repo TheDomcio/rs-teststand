@@ -9,8 +9,8 @@
 //! # The shape this demonstrates
 //!
 //! An orchestrator owns the engine and serves panels over one bidirectional
-//! connection. A panel sends [`Command`](rs_teststand_bridge::Command)s — run,
-//! terminate, read a variable — and receives both the answers and the stream of
+//! connection. A panel sends [`Command`](rs_teststand_bridge::Command)s, run,
+//! terminate, read a variable, and receives both the answers and the stream of
 //! events the run produces, on the same socket. It never polls.
 //!
 //! Two threads, and the split is the whole point:

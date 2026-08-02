@@ -12,7 +12,7 @@ use rs_teststand::{Engine, SearchDirectory, SearchDirectoryType};
 
 /// Describes an entry's type, spelling out the cases worth distinguishing.
 ///
-/// An unrecognised value is reported with its raw number rather than hidden — a
+/// An unrecognized value is reported with its raw number rather than hidden, a
 /// newer engine may define types this build does not name.
 fn describe_type(directory: &SearchDirectory) -> Result<String, rs_teststand::Error> {
     let raw = directory.dir_type()?;

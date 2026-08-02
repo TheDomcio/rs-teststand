@@ -9,7 +9,7 @@ use crate::dispids::sequence_file;
 ///
 /// Obtained from [`crate::Engine::get_sequence_file_ex`]. Dropping this value
 /// releases the wrapper's own reference, but the engine keeps the file in its
-/// cache until it is released explicitly — see
+/// cache until it is released explicitly, see
 /// [`crate::Engine::release_sequence_file_ex`].
 #[derive(Debug)]
 pub struct SequenceFile {
@@ -64,8 +64,7 @@ impl SequenceFile {
     ///
     /// The copy keeps the template's name, so inserting the same template twice
     /// without renaming the first copy puts two sequences of one name in the
-    /// file. Every step in the copy also still carries the template's step ID —
-    /// see
+    /// file. Every step in the copy also still carries the template's step ID, /// see
     /// [`Sequence::create_new_unique_step_ids`](crate::Sequence::create_new_unique_step_ids).
     ///
     /// # Errors
@@ -104,8 +103,7 @@ impl SequenceFile {
     ///
     /// These are the **defaults stored in the file**, which is what an editor
     /// shows and what this API can change. A running execution works on its own
-    /// run-time copy instead, and edits made there do not travel back here —
-    /// reach that copy through the execution, not through this method.
+    /// run-time copy instead, and edits made there do not travel back here, /// reach that copy through the execution, not through this method.
     ///
     /// # Errors
     /// [`Error`] if the COM call fails or returns an unexpected type.

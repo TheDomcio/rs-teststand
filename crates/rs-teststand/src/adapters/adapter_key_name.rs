@@ -18,7 +18,7 @@
 /// );
 /// ```
 ///
-/// A key names an adapter the engine recognises, not one the station can
+/// A key names an adapter the engine recognizes, not one the station can
 /// necessarily run: calling a `LabVIEW` step needs `LabVIEW` present. Building a
 /// step with the key succeeds either way; only running it does not.
 ///
@@ -26,31 +26,31 @@
 /// standard-prototype [`Self::LabViewStdPrototype`] and [`Self::CviStdPrototype`] are to be
 /// replaced by [`Self::LabView`] and [`Self::Cvi`]. They are kept here
 /// because engines back to 2016 accept them and old sequence files contain
-/// them, but a step built with one reports back its replacement — so a
+/// them, but a step built with one reports back its replacement, so a
 /// comparison of "asked for" against "got" differs for exactly those two, by
 /// design rather than by accident. [`Self::is_obsolete`] and
 /// [`Self::replacement`] make that checkable instead of folklore.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum AdapterKeyName {
-    /// No code module — the step type does its own work
+    /// No code module, the step type does its own work
     /// (`NoneAdapterKeyName`).
     NoneAdapter,
     /// The `LabVIEW` adapter (`FlexLVAdapterKeyName`, value
     /// "G Flexible VI Adapter"). This is what the editor calls the `LabVIEW`
     /// Adapter today, and the one to reach for.
     LabView,
-    /// The superseded standard-prototype `LabVIEW` adapter. **Obsolete** — the
+    /// The superseded standard-prototype `LabVIEW` adapter. **Obsolete**, the
     /// documentation directs callers to [`Self::LabView`], and the engine
     /// substitutes it. The type library carries this one key under two names,
     /// `LVAdapterKeyName` and `GAdapterKeyName`, so the crate names it once.
     LabViewStdPrototype,
-    /// `LabVIEW` NXG (`LabVIEWNXGAdapterKeyName`) — its own key for the
+    /// `LabVIEW` NXG (`LabVIEWNXGAdapterKeyName`), its own key for the
     /// discontinued second-generation product, not a spelling of the above.
     LabViewNxg,
     /// A C/CVI function with any prototype (`FlexCVIAdapterKeyName`).
     Cvi,
-    /// A C/CVI function with the standard prototype. **Obsolete** — the
+    /// A C/CVI function with the standard prototype. **Obsolete**, the
     /// documentation directs callers to [`Self::Cvi`]
     /// (`StdCVIAdapterKeyName`).
     CviStdPrototype,
@@ -88,10 +88,10 @@ impl AdapterKeyName {
         }
     }
 
-    /// Recognises a key read back from a step.
+    /// Recognizes a key read back from a step.
     ///
-    /// `None` means the key is not one this build names — a newer engine's
-    /// adapter, or a step that has none — which is information, not an error.
+    /// `None` means the key is not one this build names, a newer engine's
+    /// adapter, or a step that has none, which is information, not an error.
     #[must_use]
     pub fn from_key(key: &str) -> Option<Self> {
         [
@@ -114,8 +114,8 @@ impl AdapterKeyName {
 
     /// Whether the documentation marks this key obsolete.
     ///
-    /// An obsolete key still works — engines back to 2016 accept it, and old
-    /// sequence files are full of them — but a step built with one reports
+    /// An obsolete key still works, engines back to 2016 accept it, and old
+    /// sequence files are full of them, but a step built with one reports
     /// [`replacement`](Self::replacement) back instead.
     #[must_use]
     pub const fn is_obsolete(self) -> bool {
@@ -164,7 +164,7 @@ mod tests {
     }
 
     #[test]
-    fn an_unrecognised_key_is_reported_rather_than_guessed() {
+    fn an_unrecognized_key_is_reported_rather_than_guessed() {
         assert_eq!(AdapterKeyName::from_key("Some Future Adapter"), None);
         assert_eq!(AdapterKeyName::from_key(""), None);
     }

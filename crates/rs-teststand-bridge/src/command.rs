@@ -12,7 +12,7 @@
 //! host can actually reason about, and what it can refuse.
 //!
 //! Serialized externally tagged, so the wire form is
-//! `{"command":"run","sequence_file":"...","sequence":"MainSequence"}` — one
+//! `{"command":"run","sequence_file":"...","sequence":"MainSequence"}`, one
 //! obvious discriminant, readable by a reader with a fixed schema.
 
 use serde::{Deserialize, Serialize};

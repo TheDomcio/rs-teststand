@@ -10,15 +10,15 @@ use crate::error::ComError;
 /// An owned value crossing the COM boundary, mapped from a `VARIANT`.
 #[derive(Debug)]
 pub enum Value {
-    /// `VT_EMPTY` — an uninitialized VARIANT.
+    /// `VT_EMPTY`, an uninitialized VARIANT.
     Empty,
-    /// `VT_NULL` — SQL-style null.
+    /// `VT_NULL`, SQL-style null.
     Null,
     /// `VT_BOOL`.
     Bool(bool),
-    /// `VT_I4` — a 32-bit signed integer.
+    /// `VT_I4`, a 32-bit signed integer.
     I32(i32),
-    /// `VT_I8` — a 64-bit signed integer (handles, large counts).
+    /// `VT_I8`, a 64-bit signed integer (handles, large counts).
     I64(i64),
     /// A null *object reference* (`VT_DISPATCH` holding no pointer).
     ///
@@ -32,11 +32,11 @@ pub enum Value {
     /// representation strictly: a property stored as unsigned rejects a signed
     /// variant rather than coercing it.
     U64(u64),
-    /// `VT_R8` — a 64-bit float.
+    /// `VT_R8`, a 64-bit float.
     F64(f64),
-    /// `VT_BSTR` — an owned UTF-8 copy of the BSTR.
+    /// `VT_BSTR`, an owned UTF-8 copy of the BSTR.
     Str(String),
-    /// `VT_DISPATCH` — a nested COM object, ready to wrap.
+    /// `VT_DISPATCH`, a nested COM object, ready to wrap.
     Object(Box<dyn Dispatch>),
 }
 

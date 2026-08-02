@@ -8,7 +8,7 @@
 //! existing account is touched.
 //!
 //! Effective privileges normally come from the groups a user belongs to, which
-//! are configured on the station — so this shows creating and interrogating a
+//! are configured on the station, so this shows creating and interrogating a
 //! user rather than granting rights.
 
 use rs_teststand::{Engine, User, UserPrivilege};

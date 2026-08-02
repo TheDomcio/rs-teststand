@@ -6,7 +6,7 @@ bitflags::bitflags! {
     /// A bitmask read and written whole via
     /// [`StationOptions::debug_options`](crate::StationOptions::debug_options)
     /// and its setter, so changing one option means editing a mask rather than
-    /// assigning a value — always read, modify the bits, write back.
+    /// assigning a value, always read, modify the bits, write back.
     ///
     /// ```
     /// use rs_teststand::DebugOptions;
@@ -28,7 +28,7 @@ bitflags::bitflags! {
         /// Report leaked objects at shutdown (`DebugOption_ReportObjectLeaks`).
         ///
         /// The report is a modal dialog, so this bit blocks an unattended host
-        /// at exit. Leak *detection* is separate — clearing this suppresses
+        /// at exit. Leak *detection* is separate, clearing this suppresses
         /// only the dialog.
         const REPORT_OBJECT_LEAKS = 4;
         /// Send output messages to an attached debugger

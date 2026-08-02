@@ -1,7 +1,7 @@
 //! Moving events and commands between a host and whatever is watching it.
 //!
-//! Every transport here carries the same two types — [`MessageEvent`] out and
-//! [`Command`] in — and differs only in how bytes reach the wire. That is
+//! Every transport here carries the same two types, [`MessageEvent`] out and
+//! [`Command`] in, and differs only in how bytes reach the wire. That is
 //! deliberate: a front end written against one can be moved to the other
 //! without its message handling changing, and neither transport gets its own
 //! private idea of what a message is.

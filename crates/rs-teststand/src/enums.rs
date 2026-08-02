@@ -83,7 +83,7 @@ bitflags::bitflags! {
 /// Step execution groups in a sequence (`StepGroup_*`).
 ///
 /// A sequence holds three ordered lists rather than one. Setup runs first, Main
-/// carries the test, and Cleanup runs last — including after Main fails, which
+/// carries the test, and Cleanup runs last, including after Main fails, which
 /// is what makes it the place for anything that must happen regardless.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(i32)]
@@ -106,7 +106,7 @@ impl StepGroup {
         self as i32
     }
 
-    /// Reads a raw value, returning it unchanged when unrecognised.
+    /// Reads a raw value, returning it unchanged when unrecognized.
     ///
     /// # Errors
     /// The raw value, when it matches no known group.

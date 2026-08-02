@@ -70,7 +70,7 @@ mod tests {
     #[test]
     fn the_non_finite_constants_are_grouped() {
         // Nan, Ind and Inf are the three the engine writes for values that are
-        // not ordinary numbers; a serialiser has to handle all three.
+        // not ordinary numbers; a serializer has to handle all three.
         for constant in [OtherConstant::Nan, OtherConstant::Ind, OtherConstant::Inf] {
             assert!(constant.is_non_finite(), "{constant:?}");
         }

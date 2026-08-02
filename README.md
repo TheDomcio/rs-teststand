@@ -84,7 +84,7 @@ This is a hobby project, maintained on a best-effort basis and **not** yet
 under active full-time development ahead of the first release. There is no fixed release
 schedule or formal support, but feel free to get in touch.
 
-Treat it as experimental: wrapper behaviour may change between releases without notice.
+Treat it as experimental: wrapper behavior may change between releases without notice.
 
 If you hit a missing TestStand™ binding, a wrong dispatch identifier, or unexpected
 TestStand™ COM dispatch behavior, open an issue with a reproducible case. That is the
@@ -232,7 +232,7 @@ The last row is the one to care about for deployment. A default Rust MSVC binary
 
 #### 🛡️ Dialogs and the watchdog
 
-The engine runs in-process on a single-threaded COM apartment. When a dialog goes up, the calling thread is stuck _inside_ COM: the call does not return, so there is nothing to time out and no Rust code can cancel it. Construction removes the dialogs the engine raises on its own, but it cannot remove the ones a sequence asks for, and it should not — a [message popup][ts-messagepopup] step exists to stop and ask a person something.
+The engine runs in-process on a single-threaded COM apartment. When a dialog goes up, the calling thread is stuck _inside_ COM: the call does not return, so there is nothing to time out and no Rust code can cancel it. Construction removes the dialogs the engine raises on its own, but it cannot remove the ones a sequence asks for, and it should not, a [message popup][ts-messagepopup] step exists to stop and ask a person something.
 
 So the guard's job is to make sure the question is **seen**, not to make the process die for it:
 
@@ -267,7 +267,7 @@ flowchart TD
 
 **Surfacing.** Windows sorts windows into an ordinary band and an always-on-top band. The dialog is moved into the second one, which puts it above every ordinary window, and re-asserting that on each poll also moves it to the front _of_ that band, so an always-on-top front end in another process cannot bury it. Focus is requested as well, but it is the weaker half: Windows grants the foreground only under conditions it decides, and a refusal is reported rather than papered over. Z-order is the guarantee; focus is best effort.
 
-**Detection is by shape, not by class.** Any visible, non-minimised, captioned top-level window this process owns counts. Matching the standard dialog class `#32770` was tried first and misses the case that matters: measured against a live engine, a message popup step produces a captioned overlapped window from the runtime the engine's user interface is built on, whose owner stays _enabled_, so neither the dialog class nor the usual Win32 modality signature identifies it. The cost of the broad rule is that a host with windows of its own in the same process matches those too — harmless under surfacing, which only reorders windows, and a reason not to pair a graphical host with the terminating policy.
+**Detection is by shape, not by class.** Any visible, non-minimised, captioned top-level window this process owns counts. Matching the standard dialog class `#32770` was tried first and misses the case that matters: measured against a live engine, a message popup step produces a captioned overlapped window from the runtime the engine's user interface is built on, whose owner stays _enabled_, so neither the dialog class nor the usual Win32 modality signature identifies it. The cost of the broad rule is that a host with windows of its own in the same process matches those too, harmless under surfacing, which only reorders windows, and a reason not to pair a graphical host with the terminating policy.
 
 **Terminating** is opt-in via `Watchdog::start_with` and `DialogPolicy::Terminate`, for a host that truly has nobody to answer. It needs **both** the deadline passed **and** a dialog present, because elapsed time alone is not evidence: a real sequence can legitimately sit for many minutes on a popup step or a long test. When it does fire, the dialog's title and body go to `stderr` before the process exits with code `75`, a distinct code so a supervisor can tell "stuck" from "returned an error". Capturing the text matters: `engine error TS_Err_...` is actionable, "the process died" is not. Termination is blunt because it is the only exit from a blocked apartment, so anything that must survive it should run the engine in a **worker process** and let the supervisor restart it.
 

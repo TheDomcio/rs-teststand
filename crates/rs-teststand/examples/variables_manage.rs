@@ -3,10 +3,10 @@
 //! A variable lives in one of four places, and which one decides who can see it
 //! and how long it lasts:
 //!
-//! * **Sequence locals** — private to one call of one sequence.
-//! * **Sequence parameters** — supplied by the caller of that sequence.
-//! * **File globals** — shared by every sequence in one file.
-//! * **Station globals** — shared by every file on the station, and persisted.
+//! * **Sequence locals**, private to one call of one sequence.
+//! * **Sequence parameters**, supplied by the caller of that sequence.
+//! * **File globals**, shared by every sequence in one file.
+//! * **Station globals**, shared by every file on the station, and persisted.
 //!
 //! The example writes one variable into each, then walks the lifecycle of a
 //! throwaway variable: a property's type is fixed when it is created, so
@@ -34,7 +34,7 @@ fn set_string(
 /// Creates a variable, retypes it, clones it, then removes both.
 ///
 /// The type is fixed at creation, so each "retype" is a delete followed by a
-/// fresh create — the same thing the sequence editor does behind the scenes.
+/// fresh create, the same thing the sequence editor does behind the scenes.
 fn temporary_variable_lifecycle(container: &PropertyObject) -> Result<(), rs_teststand::Error> {
     let name = "TempScratch";
     let clone_name = "TempScratchCopy";

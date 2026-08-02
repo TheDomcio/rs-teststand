@@ -72,7 +72,7 @@ fn rich_tree(engine: &Engine) -> Result<PropertyObject, Error> {
 }
 
 /// Counts what the walk produced, so a silently empty result cannot pass.
-fn summarise(value: &PropertyValue, counts: &mut [usize; 8]) {
+fn summarize(value: &PropertyValue, counts: &mut [usize; 8]) {
     match value {
         PropertyValue::Null => counts[7] += 1,
         PropertyValue::Bool(_) => counts[0] += 1,
@@ -83,13 +83,13 @@ fn summarise(value: &PropertyValue, counts: &mut [usize; 8]) {
         PropertyValue::Array(items) => {
             counts[5] += 1;
             for item in items {
-                summarise(item, counts);
+                summarize(item, counts);
             }
         }
         PropertyValue::Container(members) => {
             counts[6] += 1;
             for member in members.values() {
-                summarise(member, counts);
+                summarize(member, counts);
             }
         }
     }
@@ -102,7 +102,7 @@ fn a_rich_tree_serializes_every_value_type() -> Result<(), Box<dyn std::error::E
     let value = rich_tree(&engine)?.to_value()?;
 
     let mut counts = [0_usize; 8];
-    summarise(&value, &mut counts);
+    summarize(&value, &mut counts);
     println!("  counts (bool, i64, u64, f64, text, array, container, null): {counts:?}");
 
     // Each of these is a distinct code path, so each must actually appear.
@@ -270,7 +270,7 @@ fn a_self_referential_context_is_refused_instead_of_crashing()
 -> Result<(), Box<dyn std::error::Error>> {
     // A live sequence context lists `ThisContext` among its own sub-properties,
     // so it contains itself. Walking one with no limit used to recurse until the
-    // stack was gone and the process died with nothing to catch — this asserts
+    // stack was gone and the process died with nothing to catch, this asserts
     // it now comes back as an error naming the path.
     //
     // The context is built here rather than taken from a UI message so the test

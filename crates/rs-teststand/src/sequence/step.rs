@@ -12,8 +12,7 @@ use crate::property::PropertyObject;
 /// [`Sequence::insert_step`](crate::Sequence::insert_step).
 ///
 /// This type carries the properties every step has, whatever its type. Anything
-/// specific to a step type — a numeric limit test's limits, for instance —
-/// lives in the property tree reached through
+/// specific to a step type, a numeric limit test's limits, for instance, /// lives in the property tree reached through
 /// [`as_property_object`](Self::as_property_object).
 #[derive(Debug)]
 pub struct Step {
@@ -128,8 +127,8 @@ impl Step {
     ///
     /// A copy of a step carries the original's step ID, so a sequence built by
     /// cloning a prototype ends up with several steps claiming the same
-    /// identity. Anything that refers to a step by ID — a result, a report
-    /// entry, a `GoTo` — then cannot tell them apart. Call this on each copy.
+    /// identity. Anything that refers to a step by ID, a result, a report
+    /// entry, a `GoTo`, then cannot tell them apart. Call this on each copy.
     ///
     /// # Errors
     /// [`Error`] if the COM call fails.
@@ -188,8 +187,7 @@ impl Step {
 
     /// The step as a property tree (`Step.AsPropertyObject`).
     ///
-    /// Type-specific settings live here, addressed by lookup path —
-    /// `Limits.High` on a numeric limit test, for instance.
+    /// Type-specific settings live here, addressed by lookup path, /// `Limits.High` on a numeric limit test, for instance.
     ///
     /// # Errors
     /// [`Error`] if the COM call fails or returns an unexpected type.

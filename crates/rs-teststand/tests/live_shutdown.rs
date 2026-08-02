@@ -44,7 +44,7 @@ fn shutting_down_is_confirmed_by_the_engine_and_bounded() -> Result<(), Error> {
     // ShutDown is asynchronous: it returns as soon as the request is accepted
     // and reports completion later on the message queue. A host that skips the
     // wait tears COM down underneath work still in progress. The wait must also
-    // be bounded — an unattended station cannot be allowed to hang here.
+    // be bounded, an unattended station cannot be allowed to hang here.
     let engine = Engine::new()?;
     let sequence_file = runnable_file(&engine)?;
     let _execution = engine.new_execution(&sequence_file, "MainSequence", None, false, 0)?;

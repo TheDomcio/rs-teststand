@@ -10,8 +10,8 @@ use crate::property::PropertyObject;
 ///
 /// A sequence owns two of the four variable scopes:
 ///
-/// * [`locals`](Self::locals) — storage private to one call of this sequence.
-/// * [`parameters`](Self::parameters) — values the caller supplies.
+/// * [`locals`](Self::locals), storage private to one call of this sequence.
+/// * [`parameters`](Self::parameters), values the caller supplies.
 ///
 /// The other two live elsewhere: file globals on the sequence file, and station
 /// globals on the engine.
@@ -106,7 +106,7 @@ impl Sequence {
     ///
     /// Composed rather than a COM member of its own, because the raw sequence
     /// has a trap in it. `Clone` lives on `PropertyObject`, so a copied step
-    /// arrives on the `PropertyObject` interface — and the `Step` interface
+    /// arrives on the `PropertyObject` interface, and the `Step` interface
     /// shares none of its dispatch identifiers. Reading `Name` off such a copy
     /// would dispatch a step identifier against a property-object interface and
     /// take the process down rather than fail. Inserting first and reading the

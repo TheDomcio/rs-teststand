@@ -43,7 +43,7 @@ file you already have.
 The run produces the whole spread a real panel has to cope with, which is the
 point of it:
 
-- **Engine messages nobody asked for** — execution start and end, file start and
+- **Engine messages nobody asked for**, execution start and end, file start and
   end, per-step trace. Two of them carry an object payload of their own.
 - **The documented progress pair**, `UIMsg_ProgressPercent` and
   `UIMsg_ProgressText`, which are the two a step is meant to post.
@@ -80,7 +80,7 @@ Two, and the split is enforced by the compiler rather than by care:
 - **The engine thread** owns the engine for its whole life. Engine wrappers are
   neither `Send` nor `Sync`, so none of them can reach the server.
 - **The server thread** runs the accept loop and moves bytes. It never sees the
-  engine. What crosses is `MessageEvent`, `Command` and `Response` — plain data.
+  engine. What crosses is `MessageEvent`, `Command` and `Response`, plain data.
 
 `WebSocketBridge::next_command` is non-blocking on purpose: the engine thread
 has its own queue to pump and cannot afford to wait on a socket.
@@ -88,7 +88,7 @@ has its own queue to pump and cannot afford to wait on a socket.
 ## The wire format
 
 JSON in `WebSocket` **text** frames, opcode `0x1` in RFC 6455. The protocol
-frames each message, so there is no terminator — unlike the raw-TCP transport in
+frames each message, so there is no terminator, unlike the raw-TCP transport in
 `examples/tcp-bridge`, where CRLF exists precisely because a byte stream has no
 record boundary.
 
@@ -166,7 +166,7 @@ and without jitter they all return at once and knock it over again.
 Nothing here reimplements the crate. `rs-teststand-bridge` owns the wire types
 and both transports; the example is the loop around them.
 
-- `host/src/main.rs` — starts the orchestrator, nothing else
-- `host/src/orchestrator.rs` — the engine thread: answer, pump, publish
-- `host/src/demo_sequence.rs` — the sequence, built in code
-- `panel.html` — the browser front end, served by the host rather than opened from disk
+- `host/src/main.rs`, starts the orchestrator, nothing else
+- `host/src/orchestrator.rs`, the engine thread: answer, pump, publish
+- `host/src/demo_sequence.rs`, the sequence, built in code
+- `panel.html`, the browser front end, served by the host rather than opened from disk

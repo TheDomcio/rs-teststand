@@ -1,4 +1,4 @@
-//! Code-module adapters — how a step reaches the code it calls.
+//! Code-module adapters, how a step reaches the code it calls.
 
 pub mod adapter_key_name;
 

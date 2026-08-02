@@ -6,7 +6,7 @@
 //!
 //! Polling has a shape that must be followed:
 //!
-//! 1. Enable it — [`Engine::set_ui_message_polling_enabled`](crate::Engine::set_ui_message_polling_enabled).
+//! 1. Enable it, [`Engine::set_ui_message_polling_enabled`](crate::Engine::set_ui_message_polling_enabled).
 //!    It is off by default.
 //! 2. Check [`Engine::is_ui_message_queue_empty`](crate::Engine::is_ui_message_queue_empty).
 //! 3. If not empty, take one with [`Engine::get_ui_message`](crate::Engine::get_ui_message).

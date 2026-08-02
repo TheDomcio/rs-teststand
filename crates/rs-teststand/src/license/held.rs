@@ -1,13 +1,13 @@
-//! A licence the engine is holding.
+//! A license the engine is holding.
 
 use crate::error::Error;
 use crate::license::LicenseType;
 
-/// A licence acquired from the engine, released when dropped.
+/// A license acquired from the engine, released when dropped.
 ///
-/// The engine holds a licence type until every handle for it is released, so
+/// The engine holds a license type until every handle for it is released, so
 /// this must stay alive for as long as the host needs to run. Dropping it early
-/// gives the licence back.
+/// gives the license back.
 ///
 /// Obtained from [`Engine::require_license`](crate::Engine::require_license).
 #[derive(Debug)]
@@ -34,21 +34,21 @@ impl<'engine> HeldLicense<'engine> {
     /// What the engine reports it is using.
     ///
     /// Informational, not the verdict: holding this object at all means a
-    /// licence was granted. After an unspecified request the engine may still
+    /// license was granted. After an unspecified request the engine may still
     /// report [`LicenseType::NoLicense`] here, while a named request such as a
-    /// sequence editor makes it report the station's actual licence.
+    /// sequence editor makes it report the station's actual license.
     #[must_use]
     pub const fn kind(&self) -> LicenseType {
         self.kind
     }
 
-    /// The engine's handle for this licence.
+    /// The engine's handle for this license.
     #[must_use]
     pub const fn handle(&self) -> i32 {
         self.handle
     }
 
-    /// Gives the licence back, reporting whether the engine accepted it.
+    /// Gives the license back, reporting whether the engine accepted it.
     ///
     /// Dropping does the same thing but cannot report a failure. Use this when
     /// a host needs to know.

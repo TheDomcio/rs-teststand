@@ -227,7 +227,7 @@ pub(crate) mod property_object_file {
     pub(crate) const INC_CHANGE_COUNT: i32 = 0x66;
     /// `Path`, read/write.
     pub(crate) const PATH: i32 = 0x6c;
-    /// `Data`, read-only — the file's root property object.
+    /// `Data`, read-only, the file's root property object.
     pub(crate) const DATA: i32 = 0x6e;
     /// `SaveFileIfModified`, one `VT_BOOL` param, returns `VT_BOOL`.
     pub(crate) const SAVE_FILE_IF_MODIFIED: i32 = 0x7a;
@@ -235,7 +235,7 @@ pub(crate) mod property_object_file {
 
 /// `UsersFile` dispinterface members.
 pub(crate) mod users_file {
-    /// `UserList`, read-only here — an array of `User` objects.
+    /// `UserList`, read-only here, an array of `User` objects.
     pub(crate) const USER_LIST: i32 = 0x1;
     /// `UserProfileList`, read-only here.
     pub(crate) const USER_PROFILE_LIST: i32 = 0x2;
@@ -311,7 +311,7 @@ pub(crate) mod property_object_type {
 
 /// `PropertyObject` introspection members.
 pub(crate) mod property_object_introspect {
-    /// `GetType`, 5 params — three are `[out]` byref, so it is not bindable
+    /// `GetType`, 5 params, three are `[out]` byref, so it is not bindable
     /// through the current in-only dispatch seam. Recorded for completeness.
     #[allow(dead_code, reason = "needs byref out-param support in the sys crate")]
     pub(crate) const GET_TYPE: i32 = 0x214;
@@ -325,7 +325,7 @@ pub(crate) mod property_object_introspect {
     pub(crate) const GET_TYPE_DISPLAY_STRING: i32 = 0x249;
     /// `GetTypeFlags`, 2 params.
     pub(crate) const GET_TYPE_FLAGS: i32 = 0x26c;
-    /// `Type`, read-only — yields a `PropertyObjectType`.
+    /// `Type`, read-only, yields a `PropertyObjectType`.
     pub(crate) const TYPE: i32 = 0x284;
     /// `GetValInteger64`, 2 params.
     pub(crate) const GET_VAL_INTEGER64: i32 = 0x2d0;
@@ -335,7 +335,7 @@ pub(crate) mod property_object_introspect {
     pub(crate) const GET_VAL_UNSIGNED_INTEGER64: i32 = 0x2d4;
     /// `SetValUnsignedInteger64`, 3 params.
     pub(crate) const SET_VAL_UNSIGNED_INTEGER64: i32 = 0x2d5;
-    /// `Evaluate`, 1 param — obsolete, kept for older engines.
+    /// `Evaluate`, 1 param, obsolete, kept for older engines.
     pub(crate) const EVALUATE: i32 = 0x23c;
     /// `EvaluateEx`, 2 params.
     pub(crate) const EVALUATE_EX: i32 = 0x28a;
@@ -373,11 +373,11 @@ pub(crate) mod execution {
     pub(crate) const WAIT_FOR_END_EX: i32 = 0x14;
     /// `Id`, read-only.
     pub(crate) const ID: i32 = 0x7b;
-    /// `Break`, no params — suspends the execution.
+    /// `Break`, no params, suspends the execution.
     pub(crate) const BREAK: i32 = 0x1;
     /// `Resume`, no params.
     pub(crate) const RESUME: i32 = 0x2;
-    /// `Abort`, no params — stops without running cleanup.
+    /// `Abort`, no params, stops without running cleanup.
     pub(crate) const ABORT: i32 = 0x7;
     /// `CancelTermination`, no params.
     pub(crate) const CANCEL_TERMINATION: i32 = 0xa;
@@ -413,7 +413,7 @@ pub(crate) mod execution {
     pub(crate) const ERROR_OBJECT: i32 = 0x79;
     /// `ResultObject`, read-only.
     pub(crate) const RESULT_OBJECT: i32 = 0x7d;
-    /// `GetStates`, 2 `[out]` byref params — not bindable through the current
+    /// `GetStates`, 2 `[out]` byref params, not bindable through the current
     /// in-only dispatch seam. Recorded so nobody re-derives it.
     #[allow(dead_code, reason = "needs byref out-param support in the sys crate")]
     pub(crate) const GET_STATES: i32 = 0x13;
@@ -421,7 +421,7 @@ pub(crate) mod execution {
 
 /// `Thread` dispinterface members.
 pub(crate) mod thread {
-    /// `GetSequenceContext`, 2 params — the second is an optional `[out]`
+    /// `GetSequenceContext`, 2 params, the second is an optional `[out]`
     /// byref frame id, which is omitted.
     pub(crate) const GET_SEQUENCE_CONTEXT: i32 = 0x5;
     /// `AsPropertyObject`, no params.
@@ -458,7 +458,7 @@ pub(crate) mod thread {
     pub(crate) const UNIQUE_THREAD_ID: i32 = 0x33;
     /// `Execution`, read-only.
     pub(crate) const EXECUTION: i32 = 0x1f;
-    /// `ExternallySuspended`, read-only — true once a `Break` has taken effect.
+    /// `ExternallySuspended`, read-only, true once a `Break` has taken effect.
     pub(crate) const EXTERNALLY_SUSPENDED: i32 = 0x28;
 }
 
@@ -470,19 +470,19 @@ pub(crate) mod sequence_context {
     pub(crate) const LOCALS: i32 = 0x36;
     /// `Parameters`, read-only.
     pub(crate) const PARAMETERS: i32 = 0x37;
-    /// `FileGlobals`, read-only — the run's own copy, not the file's defaults.
+    /// `FileGlobals`, read-only, the run's own copy, not the file's defaults.
     pub(crate) const FILE_GLOBALS: i32 = 0x38;
-    /// `StationGlobals`, read-only — outlives the execution.
+    /// `StationGlobals`, read-only, outlives the execution.
     pub(crate) const STATION_GLOBALS: i32 = 0x39;
     /// `Execution`, read-only.
     pub(crate) const EXECUTION: i32 = 0x31;
     /// `Thread`, read-only.
     pub(crate) const THREAD: i32 = 0x30;
-    /// `SequenceFile`, read-only — outlives the execution.
+    /// `SequenceFile`, read-only, outlives the execution.
     pub(crate) const SEQUENCE_FILE: i32 = 0x22;
     /// `Sequence`, read-only.
     pub(crate) const SEQUENCE: i32 = 0x21;
-    /// `Step`, read-only — present only while a step executes.
+    /// `Step`, read-only, present only while a step executes.
     pub(crate) const STEP: i32 = 0x1e;
     /// `StepIndex`, read-only.
     pub(crate) const STEP_INDEX: i32 = 0x23;
@@ -496,10 +496,10 @@ pub(crate) mod sequence_context {
     pub(crate) const ERROR_REPORTED: i32 = 0x50;
     /// `RunTimeErrorMessage`, read-only.
     pub(crate) const RUN_TIME_ERROR_MESSAGE: i32 = 0x2a;
-    /// `Root`, read-only — the context's own property tree root, which is what
+    /// `Root`, read-only, the context's own property tree root, which is what
     /// an expression means by `ThisContext`.
     pub(crate) const ROOT: i32 = 0x2e;
-    /// `GetMultipleValues`, `[out]` byref — not bindable through the in-only
+    /// `GetMultipleValues`, `[out]` byref, not bindable through the in-only
     /// dispatch seam. Recorded so nobody re-derives it.
     #[allow(dead_code, reason = "needs byref out-param support in the sys crate")]
     pub(crate) const GET_MULTIPLE_VALUES: i32 = 0x58;
@@ -539,9 +539,9 @@ pub(crate) mod step {
     pub(crate) const BREAK_ON_STEP: i32 = 0x16;
     /// `SetBreakSettings`: pass count and condition alongside the breakpoint.
     pub(crate) const SET_BREAK_SETTINGS: i32 = 0x96;
-    /// `AdapterKeyName`, read/write — a string, not a number.
+    /// `AdapterKeyName`, read/write, a string, not a number.
     pub(crate) const ADAPTER_KEY_NAME: i32 = 0x15;
-    /// `RunMode`, read/write — a string, not a number.
+    /// `RunMode`, read/write, a string, not a number.
     pub(crate) const RUN_MODE: i32 = 0x17;
     /// `Precondition`, read/write.
     pub(crate) const PRECONDITION: i32 = 0x1a;

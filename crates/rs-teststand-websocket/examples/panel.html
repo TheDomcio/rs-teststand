@@ -86,7 +86,7 @@
 
   socket.onopen = () => (el("state").textContent = "connected");
   socket.onclose = () => (el("state").textContent = "host disconnected");
-  socket.onerror = () => (el("state").textContent = "connection failed — is the host running?");
+  socket.onerror = () => (el("state").textContent = "connection failed, is the host running?");
 
   // The same socket that streams events carries requests back. A panel never
   // polls and never opens a second connection to ask for something.

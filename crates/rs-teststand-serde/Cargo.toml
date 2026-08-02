@@ -13,7 +13,7 @@ categories = ["api-bindings", "encoding", "os::windows-apis"]
 readme = "README.md"
 
 # An addition to the binding, not part of it. `rs-teststand` mirrors the COM API
-# and carries no serialization framework; a caller that never serialises a
+# and carries no serialization framework; a caller that never serializes a
 # property tree pays for none of this.
 [package.metadata.docs.rs]
 # This crate wraps a Windows COM API and does not build for Linux, which is what
@@ -24,7 +24,7 @@ targets = ["i686-pc-windows-msvc"]
 all-features = true
 
 [dependencies]
-rs-teststand = { path = "../rs-teststand", version = "0.0.9" }
+rs-teststand = { path = "../rs-teststand", version = "0.0.10" }
 serde = { version = "1", features = ["derive"] }
 
 [features]

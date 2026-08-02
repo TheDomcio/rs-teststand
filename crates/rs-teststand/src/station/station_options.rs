@@ -257,7 +257,7 @@ impl StationOptions {
     /// trace postings to a user interface.
     ///
     /// This is the Execution page's **Speed** slider, and it runs backwards
-    /// from the label: a *larger* delay is *slower* tracing. Fast is `0` — post
+    /// from the label: a *larger* delay is *slower* tracing. Fast is `0`, post
     /// as often as the execution produces messages; slow is a few hundred
     /// milliseconds, which paces an execution so a person can follow it.
     ///
@@ -287,7 +287,7 @@ impl StationOptions {
     /// Reads `UIMessageMinDelay` (`VT_I4`): the floor for
     /// [`Self::ui_message_delay`], defaulting to `0`.
     ///
-    /// Unlike most station options this one is not persisted — it lasts only as
+    /// Unlike most station options this one is not persisted, it lasts only as
     /// long as the engine object, so it must be set again each session.
     ///
     /// # Errors

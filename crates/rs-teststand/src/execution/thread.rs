@@ -97,7 +97,7 @@ impl Thread {
 
     /// The sequence context at a call-stack frame (`Thread.GetSequenceContext`).
     ///
-    /// Index `0` is the innermost frame — the sequence running right now.
+    /// Index `0` is the innermost frame, the sequence running right now.
     ///
     /// This is the route to `RunState`, `Locals`, `FileGlobals` and
     /// `StationGlobals` for a live run. **Mind what may outlive the run:** NI
@@ -106,14 +106,14 @@ impl Thread {
     /// before and persisting after the execution, and everything else in the
     /// context as belonging to it. `FileGlobals` in particular is the run's own
     /// copy, so keeping one past the execution holds a reference to a finished
-    /// run — read what is needed while it is alive, or take the edit-time
+    /// run, read what is needed while it is alive, or take the edit-time
     /// defaults from
     /// [`SequenceFile::file_globals_default_values`](crate::SequenceFile::file_globals_default_values)
     /// instead.
     ///
     /// The engine declares **two** parameters: the call stack index, and an
     /// `[out]` frame id (`VT_BYREF | VT_I4`). Both must be present in the call
-    /// even though only the first carries information — supplying one gives
+    /// even though only the first carries information, supplying one gives
     /// `DISP_E_BADPARAMCOUNT`. The second is passed empty, which the engine
     /// accepts as "no output wanted"; reading the frame id back would need
     /// byref support this crate does not have yet.

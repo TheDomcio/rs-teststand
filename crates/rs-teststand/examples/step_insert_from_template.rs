@@ -6,8 +6,8 @@
 //!
 //! The editor's Templates pane holds reusable step prototypes, reached with
 //! `Engine.GetTemplatesFile`. It is empty on a station nobody has saved one on,
-//! so this reports what is there and then builds its own prototype — a VI-call
-//! step — which exercises the part of the workflow that applies whatever the
+//! so this reports what is there and then builds its own prototype, a VI-call
+//! step, which exercises the part of the workflow that applies whatever the
 //! template came from.
 //!
 //! The one thing a copy does not bring with it is a distinct identity. Every

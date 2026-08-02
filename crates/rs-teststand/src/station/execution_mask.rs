@@ -10,9 +10,9 @@ bitflags::bitflags! {
     /// Tracing has two independent controls, and confusing them is the usual
     /// mistake:
     ///
-    /// * **Whether** tracing happens — [`Self::TRACING_ENABLED`] plus the
+    /// * **Whether** tracing happens, [`Self::TRACING_ENABLED`] plus the
     ///   `TRACE_INTO_*` bits that widen its reach.
-    /// * **How fast** it runs — not in this mask at all. That is the Speed
+    /// * **How fast** it runs, not in this mask at all. That is the Speed
     ///   slider, which is
     ///   [`StationOptions::ui_message_delay`](crate::StationOptions::ui_message_delay):
     ///   milliseconds between trace postings. See that method for the scale.

@@ -5,7 +5,7 @@
 //! that implements the same trait, so wrapper logic runs with no COM at all.
 //!
 //! Every `VARIANT` here is held as an [`OwnedVariant`], which clears itself on
-//! drop — including on the error paths, where a manual clear is easy to forget.
+//! drop, including on the error paths, where a manual clear is easy to forget.
 
 use std::fmt;
 
@@ -35,7 +35,7 @@ pub trait Dispatch: fmt::Debug {
     ///
     /// # Errors
     /// [`ComError::Hresult`] if the COM call fails, or
-    /// [`ComError::UnexpectedType`] if the returned value has an unmodelled type.
+    /// [`ComError::UnexpectedType`] if the returned value has an unmodeled type.
     fn get(&self, dispid: i32) -> Result<Value, ComError>;
 
     /// Sets a property by dispatch id (`DISPATCH_PROPERTYPUT`).
@@ -54,7 +54,7 @@ pub trait Dispatch: fmt::Debug {
     ///
     /// # Errors
     /// [`ComError::Hresult`] if the COM call fails, or
-    /// [`ComError::UnexpectedType`] if the returned value has an unmodelled type.
+    /// [`ComError::UnexpectedType`] if the returned value has an unmodeled type.
     fn call(&self, dispid: i32, args: &[Value]) -> Result<Value, ComError>;
 
     /// An owned handle to the same COM object, when there is one.
@@ -236,7 +236,7 @@ pub fn create_dispatch(prog_id: &str) -> Result<ComDispatch, ComError> {
 /// Initializes COM on the current thread as a single-threaded apartment.
 ///
 /// Idempotent: `S_FALSE` (already initialized on this thread) is success.
-/// Never paired with `CoUninitialize` here — uninitializing COM while engine
+/// Never paired with `CoUninitialize` here, uninitializing COM while engine
 /// objects are alive aborts the process; let COM unwind at thread exit.
 ///
 /// # Errors
@@ -247,7 +247,7 @@ pub fn init_apartment() -> Result<(), ComError> {
     let result = unsafe { CoInitializeEx(None, COINIT_APARTMENTTHREADED) };
     // RPC_E_CHANGED_MODE means the thread already belongs to the other
     // concurrency model. That is a deliberate choice by whoever set the thread
-    // up, not a failure — a host may run the engine on a multithreaded thread.
+    // up, not a failure, a host may run the engine on a multithreaded thread.
     if result.is_ok() || result.0 == RPC_E_CHANGED_MODE {
         Ok(())
     } else {
@@ -264,7 +264,7 @@ const RPC_E_CHANGED_MODE: i32 = -2_147_417_850;
 ///
 /// A thread that initializes an apartment and then **exits** should uninitialize
 /// first. The process's main thread never really has to: the process is ending
-/// anyway. A spawned thread does — it genuinely detaches while the runtime still
+/// anyway. A spawned thread does, it genuinely detaches while the runtime still
 /// believes it owns a live apartment.
 ///
 /// Ordering is the precondition, so this takes the object rather than trusting

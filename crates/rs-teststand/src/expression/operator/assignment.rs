@@ -5,7 +5,7 @@ use super::Arity;
 /// An assignment operator.
 ///
 /// The plain form evaluates the right-hand side and stores it in the left-hand
-/// operand, converting between types where it can — a number into a string
+/// operand, converting between types where it can, a number into a string
 /// property, for instance. Assigning one container to another requires the
 /// subproperty names on both sides to line up.
 ///
@@ -72,7 +72,7 @@ impl AssignmentOperator {
         Arity::Binary
     }
 
-    /// Binding strength — deliberately unmeasured.
+    /// Binding strength, deliberately unmeasured.
     ///
     /// Assignment binds loosest of everything here, but the exact level was not
     /// established by evaluation, and a number that has not been verified would

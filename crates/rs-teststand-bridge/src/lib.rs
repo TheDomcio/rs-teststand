@@ -3,23 +3,23 @@
 //! The engine is a single-threaded-apartment COM object: the wrappers in
 //! [`rs_teststand`] are deliberately neither [`Send`] nor [`Sync`], so one
 //! thread owns the engine and no other may touch it. A user interface is the
-//! opposite — its own thread, its own event loop, often its own process, and
+//! opposite, its own thread, its own event loop, often its own process, and
 //! often not even the same language.
 //!
 //! This crate is the seam between the two. Nothing that crosses it is a COM
 //! reference; what crosses is data:
 //!
-//! - [`MessageEvent`] — one engine message flattened into something sendable,
+//! - [`MessageEvent`], one engine message flattened into something sendable,
 //!   including the object payload, serialized through `rs-teststand-serde`.
-//! - [`Command`] — what a user interface asks the host to do.
-//! - [`Response`] — the host's answer to one command.
+//! - [`Command`], what a user interface asks the host to do.
+//! - [`Response`], the host's answer to one command.
 //!
 //! Those three types are shared by every transport, so a front end written
 //! against one can move to another without its message handling changing:
 //!
-//! - `rs-teststand-websocket` — bidirectional, framed by the protocol, and what
+//! - `rs-teststand-websocket`, bidirectional, framed by the protocol, and what
 //!   a browser or a modern panel should use. **Start here.**
-//! - [`transport::line`] — one JSON object per line over raw TCP, CRLF-framed,
+//! - [`transport::line`], one JSON object per line over raw TCP, CRLF-framed,
 //!   for a script or an older tool that speaks nothing else.
 //!
 //! [`EngineHost`] is a different answer to a different question: it gives the

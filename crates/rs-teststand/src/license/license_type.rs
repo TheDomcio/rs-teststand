@@ -1,6 +1,6 @@
-//! What licence the engine is currently running on.
+//! What license the engine is currently running on.
 
-/// The kind of licence the engine is using (`Engine.LicenseType`).
+/// The kind of license the engine is using (`Engine.LicenseType`).
 ///
 /// Where several are activated on one machine, the engine picks the minimum
 /// that satisfies the request rather than the most capable, so this reports
@@ -14,16 +14,16 @@ pub enum LicenseType {
     DebugDeploymentEnv,
     /// Base deployment engine.
     BaseDeploymentEngine,
-    /// An OEM licence.
+    /// An OEM license.
     Oem,
-    /// An evaluation licence, which expires.
+    /// An evaluation license, which expires.
     Evaluation,
-    /// No licence at all.
+    /// No license at all.
     ///
     /// The state a host has to survive: the engine object may still exist, but
-    /// anything needing a licence will refuse.
+    /// anything needing a license will refuse.
     NoLicense,
-    /// A temporary licence, taken when the volume licence server is
+    /// A temporary license, taken when the volume license server is
     /// unreachable. Worth logging: it means the station could not reach the
     /// server, so it will need to later.
     Temporary,
@@ -38,7 +38,7 @@ impl LicenseType {
     ///
     /// # Errors
     /// The raw value, when it is one this build does not name. A newer engine
-    /// may define a licence type this crate predates, and reporting the number
+    /// may define a license type this crate predates, and reporting the number
     /// is more useful than guessing which existing one it resembles.
     pub const fn from_bits(bits: i32) -> Result<Self, i32> {
         match bits {
@@ -71,11 +71,11 @@ impl LicenseType {
         }
     }
 
-    /// Whether this licence lets a host expect to run sequences.
+    /// Whether this license lets a host expect to run sequences.
     ///
     /// False for [`NoLicense`](Self::NoLicense) only. Everything else grants
-    /// something, though not necessarily everything a caller wants — an
-    /// evaluation licence expires and a base deployment engine cannot edit — so
+    /// something, though not necessarily everything a caller wants, an
+    /// evaluation license expires and a base deployment engine cannot edit, so
     /// this is a floor, not a guarantee.
     #[must_use]
     pub const fn is_usable(self) -> bool {

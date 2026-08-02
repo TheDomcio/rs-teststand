@@ -26,7 +26,7 @@ pub enum ArithmeticOperator {
     Divide,
     /// Remainder, `%`.
     Modulo,
-    /// Remainder, `MOD` — the word spelling of [`Self::Modulo`].
+    /// Remainder, `MOD`, the word spelling of [`Self::Modulo`].
     ModuloWord,
     /// Increment, `++`.
     Increment,

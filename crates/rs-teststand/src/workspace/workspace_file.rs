@@ -47,7 +47,7 @@ impl WorkspaceFile {
     /// The sentinel the engine returns when a workspace names no provider.
     ///
     /// Measured against a live engine: the value comes back as this literal
-    /// string, not as a COM null, so it must be recognised by text.
+    /// string, not as a COM null, so it must be recognized by text.
     const NO_PROVIDER: &'static str = "<None>";
 
     /// The source code control provider this workspace names
@@ -55,9 +55,9 @@ impl WorkspaceFile {
     ///
     /// Three states, all distinct:
     ///
-    /// * `None` — the workspace names no provider.
-    /// * `Some("")` — defer to the system default provider.
-    /// * `Some(name)` — that named provider.
+    /// * `None`, the workspace names no provider.
+    /// * `Some("")`, defer to the system default provider.
+    /// * `Some(name)`, that named provider.
     ///
     /// # Errors
     /// [`Error`] if the COM call fails or returns an unexpected type.
@@ -106,7 +106,7 @@ impl WorkspaceFile {
     ///
     /// **This method can raise a dialog and is therefore unsafe on an
     /// unattended host.** When there are modifications it asks the user before
-    /// writing, and a `false` return means precisely that they declined — not
+    /// writing, and a `false` return means precisely that they declined, not
     /// that the save failed. Nothing is prompted or written when nothing has
     /// changed. A failure to write is reported as an error naming the files,
     /// not as `false`.

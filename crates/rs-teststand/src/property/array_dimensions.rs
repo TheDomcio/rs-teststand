@@ -170,7 +170,7 @@ mod tests {
     #[test]
     fn a_non_array_reports_no_bounds() -> Result<(), crate::Error> {
         // A scalar has zero dimensions, and its bound string is empty rather
-        // than malformed — that must not read as an error.
+        // than malformed, that must not read as an error.
         assert!(parse_bounds("")?.is_empty());
         assert!(parse_bounds("[]")?.is_empty());
         Ok(())

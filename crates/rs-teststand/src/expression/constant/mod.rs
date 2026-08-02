@@ -2,8 +2,8 @@
 //!
 //! Two families: [`ColorConstant`] and [`OtherConstant`].
 //!
-//! The published reference does not list the color names — it points at the
-//! editor's expression browser instead — so each name here was confirmed by
+//! The published reference does not list the color names, it points at the
+//! editor's expression browser instead, so each name here was confirmed by
 //! evaluating it on a live engine, and the values were read back from the same
 //! run. Nothing in this module is inferred.
 

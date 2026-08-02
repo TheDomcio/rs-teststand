@@ -208,8 +208,8 @@ impl PropertyObject {
 
     /// Reads a signed 64-bit integer property (`GetValInteger64`).
     ///
-    /// The engine stores a number as one of three things — a double, a signed
-    /// 64-bit integer, or an unsigned one — and the accessor must match. Use
+    /// The engine stores a number as one of three things, a double, a signed
+    /// 64-bit integer, or an unsigned one, and the accessor must match. Use
     /// this when [`property_type`](Self::property_type) reports
     /// [`PropertyRepresentation::Int64`](crate::PropertyRepresentation::Int64);
     /// [`get_val_number`](Self::get_val_number) fails on such a property rather
@@ -304,7 +304,7 @@ impl PropertyObject {
     /// A `printf`-style format that decides how
     /// [`get_formatted_value`](Self::get_formatted_value) renders a number, so
     /// the same stored value can display as decimal, hex, octal or binary. It
-    /// is presentation only — the underlying number is unchanged.
+    /// is presentation only, the underlying number is unchanged.
     ///
     /// Two departures from C: `%b` formats in binary, and a `$` placed straight
     /// after the `%` strips trailing zeros after the decimal point. An empty
@@ -410,7 +410,7 @@ impl PropertyObject {
     /// The object's attributes (`PropertyObject.Attributes`).
     ///
     /// A property tree of its own, used for metadata that is not part of the
-    /// value — an enumeration's strictness flag, for instance.
+    /// value, an enumeration's strictness flag, for instance.
     ///
     /// # Errors
     /// [`Error`] if the COM call fails or returns an unexpected type.
@@ -484,7 +484,7 @@ impl PropertyObject {
     ///
     /// Superseded by [`evaluate_ex`](Self::evaluate_ex), which adds an options
     /// argument. This form is kept because it is the member available on
-    /// engines from TestStand 2016, which the crate supports — a caller
+    /// engines from TestStand 2016, which the crate supports, a caller
     /// targeting the whole range can use it without a version check.
     ///
     /// # Errors
@@ -502,7 +502,7 @@ impl PropertyObject {
     /// The object is the scope: the expression can name this property's
     /// subproperties directly. The result comes back as a `PropertyObject`
     /// holding whatever type the expression produced, so read it with the
-    /// accessor that matches — or with `to_value`.
+    /// accessor that matches, or with `to_value`.
     ///
     /// `Evaluate` is the obsolete form of this member; use this one.
     ///

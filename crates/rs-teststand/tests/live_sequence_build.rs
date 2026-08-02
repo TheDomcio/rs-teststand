@@ -17,7 +17,7 @@ const NO_ADAPTER: &str = "";
 fn a_built_in_step_type_is_available_without_extra_setup() -> Result<(), Error> {
     // Step types come from the type palettes, which an engine created over COM
     // does not load by itself. Engine::new does it, and this is the check that
-    // it stays done — without it every new_step fails with StepTypeNotFound.
+    // it stays done, without it every new_step fails with StepTypeNotFound.
     let engine = Engine::new()?;
     for step_type in [
         "NumericLimitTest",

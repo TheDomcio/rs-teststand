@@ -8,13 +8,13 @@
 /// # Why a COM caller needs this
 ///
 /// Not to be confused with the engine's own message queue
-/// ([`Engine::get_ui_message`](crate::Engine::get_ui_message)) — this is the
+/// ([`Engine::get_ui_message`](crate::Engine::get_ui_message)), this is the
 /// **operating system's** queue, one level below.
 ///
 /// The engine is a single-threaded-apartment object, and COM delivers
 /// cross-apartment calls to an STA thread as window messages. A thread that
 /// never dispatches them cannot receive those calls, so a caller that waits in
-/// a tight loop — or in `sleep` — starves the very machinery it is waiting on.
+/// a tight loop, or in `sleep`, starves the very machinery it is waiting on.
 /// The symptom is not an error: it is a wait that never ends while the process
 /// burns a core.
 ///

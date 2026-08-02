@@ -48,7 +48,7 @@ impl LineSink {
 
     /// Writes one event as a single line.
     ///
-    /// Blocking, and that is the useful behaviour: the caller has not yet
+    /// Blocking, and that is the useful behavior: the caller has not yet
     /// acknowledged the engine's message, so back-pressure from a slow reader
     /// reaches the sequence rather than growing a queue nobody drains.
     ///

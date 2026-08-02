@@ -22,7 +22,7 @@ bitflags::bitflags! {
         /// Skip the file's load callback (`GetSeqFile_DoNotRunLoadCallback`).
         ///
         /// A load callback can display a dialog, which blocks an unattended
-        /// host — set this when opening untrusted files headlessly.
+        /// host, set this when opening untrusted files headlessly.
         const DO_NOT_RUN_LOAD_CALLBACK = 16;
         /// Search the configured directories for the file (`GetSeqFile_FindFile`).
         const FIND_FILE = 32;
@@ -43,7 +43,7 @@ pub enum ConflictHandler {
     /// Fail the load (`ConflictHandler_Error`). The only non-interactive
     /// choice that never blocks, so it is the sensible default for a service.
     Error = 1,
-    /// Ask the user (`ConflictHandler_Prompt`). Raises a dialog — unsuitable
+    /// Ask the user (`ConflictHandler_Prompt`). Raises a dialog, unsuitable
     /// for an unattended host.
     Prompt = 3,
     /// Keep the already-loaded type (`ConflictHandler_UseGlobalType`).

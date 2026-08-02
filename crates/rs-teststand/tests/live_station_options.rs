@@ -3,7 +3,7 @@
 //!
 //! **These touch real machine state.** Station options persist into the active
 //! installation's configuration directory, so every test here restores the
-//! original value through a drop guard — including when an assertion fails.
+//! original value through a drop guard, including when an assertion fails.
 //! Nothing is hard-coded to a version or an install path: the engine is asked
 //! where its configuration lives, so the same test is correct on whichever
 //! version is active.
@@ -149,7 +149,7 @@ fn options_persist_into_the_engine_reported_config_directory(engine: &Engine) ->
 /// Reads an option, writes the same value back, reads it again, and records a
 /// failure if the value moved.
 ///
-/// Failures — a failed read, a failed write, or a value that moved — are
+/// Failures, a failed read, a failed write, or a value that moved, are
 /// collected rather than propagated, so one run reports every broken option
 /// instead of stopping at the first. On a mismatch the original value is
 /// written back, so a defective mapping cannot leave the station altered.
@@ -502,7 +502,7 @@ fn the_32bit_cpu_affinity_member_is_rejected_by_a_64bit_engine(
 
 /// `RecognizeMBChars` became read-only in TestStand 2019 and is derived from the
 /// system code page at launch. The round-trip audit passes it only because
-/// re-writing the value it already holds is accepted as a no-op — so on its own
+/// re-writing the value it already holds is accepted as a no-op, so on its own
 /// that audit would wrongly suggest the setter works. This pins the real
 /// behavior: changing the value is refused.
 fn recognize_mb_chars_refuses_a_real_change_on_a_modern_engine(

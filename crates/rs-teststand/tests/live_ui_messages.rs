@@ -1,7 +1,6 @@
 //! Live-engine tests for receiving messages from a running sequence.
 //!
-//! This is the path a headless host uses to learn what an execution is doing —
-//! the same information a graphical front end shows, delivered to a process
+//! This is the path a headless host uses to learn what an execution is doing, //! the same information a graphical front end shows, delivered to a process
 //! with no window. It is what any IPC layer over this crate would forward.
 //!
 //! Requires a registered engine:
@@ -174,7 +173,7 @@ fn a_sequence_reaches_a_headless_host_through_the_queue() -> Result<(), Error> {
 #[ignore = "requires a live engine"]
 fn engine_and_sequence_messages_are_distinguishable_by_code() -> Result<(), Error> {
     // A host forwarding messages elsewhere has to tell its own traffic from the
-    // engine's, and the code alone is enough — no lookup table needed.
+    // engine's, and the code alone is enough, no lookup table needed.
     let engine = Engine::new()?;
     engine.set_ui_message_polling_enabled(true)?;
 
@@ -266,7 +265,7 @@ fn a_sequence_can_hand_the_host_a_whole_container() -> Result<(), Error> {
     //
     // The engine declares the slot as `IUnknown` rather than `IDispatch`, so
     // this also covers the conversion that reading it requires: without it the
-    // read fails as an unmodelled VARIANT type rather than returning the data.
+    // read fails as an unmodeled VARIANT type rather than returning the data.
     let engine = Engine::new()?;
     engine.set_ui_message_polling_enabled(true)?;
 

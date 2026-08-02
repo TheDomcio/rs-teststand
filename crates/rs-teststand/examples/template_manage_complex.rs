@@ -6,13 +6,13 @@
 //!
 //! A template in TestStand is not a type of its own: it is an ordinary
 //! `PropertyObject` kept somewhere a program can find it again. The station has
-//! a file for exactly that — `Engine.GetTemplatesFile`, behind the editor's
-//! Insert menus — but nothing stops a program from keeping its own, which is
+//! a file for exactly that, `Engine.GetTemplatesFile`, behind the editor's
+//! Insert menus, but nothing stops a program from keeping its own, which is
 //! what this example does: an in-memory array container holding a step, a
 //! sequence and a variable prototype.
 //!
 //! The interesting part is the copying. `Clone` is a `PropertyObject` member,
-//! so every copy arrives on the `PropertyObject` interface — and `Step` and
+//! so every copy arrives on the `PropertyObject` interface, and `Step` and
 //! `Sequence` share none of its dispatch identifiers. `insert_step_from_template`
 //! and `insert_sequence_from_template` fold that into one call: they clone,
 //! insert, and hand back the copy on the interface it belongs on.

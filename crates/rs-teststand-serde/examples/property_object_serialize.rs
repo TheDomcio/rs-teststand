@@ -5,8 +5,7 @@
 //! ```
 //!
 //! A `PropertyObject` is a tree of named variables. This turns one into plain
-//! JSON, edits that JSON the way any other program would, and applies it back —
-//! then reads the variables through the ordinary accessors to show they really
+//! JSON, edits that JSON the way any other program would, and applies it back, //! then reads the variables through the ordinary accessors to show they really
 //! changed.
 
 use rs_teststand::{Engine, PropValType, PropertyObject};

@@ -1,4 +1,4 @@
-//! The `Engine` — root of the object model and factory for everything else.
+//! The `Engine`, root of the object model and factory for everything else.
 
 use rs_teststand_sys::{Dispatch, Value, create_dispatch};
 
@@ -42,7 +42,7 @@ impl Engine {
     /// cannot be created (e.g. no TestStand™ installation is registered).
     pub fn new() -> Result<Self, Error> {
         // Creating the engine can itself raise a dialog, before any option can
-        // be set — see the `startup` module. The sweeper has to be running
+        // be set, see the `startup` module. The sweeper has to be running
         // before the call, because the call is what blocks.
         let sweeper = startup::Sweeper::start();
         let dispatch = create_dispatch(ENGINE_PROG_ID);
@@ -146,7 +146,7 @@ impl Engine {
     ///
     /// Tracing is left alone. Only the execution bits that halt and wait for a
     /// person are cleared, so a host keeps whatever tracing the station was
-    /// configured for — see [`ExecutionMask`](crate::ExecutionMask).
+    /// configured for, see [`ExecutionMask`](crate::ExecutionMask).
     fn suppress_modal_dialogs(&self) {
         let Ok(options) = self.station_options() else {
             return;
@@ -441,7 +441,7 @@ impl Engine {
         Ok(())
     }
 
-    /// The licence the engine is currently using (`Engine.LicenseType`).
+    /// The license the engine is currently using (`Engine.LicenseType`).
     ///
     /// **Using, not holding.** A freshly created engine has acquired nothing
     /// and reports [`LicenseType::NoLicense`](crate::LicenseType::NoLicense)
@@ -460,15 +460,15 @@ impl Engine {
         crate::LicenseType::from_bits(raw).map_err(|bits| Error::UnknownLicenseType { bits })
     }
 
-    /// Acquires a licence, or fails if the station cannot grant one.
+    /// Acquires a license, or fails if the station cannot grant one.
     ///
     /// The check a headless host should make before anything else, and the
     /// object it should keep alive while it runs.
     ///
-    /// Acquiring is what makes a licence real.
-    /// [`license_type`](Self::license_type) reports the licence the engine is
-    /// *using*, and a freshly created engine is using none — measured on a
-    /// station with a valid development system licence, it reads `NoLicense`
+    /// Acquiring is what makes a license real.
+    /// [`license_type`](Self::license_type) reports the license the engine is
+    /// *using*, and a freshly created engine is using none, measured on a
+    /// station with a valid development system license, it reads `NoLicense`
     /// until something acquires. So reading before acquiring answers the wrong
     /// question, and this method acquires first.
     ///
@@ -500,7 +500,7 @@ impl Engine {
     /// verdict.
     ///
     /// # Errors
-    /// [`Error::NoLicense`] if no licence can be acquired, or [`Error`] if the
+    /// [`Error::NoLicense`] if no license can be acquired, or [`Error`] if the
     /// COM call fails.
     pub fn require_license(&self) -> Result<crate::HeldLicense<'_>, Error> {
         /// Longest to keep asking before calling the station unlicensed.
@@ -530,7 +530,7 @@ impl Engine {
         Ok(crate::HeldLicense::new(self, handle, kind))
     }
 
-    /// A description of the current licence (`Engine.GetLicenseDescription`).
+    /// A description of the current license (`Engine.GetLicenseDescription`).
     ///
     /// Free text meant for a person, so log it rather than branch on it; use
     /// [`license_type`](Self::license_type) for decisions.
@@ -546,7 +546,7 @@ impl Engine {
             .into_string()?)
     }
 
-    /// The licence this application requested (`Engine.ApplicationLicense`).
+    /// The license this application requested (`Engine.ApplicationLicense`).
     ///
     /// # Errors
     /// [`Error`] if the COM call fails, or [`Error::UnknownLicenseType`] if the
@@ -556,14 +556,14 @@ impl Engine {
         crate::ApplicationLicense::from_bits(raw).map_err(|bits| Error::UnknownLicenseType { bits })
     }
 
-    /// Acquires a licence and returns its handle (`Engine.AcquireLicense`).
+    /// Acquires a license and returns its handle (`Engine.AcquireLicense`).
     ///
-    /// Release it with [`release_license`](Self::release_license); the licence
+    /// Release it with [`release_license`](Self::release_license); the license
     /// is held until every handle for it is released.
     ///
     /// **Pass [`AcquireLicenseOptions::SUPPRESS_STARTUP_DIALOG`](crate::AcquireLicenseOptions) on any station
     /// without a person at it.** Without it, an engine that cannot acquire the
-    /// licence opens a window offering to evaluate, activate or buy, and waits.
+    /// license opens a window offering to evaluate, activate or buy, and waits.
     /// A headless host stops there until something kills it. With it, the same
     /// situation returns an error this method propagates.
     ///
@@ -580,13 +580,13 @@ impl Engine {
     /// which acquires and hands back a guard that releases on drop.
     ///
     /// # Errors
-    /// [`Error::NoLicense`] if the licence was not granted, or [`Error`] if the
+    /// [`Error::NoLicense`] if the license was not granted, or [`Error`] if the
     /// COM call fails.
     ///
     /// A handle of zero is treated as refusal. The reference says this member
-    /// returns an error when it cannot acquire the licence; measured against an
+    /// returns an error when it cannot acquire the license; measured against an
     /// unlicensed station it succeeds and hands back zero instead. A caller
-    /// that trusted the documented behaviour would carry on unlicensed, so the
+    /// that trusted the documented behavior would carry on unlicensed, so the
     /// zero is turned into the error the caller was promised.
     pub fn acquire_license(
         &self,
@@ -606,7 +606,7 @@ impl Engine {
         Ok(handle)
     }
 
-    /// Releases a licence handle (`Engine.ReleaseLicense`).
+    /// Releases a license handle (`Engine.ReleaseLicense`).
     ///
     /// # Errors
     /// [`Error`] if the COM call fails.
@@ -804,7 +804,7 @@ impl Engine {
     /// Turns message polling on or off (`Engine.UIMessagePollingEnabled`).
     ///
     /// Off by default. A headless host must turn it on before anything appears
-    /// in the queue — without it the queue stays empty however much a sequence
+    /// in the queue, without it the queue stays empty however much a sequence
     /// posts.
     ///
     /// # Errors
@@ -829,7 +829,7 @@ impl Engine {
     /// Takes the next message from the queue (`Engine.GetUIMessage`).
     ///
     /// Check [`is_ui_message_queue_empty`](Self::is_ui_message_queue_empty)
-    /// first. The message must be acknowledged once handled — see
+    /// first. The message must be acknowledged once handled, see
     /// [`UIMessage::acknowledge`](crate::UIMessage::acknowledge).
     ///
     /// # Errors
@@ -844,13 +844,13 @@ impl Engine {
 
     /// Creates a step (`Engine.NewStep`).
     ///
-    /// `adapter_key_name` selects the code-module adapter — see
+    /// `adapter_key_name` selects the code-module adapter, see
     /// [`AdapterKeyName`](crate::AdapterKeyName). `step_type_name` names the
     /// step type, for example `NumericLimitTest` or `Action`.
     ///
     /// An empty key does **not** mean "no code module". It means the step type
     /// chooses, falling back to the station's `DefaultAdapter` when the type
-    /// designates none — so an empty key on an `Action` yields whatever adapter
+    /// designates none, so an empty key on an `Action` yields whatever adapter
     /// the station happens to default to. Pass
     /// [`AdapterKeyName::NoneAdapter`](crate::AdapterKeyName::NoneAdapter) to
     /// actually mean no code module.
@@ -897,7 +897,7 @@ impl Engine {
     /// user does **not** join any group the profile belongs to. Pass `None` for
     /// a user with no privileges.
     ///
-    /// The result exists only in memory — nothing is written to the station's
+    /// The result exists only in memory, nothing is written to the station's
     /// users file by creating one.
     ///
     /// # Errors
@@ -909,7 +909,7 @@ impl Engine {
         // The engine reads the profile's privileges, so it needs a real
         // handle; a null means "no privileges to inherit".
         // The profile is required, and "no profile" is a null object
-        // reference — a VT_DISPATCH holding nothing. VT_NULL and VT_EMPTY are
+        // reference, a VT_DISPATCH holding nothing. VT_NULL and VT_EMPTY are
         // both refused here, and omitting the argument reports it as missing.
         let argument = profile
             .and_then(crate::users::User::duplicate_dispatch)
@@ -1028,7 +1028,7 @@ impl Engine {
     /// be closed or the COM runtime is left believing a live thread still owns
     /// one. The process's main thread does not need this: it is ending anyway.
     ///
-    /// Consuming `self` is what makes the ordering safe — the engine is
+    /// Consuming `self` is what makes the ordering safe, the engine is
     /// released before the apartment closes, and no caller can hold a reference
     /// across the boundary.
     ///
@@ -1057,7 +1057,7 @@ impl Engine {
     ///
     /// Returns `true` when the engine confirmed. `false` means the timeout came
     /// first, or the engine posted
-    /// [`ShutDownCancelled`](crate::UIMessageCode::ShutDownCancelled) — which a
+    /// [`ShutDownCanceled`](crate::UIMessageCode::ShutDownCanceled), which a
     /// sequence can cause, for instance by refusing to terminate. Either way the
     /// wait is **bounded**: an unattended host must not be able to hang here.
     ///
@@ -1086,7 +1086,7 @@ impl Engine {
                 message.acknowledge()?;
                 match code {
                     Ok(crate::UIMessageCode::ShutDownComplete) => return Ok(true),
-                    Ok(crate::UIMessageCode::ShutDownCancelled) => return Ok(false),
+                    Ok(crate::UIMessageCode::ShutDownCanceled) => return Ok(false),
                     _ => {}
                 }
             }
@@ -1098,7 +1098,7 @@ impl Engine {
     ///
     /// Holds the variable, step and sequence prototypes the editor offers when
     /// inserting. It is a station-wide file, so it is empty until someone adds
-    /// templates to it — an empty one is the normal state, not a failure.
+    /// templates to it, an empty one is the normal state, not a failure.
     ///
     /// A template is an ordinary [`PropertyObject`](crate::PropertyObject), not
     /// a type of its own, so a program is free to keep its own prototypes in a
@@ -1156,7 +1156,7 @@ impl Engine {
     ///
     /// Returns `true` when that was the last reference and the engine has
     /// discarded the file. `false` means something else still holds it open,
-    /// so the file stays loaded — which is why only the `true` case also
+    /// so the file stays loaded, which is why only the `true` case also
     /// releases the wrapper's own COM reference.
     ///
     /// # Errors
@@ -1482,7 +1482,7 @@ mod tests {
 
     #[test]
     fn dot_net_clr_version_is_empty_when_the_runtime_is_not_loaded() -> Result<(), Error> {
-        // Documented behaviour: empty means "not loaded", not "failed".
+        // Documented behavior: empty means "not loaded", not "failed".
         let engine = engine_with([(dispid::DOT_NET_CLR_VERSION, Scripted::Str(""))]);
         assert_eq!(engine.dot_net_clr_version()?, "");
         Ok(())
