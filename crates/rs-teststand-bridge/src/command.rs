@@ -17,6 +17,33 @@
 
 use serde::{Deserialize, Serialize};
 
+/// What to do to a running execution.
+///
+/// Named for what the engine calls each operation, so somebody reading the
+/// vendor documentation finds the verb they already know.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+#[non_exhaustive]
+pub enum ExecutionControl {
+    /// Stop at the next step and wait. The run keeps its place.
+    Break,
+    /// Carry on from a break. This is also what releases a breakpoint stop.
+    Resume,
+    /// Run the next step, then stop again without descending into it.
+    StepOver,
+    /// Stop at the first step inside whatever the next step calls.
+    StepInto,
+    /// Carry on until the current sequence returns, then stop.
+    StepOut,
+    /// Stop the run, letting cleanup run so hardware is left safe.
+    Terminate,
+    /// Stop the run without cleanup.
+    ///
+    /// Blunter than [`Terminate`](Self::Terminate) and rarely what a host
+    /// wants: anything a sequence would have switched off stays on.
+    Abort,
+}
+
 /// A request from a front end, addressed to the host that owns the engine.
 ///
 /// Every variant is something the engine can do on its own thread, because that
@@ -85,6 +112,23 @@ pub enum Command {
         execution_id: i32,
     },
 
+    /// Change what a running execution is doing.
+    ///
+    /// One command carrying a verb rather than six commands, so the wire shape
+    /// stays stable as more controls land, and so a panel acting on whatever is
+    /// running can leave `execution_id` out instead of tracking it.
+    ///
+    /// The engine binding has had these members for a while. Without this
+    /// variant none were reachable from a client, which left a panel able to
+    /// start a run and stop it and do nothing in between.
+    Control {
+        /// Which execution. Absent means whatever the host has running.
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        execution_id: Option<i32>,
+        /// What to do to it.
+        control: ExecutionControl,
+    },
+
     /// Read a value out of a running execution's context.
     ///
     /// `lookup` is an ordinary property path, `Locals.Result` or
@@ -119,6 +163,7 @@ impl Command {
             Self::Start { .. } => "start",
             Self::Run { .. } => "run",
             Self::Terminate { .. } => "terminate",
+            Self::Control { .. } => "control",
             Self::ReadValue { .. } => "read_value",
             Self::Shutdown => "shutdown",
         }
@@ -145,7 +190,55 @@ impl Command {
 
 #[cfg(test)]
 mod tests {
-    use super::Command;
+
+    #[test]
+    fn a_control_command_names_its_verb_on_the_wire() {
+        // What a panel sends. The verb is a field rather than part of the tag,
+        // so adding a control later does not change the shape a client parses.
+        let text = serde_json::to_string(&Command::Control {
+            execution_id: Some(4),
+            control: ExecutionControl::StepOver,
+        })
+        .unwrap_or_default();
+        assert_eq!(
+            text,
+            r#"{"command":"control","execution_id":4,"control":"step_over"}"#
+        );
+    }
+
+    #[test]
+    fn a_control_without_an_execution_omits_the_field() {
+        // Absent, not null. A panel with one run in view should not have to
+        // track its id, and a reader with a fixed schema must not meet a null.
+        let text = serde_json::to_string(&Command::Control {
+            execution_id: None,
+            control: ExecutionControl::Resume,
+        })
+        .unwrap_or_default();
+        assert_eq!(text, r#"{"command":"control","control":"resume"}"#);
+    }
+
+    #[test]
+    fn every_control_verb_round_trips() {
+        for control in [
+            ExecutionControl::Break,
+            ExecutionControl::Resume,
+            ExecutionControl::StepOver,
+            ExecutionControl::StepInto,
+            ExecutionControl::StepOut,
+            ExecutionControl::Terminate,
+            ExecutionControl::Abort,
+        ] {
+            let command = Command::Control {
+                execution_id: None,
+                control,
+            };
+            let text = serde_json::to_string(&command).unwrap_or_default();
+            let back: Command = serde_json::from_str(&text).unwrap_or(Command::Shutdown);
+            assert_eq!(back, command, "{text}");
+        }
+    }
+    use super::{Command, ExecutionControl};
 
     #[test]
     fn the_wire_form_is_tagged_by_a_command_field() {

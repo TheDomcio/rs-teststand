@@ -42,7 +42,7 @@ pub mod transport;
 pub mod watch;
 
 pub use ack::{Ack, AckState, CODE_FAILED, CODE_OK};
-pub use command::Command;
+pub use command::{Command, ExecutionControl};
 pub use error::Error;
 pub use event::{MessageEvent, PayloadPolicy};
 pub use host::EngineHost;

@@ -18,7 +18,10 @@ use rs_teststand::{
     ConflictHandler, Engine, Execution, GetSeqFileOptions, SequenceFile, UIMessageCode,
     pump_thread_messages,
 };
-use rs_teststand_bridge::{ClientTimeout, ClientWatch, Command, MessageEvent, PayloadPolicy, Response, WatchState};
+use rs_teststand_bridge::{
+    ClientTimeout, ClientWatch, Command, ExecutionControl, MessageEvent, PayloadPolicy, Response,
+    WatchState,
+};
 use rs_teststand_websocket::{Request, WebSocketBridge};
 use rs_teststand_serde::PropertyObjectValue as _;
 
@@ -174,6 +177,10 @@ impl Orchestrator {
                 sequence,
             } => self.start(sequence_file, sequence),
             Command::Terminate { execution_id } => self.terminate(*execution_id),
+            Command::Control {
+                execution_id,
+                control,
+            } => self.control(*execution_id, *control),
             Command::ReadValue {
                 execution_id,
                 lookup,
@@ -368,6 +375,60 @@ impl Orchestrator {
             |error| failed(error.to_string()),
             |()| Response::Done {
                 command: "terminate".to_owned(),
+            },
+        )
+    }
+
+    /// Applies one control verb to the running execution.
+    ///
+    /// `execution_id` of `None` means whatever is running, which is what a
+    /// panel sends when it has one run in view and does not want to track its
+    /// id.
+    ///
+    /// `Resume` is what releases a breakpoint stop as well as a break. The
+    /// thread member of the same name does not: measured against a live engine,
+    /// resuming the thread leaves a breakpoint stop exactly where it was.
+    fn control(&mut self, execution_id: Option<i32>, control: ExecutionControl) -> Response {
+        let failed = |reason: String| Response::Failed {
+            command: "control".to_owned(),
+            reason,
+        };
+        let Some(running) = &self.running else {
+            return failed("nothing is running".to_owned());
+        };
+        if let Some(wanted) = execution_id {
+            if running.execution.id().unwrap_or(-1) != wanted {
+                return failed(format!("execution {wanted} is not the one running"));
+            }
+        }
+
+        let execution = &running.execution;
+        let outcome = match control {
+            ExecutionControl::Break => execution.suspend(),
+            ExecutionControl::Resume => execution.resume(),
+            ExecutionControl::StepOver => execution.foreground_thread().and_then(|thread| {
+                thread.set_step_over()?;
+                execution.resume()
+            }),
+            ExecutionControl::StepInto => execution.foreground_thread().and_then(|thread| {
+                thread.set_step_into()?;
+                execution.resume()
+            }),
+            ExecutionControl::StepOut => execution.foreground_thread().and_then(|thread| {
+                thread.set_step_out()?;
+                execution.resume()
+            }),
+            ExecutionControl::Terminate => execution.terminate(),
+            ExecutionControl::Abort => execution.abort(),
+            // The verb set is non-exhaustive, so an unknown one is refused
+            // rather than silently doing nothing.
+            _ => return failed("this host does not implement that control".to_owned()),
+        };
+
+        outcome.map_or_else(
+            |error| failed(error.to_string()),
+            |()| Response::Done {
+                command: "control".to_owned(),
             },
         )
     }
