@@ -48,7 +48,7 @@ pub use event::{MessageEvent, PayloadPolicy};
 pub use host::EngineHost;
 pub use response::Response;
 #[cfg(feature = "websocket")]
-pub use transport::client::{Client, Inbound};
+pub use transport::client::{Backoff, Client, Inbound};
 pub use transport::line::{LineSink, LineSource};
 #[cfg(feature = "websocket")]
 pub use transport::websocket::{Request, WebSocketBridge};
