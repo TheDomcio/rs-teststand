@@ -203,6 +203,19 @@ impl Execution {
 
     /// Calls off a termination already under way (`Execution.CancelTermination`).
     ///
+    /// # Deadlock
+    ///
+    /// **Call this only from inside a running step.** The reference is explicit
+    /// that calling it from an application's main thread, or from a step type's
+    /// edit substep, deadlocks — and it does: measured from a test thread, the
+    /// call never returns and the process has to be killed, which then leaves
+    /// sequence files unreleased.
+    ///
+    /// A host driving an engine from its own thread is in exactly the position
+    /// the reference warns about, so this is not a member a host calls to stop
+    /// a termination it started. It exists for code running as part of the
+    /// execution itself.
+    ///
     /// # Errors
     /// [`Error`] if the COM call fails.
     pub fn cancel_termination(&self) -> Result<(), Error> {
