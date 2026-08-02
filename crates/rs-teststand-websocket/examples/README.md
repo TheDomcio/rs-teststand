@@ -8,11 +8,20 @@ nothing but data between them.
 ## Running it
 
 ```text
-cargo run --manifest-path host/Cargo.toml
+cargo run -p rs-teststand-websocket --example host
 ```
 
-Then open http://127.0.0.1:50751 in a browser. Nothing is built for the panel — it is one
-file with no dependencies and no toolchain.
+Then open <http://127.0.0.1:50751> in a browser. **Do not open `panel.html` from
+disk.** The host serves it on the port it already listens on, so there is one
+address and one step.
+
+Loading it as a file works less well than it looks. Its origin is `null`, which
+is the one case an origin allowlist cannot express, so the check this host
+should grow could never accept it. Served from the host, the page and the socket
+share an origin.
+
+The panel is still one file with no dependencies and no toolchain; it is
+compiled into the example so there is nothing to find.
 
 The host needs a registered engine. The panel needs a browser.
 
@@ -160,4 +169,4 @@ and both transports; the example is the loop around them.
 - `host/src/main.rs` — starts the orchestrator, nothing else
 - `host/src/orchestrator.rs` — the engine thread: answer, pump, publish
 - `host/src/demo_sequence.rs` — the sequence, built in code
-- `panel.html` — the browser front end
+- `panel.html` — the browser front end, served by the host rather than opened from disk

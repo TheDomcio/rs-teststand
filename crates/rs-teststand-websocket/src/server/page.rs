@@ -43,15 +43,48 @@ pub(super) async fn classify(stream: &TcpStream) -> Kind {
         return Kind::Other;
     };
 
-    // The upgrade header is the discriminator, not the method: a WebSocket
-    // handshake is itself a GET, so testing the method alone would send every
-    // panel the page instead of a socket.
-    if text.to_ascii_lowercase().contains("upgrade: websocket") {
+    let mut lines = text.lines();
+    let Some(request) = lines.next() else {
+        return Kind::Other;
+    };
+    if !request.starts_with("GET ") {
+        return Kind::Other;
+    }
+
+    // Header lines only, so the sequence appearing in a body cannot be mistaken
+    // for a handshake. `tokio-tungstenite`'s own example checks the same set
+    // through hyper; this reads the header names directly rather than adding an
+    // HTTP stack to serve one static page.
+    let mut upgrades = false;
+    let mut connection_upgrade = false;
+    let mut has_key = false;
+    for line in lines {
+        if line.is_empty() {
+            break;
+        }
+        let Some((name, value)) = line.split_once(':') else {
+            continue;
+        };
+        let value = value.trim();
+        if name.eq_ignore_ascii_case("upgrade") && value.eq_ignore_ascii_case("websocket") {
+            upgrades = true;
+        } else if name.eq_ignore_ascii_case("connection") {
+            // A comma-separated list, and `Upgrade` may sit anywhere in it.
+            connection_upgrade = value
+                .split(&[' ', ','][..])
+                .any(|token| token.eq_ignore_ascii_case("upgrade"));
+        } else if name.eq_ignore_ascii_case("sec-websocket-key") && !value.is_empty() {
+            has_key = true;
+        }
+    }
+
+    // All three, matching what the transport will demand a moment later. A
+    // request that merely looks like an upgrade would otherwise be handed to
+    // the handshake and rejected, when it should have been sent the page.
+    if upgrades && connection_upgrade && has_key {
         Kind::Upgrade
-    } else if text.starts_with("GET ") {
-        Kind::Page
     } else {
-        Kind::Other
+        Kind::Page
     }
 }
 
