@@ -428,6 +428,16 @@ pub(crate) mod thread {
     pub(crate) const AS_PROPERTY_OBJECT: i32 = 0x1d;
     /// `PostUIMessageEx`, 5 params; the fourth is `VT_UNKNOWN`.
     pub(crate) const POST_UI_MESSAGE_EX: i32 = 0x29;
+    /// Arms a one-shot stop after the next step finishes.
+    pub(crate) const SET_STEP_OVER: i32 = 0x2;
+    /// Arms a stop at the first step inside what the next step calls.
+    pub(crate) const SET_STEP_INTO: i32 = 0x3;
+    /// Arms a stop once the current sequence returns.
+    pub(crate) const SET_STEP_OUT: i32 = 0x4;
+    /// Clears a stop armed by one of the step members.
+    pub(crate) const CLEAR_TEMPORARY_BREAKPOINT: i32 = 0x1;
+    /// Starts a suspended thread running.
+    pub(crate) const RESUME: i32 = 0x2c;
     /// `WaitForEnd`, 2 params.
     pub(crate) const WAIT_FOR_END: i32 = 0x9;
     /// `Id`, read-only.

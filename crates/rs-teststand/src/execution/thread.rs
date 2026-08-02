@@ -134,6 +134,75 @@ impl Thread {
         ))
     }
 
+    /// Asks this thread to stop again once the next step finishes
+    /// (`Thread.SetStepOver`).
+    ///
+    /// Arms a one-shot stop; it does not start the thread moving. Pair it with
+    /// [`resume`](Self::resume) to actually step.
+    ///
+    /// The engine also has `Execution.StepOver`, which arms and resumes in one
+    /// call but always acts on the foreground thread. This crate does not wrap
+    /// it yet. Going through the thread is the only way to say which thread to
+    /// step, which is what a host serving a panel with several threads needs.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_step_over(&self) -> Result<(), Error> {
+        self.dispatch.call(thread::SET_STEP_OVER, &[])?;
+        Ok(())
+    }
+
+    /// Arms a stop at the first step inside whatever the next step calls
+    /// (`Thread.SetStepInto`).
+    ///
+    /// Does not resume the thread. See [`set_step_over`](Self::set_step_over).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_step_into(&self) -> Result<(), Error> {
+        self.dispatch.call(thread::SET_STEP_INTO, &[])?;
+        Ok(())
+    }
+
+    /// Arms a stop once the current sequence returns to its caller
+    /// (`Thread.SetStepOut`).
+    ///
+    /// Does not resume the thread. See [`set_step_over`](Self::set_step_over).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_step_out(&self) -> Result<(), Error> {
+        self.dispatch.call(thread::SET_STEP_OUT, &[])?;
+        Ok(())
+    }
+
+    /// Clears a stop armed by one of the `set_step_*` members
+    /// (`Thread.ClearTemporaryBreakpoint`).
+    ///
+    /// Only the temporary one. Breakpoints set on a step are untouched.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn clear_temporary_breakpoint(&self) -> Result<(), Error> {
+        self.dispatch
+            .call(thread::CLEAR_TEMPORARY_BREAKPOINT, &[])?;
+        Ok(())
+    }
+
+    /// Starts this thread running (`Thread.Resume`).
+    ///
+    /// Two uses. It releases a thread created suspended, which is how a
+    /// sequence call step can hand one back before it runs. It also continues a
+    /// thread that stopped on a breakpoint, and is the second half of a step
+    /// once `set_step_over`, `set_step_into` or `set_step_out` has armed one.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn resume(&self) -> Result<(), Error> {
+        self.dispatch.call(thread::RESUME, &[])?;
+        Ok(())
+    }
+
     /// Sends a message to whatever is watching this execution
     /// (`Thread.PostUIMessageEx`).
     ///
