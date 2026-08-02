@@ -275,7 +275,7 @@ async fn a_reply_goes_only_to_the_panel_that_asked() {
     // `command` field rather than the response tag. That field is also what
     // separates an acknowledgement from an event on this one socket.
     assert!(
-        first.contains("\"command\":\"hello\"") && first.contains("\"state\":\"ok\""),
+        first.contains("\"command\":\"version_string\"") && first.contains("\"state\":\"ok\""),
         "asker got {first}"
     );
     let second = next_text(&mut asker).await;
