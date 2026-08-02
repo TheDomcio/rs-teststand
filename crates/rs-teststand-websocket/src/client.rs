@@ -1,6 +1,6 @@
 //! Connecting to a host from the other side.
 //!
-//! The counterpart to [`WebSocketBridge`](super::websocket::WebSocketBridge). A host
+//! The counterpart to [`WebSocketBridge`](crate::WebSocketBridge). A host
 //! serves; this connects, sends [`Command`]s and reads what comes back.
 //!
 //! It adds no vocabulary of its own. The wire types are [`Command`], [`Ack`]
@@ -14,7 +14,7 @@ use tokio_tungstenite::tungstenite::Message;
 
 use std::time::Duration;
 
-use crate::{Ack, Command, Error, MessageEvent};
+use rs_teststand_bridge::{Ack, Command, Error, MessageEvent};
 
 /// Renders a socket failure as the transport error the crate already has.
 fn transport(error: &tokio_tungstenite::tungstenite::Error) -> Error {
@@ -352,7 +352,7 @@ mod tests {
     use std::time::Duration;
 
     use super::{Backoff, Inbound};
-    use crate::{Ack, MessageEvent};
+    use rs_teststand_bridge::{Ack, MessageEvent};
 
     #[test]
     fn an_acknowledgement_is_recognized_by_its_command_field() {

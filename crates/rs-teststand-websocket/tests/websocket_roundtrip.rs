@@ -7,7 +7,6 @@
 //!
 //! `cargo test -p rs-teststand-bridge --features websocket`
 
-#![cfg(feature = "websocket")]
 // A test asserts by failing, so the accessors that panic are the point here
 // rather than a hazard. The workspace forbids them in library code, which is
 // where the rule earns its keep.
@@ -33,7 +32,8 @@
 use std::time::Duration;
 
 use futures_util::StreamExt as _;
-use rs_teststand_bridge::{Command, MessageEvent, Response, WebSocketBridge};
+use rs_teststand_bridge::{Command, MessageEvent, Response};
+use rs_teststand_websocket::WebSocketBridge;
 use tokio_tungstenite::tungstenite::Message;
 
 fn event(code: i32) -> MessageEvent {
