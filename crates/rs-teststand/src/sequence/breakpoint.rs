@@ -45,3 +45,17 @@ impl BreakpointScope<'_> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use rs_teststand_sys::Value;
+
+    use super::BreakpointScope;
+
+    #[test]
+    fn step_scope_sends_an_absent_argument() {
+        // Absent, not null. The engine reads a missing execution as "edit the
+        // step itself"; a null object would be a different request.
+        assert!(matches!(BreakpointScope::Step.argument(), Value::Empty));
+    }
+}

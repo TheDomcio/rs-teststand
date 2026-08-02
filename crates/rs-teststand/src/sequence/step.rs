@@ -307,3 +307,89 @@ impl Step {
         Ok(())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::cell::RefCell;
+    use std::collections::HashMap;
+    use std::rc::Rc;
+
+    use rs_teststand_sys::{ComError, Dispatch, Value};
+
+    use super::Step;
+    use crate::BreakpointScope;
+    use crate::dispids::step as dispid;
+    use crate::error::Error;
+
+    /// Shared with the test, because `Step` takes the dispatch by value.
+    type Sent = Rc<RefCell<Vec<(i32, usize)>>>;
+
+    /// Answers reads from a script and records every call.
+    #[derive(Debug)]
+    struct FakeDispatch {
+        reads: HashMap<i32, bool>,
+        sent: Sent,
+    }
+
+    impl Dispatch for FakeDispatch {
+        fn get(&self, dispid: i32) -> Result<Value, ComError> {
+            self.reads.get(&dispid).map_or_else(
+                || Err(ComError::hresult(0, "fake: unscripted")),
+                |flag| Ok(Value::Bool(*flag)),
+            )
+        }
+
+        fn put(&self, _dispid: i32, _value: Value) -> Result<(), ComError> {
+            Err(ComError::hresult(0, "fake: put not scripted"))
+        }
+
+        fn call(&self, dispid: i32, args: &[Value]) -> Result<Value, ComError> {
+            self.sent.borrow_mut().push((dispid, args.len()));
+            Ok(Value::Bool(true))
+        }
+    }
+
+    fn step_recording(reads: HashMap<i32, bool>) -> (Step, Sent) {
+        let sent: Sent = Rc::default();
+        let dispatch = FakeDispatch {
+            reads,
+            sent: Rc::clone(&sent),
+        };
+        (Step::new(Box::new(dispatch)), sent)
+    }
+
+    #[test]
+    fn break_on_step_reads_the_property() -> Result<(), Error> {
+        let (step, _) = step_recording(std::iter::once((dispid::BREAK_ON_STEP, true)).collect());
+        assert!(step.break_on_step()?);
+        Ok(())
+    }
+
+    #[test]
+    fn setting_a_breakpoint_sends_the_flag_and_the_scope() -> Result<(), Error> {
+        // Two arguments, always. The scope goes even when it is absent, because
+        // the engine reads an omitted execution differently from a null one.
+        let (step, sent) = step_recording(HashMap::new());
+        step.set_break_on_step(true, BreakpointScope::Step)?;
+        assert_eq!(
+            sent.borrow().as_slice(),
+            [(dispid::SET_BREAK_ON_STEP_EX, 2)],
+            "expected one call carrying the flag and the scope"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn break_settings_sends_all_five_arguments() -> Result<(), Error> {
+        // A short count is DISP_E_BADPARAMCOUNT on a live engine, which is the
+        // failure this pins.
+        let (step, sent) = step_recording(HashMap::new());
+        step.set_break_settings(true, true, 3, "Locals.Counter == 2", BreakpointScope::Step)?;
+        assert_eq!(
+            sent.borrow().as_slice(),
+            [(dispid::SET_BREAK_SETTINGS, 5)],
+            "the engine declares five input parameters"
+        );
+        Ok(())
+    }
+}
