@@ -56,6 +56,12 @@ cargo = { level = "warn", priority = -1 }
 # dependency tree, not from anything this workspace declares. Left on would be
 # permanent noise that no change here can clear.
 multiple_crate_versions = { level = "allow", priority = 1 }
+# Fires on `ArithmeticOperator` in `expression::operator::arithmetic` and 15
+# similar types. Stripping the suffix collides: 7 would become `Function`, 6
+# `Operator`, 2 `Constant`, and all of them are re-exported flat at the crate
+# root. The names also mirror how the vendor reference groups these elements,
+# which is the point of a twin API. See `expression::mod` for the full note.
+module_name_repetitions = { level = "allow", priority = 1 }
 
 # --- No panics in library code (mission-critical hosts) ---------------------
 unwrap_used = "deny"
