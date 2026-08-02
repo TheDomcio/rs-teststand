@@ -1,4 +1,4 @@
-# line-bridge
+# tcp-bridge
 
 The same job as [`../bridge`](../bridge), without gRPC: one JSON object per
 line, terminated by CRLF, over a plain TCP socket.

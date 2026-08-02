@@ -90,14 +90,14 @@ jobs:
 
       # Also compiles the protobuf contract, so a broken .proto is caught here.
       - name: bridge receiver
-        run: cargo check --manifest-path examples/bridge/receiver/Cargo.toml
+        run: cargo check --manifest-path examples/grpc-bridge/receiver/Cargo.toml
 
       - name: bridge transmitter
-        run: cargo check --manifest-path examples/bridge/transmitter/Cargo.toml
+        run: cargo check --manifest-path examples/grpc-bridge/transmitter/Cargo.toml
 
       # No protobuf here: plain TCP and JSON, so this is the cheap one.
-      - name: line-bridge receiver
-        run: cargo check --manifest-path examples/line-bridge/receiver/Cargo.toml
+      - name: tcp-bridge receiver
+        run: cargo check --manifest-path examples/tcp-bridge/receiver/Cargo.toml
 
-      - name: line-bridge transmitter
-        run: cargo check --manifest-path examples/line-bridge/transmitter/Cargo.toml
+      - name: tcp-bridge transmitter
+        run: cargo check --manifest-path examples/tcp-bridge/transmitter/Cargo.toml

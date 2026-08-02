@@ -1,7 +1,7 @@
 //! The far side of the bridge: a sink that knows nothing about TestStand™.
 //!
 //! ```text
-//! cargo run -p bridge-receiver
+//! cargo run -p grpc-receiver
 //! ```
 //!
 //! No COM, no engine, no installation, and no `rs-teststand` in its dependency

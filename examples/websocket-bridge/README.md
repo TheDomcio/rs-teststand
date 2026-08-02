@@ -80,7 +80,7 @@ has its own queue to pump and cannot afford to wait on a socket.
 
 JSON in `WebSocket` **text** frames, opcode `0x1` in RFC 6455. The protocol
 frames each message, so there is no terminator — unlike the raw-TCP transport in
-`examples/line-bridge`, where CRLF exists precisely because a byte stream has no
+`examples/tcp-bridge`, where CRLF exists precisely because a byte stream has no
 record boundary.
 
 One stream carries two kinds of message, told apart by which discriminant is
