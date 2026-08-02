@@ -45,6 +45,19 @@ pub enum Error {
     /// choose to keep testing and stop reporting.
     #[error("the event transport failed: {0}")]
     Transport(#[from] std::io::Error),
+
+    /// A control frame payload exceeded what the protocol allows.
+    ///
+    /// RFC 6455 section 5.5 caps every control frame at 125 bytes. A peer that
+    /// receives a larger one fails the connection, and the send that caused it
+    /// reports success, so this is raised before the frame goes out.
+    #[error("control frame payload of {bytes} bytes exceeds the {limit}-byte limit")]
+    ControlFrameTooLarge {
+        /// What was offered.
+        bytes: usize,
+        /// What the protocol allows.
+        limit: usize,
+    },
 }
 
 #[cfg(test)]
