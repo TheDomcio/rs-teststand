@@ -8,7 +8,7 @@
 //!
 //! CRLF is not an arbitrary choice: it is the record separator line-oriented
 //! instrument tooling already reads, so a client can take a whole message with
-//! one call. See the transport notes in `examples/line-bridge/README.md` for the
+//! one call. See the transport notes in `examples/tcp-bridge/README.md` for the
 //! constraints that follow from that, and for what a strictly typed reader on
 //! the far end needs from the JSON.
 //!

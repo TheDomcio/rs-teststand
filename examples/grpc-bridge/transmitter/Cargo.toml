@@ -1,5 +1,5 @@
 [package]
-name = "bridge-transmitter"
+name = "grpc-transmitter"
 version = "0.0.0"
 edition = "2024"
 rust-version = "1.85"

@@ -1,7 +1,7 @@
 //! The engine side of the bridge: run a sequence, forward what it reports.
 //!
 //! ```text
-//! cargo run -p bridge-transmitter
+//! cargo run -p grpc-transmitter
 //! ```
 //!
 //! Start the receiver first.

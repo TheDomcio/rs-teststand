@@ -1,5 +1,5 @@
 [package]
-name = "line-receiver"
+name = "tcp-receiver"
 version = "0.0.9"
 edition = "2024"
 rust-version = "1.85"
