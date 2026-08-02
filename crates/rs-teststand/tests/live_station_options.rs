@@ -18,6 +18,8 @@
 
 use std::path::Path;
 
+use std::time::Instant;
+
 use rs_teststand::{Engine, Error, StationOptions};
 
 /// Restores a station option when it goes out of scope.
@@ -53,10 +55,7 @@ impl<T: Copy> Drop for Restore<'_, T> {
     }
 }
 
-#[test]
-#[ignore = "requires a live TestStand engine"]
-fn boolean_option_round_trips_and_restores() -> Result<(), Error> {
-    let engine = Engine::new()?;
+fn boolean_option_round_trips_and_restores(engine: &Engine) -> Result<(), Error> {
     let options = engine.station_options()?;
 
     let original = options.tracing_enabled()?;
@@ -78,10 +77,7 @@ fn boolean_option_round_trips_and_restores() -> Result<(), Error> {
     Ok(())
 }
 
-#[test]
-#[ignore = "requires a live TestStand engine"]
-fn integer_option_round_trips_and_restores() -> Result<(), Error> {
-    let engine = Engine::new()?;
+fn integer_option_round_trips_and_restores(engine: &Engine) -> Result<(), Error> {
     let options = engine.station_options()?;
 
     let original = options.ui_message_delay()?;
@@ -104,10 +100,7 @@ fn integer_option_round_trips_and_restores() -> Result<(), Error> {
     Ok(())
 }
 
-#[test]
-#[ignore = "requires a live TestStand engine"]
-fn string_option_round_trips_and_restores() -> Result<(), Error> {
-    let engine = Engine::new()?;
+fn string_option_round_trips_and_restores(engine: &Engine) -> Result<(), Error> {
     let options = engine.station_options()?;
 
     let original = options.station_id()?;
@@ -127,12 +120,9 @@ fn string_option_round_trips_and_restores() -> Result<(), Error> {
     Ok(())
 }
 
-#[test]
-#[ignore = "requires a live TestStand engine"]
-fn options_persist_into_the_engine_reported_config_directory() -> Result<(), Error> {
+fn options_persist_into_the_engine_reported_config_directory(engine: &Engine) -> Result<(), Error> {
     // Station options are written to the active installation's configuration
     // directory. Ask the engine where that is rather than hard-coding a version.
-    let engine = Engine::new()?;
     let configuration = engine.config_directory()?;
     let config_path = Path::new(&configuration);
 
@@ -229,11 +219,8 @@ macro_rules! audit_str {
     }};
 }
 
-/// The engine must outlive the options it produced, so both are returned.
-fn station_options() -> Result<(Engine, StationOptions), Error> {
-    let engine = Engine::new()?;
-    let options = engine.station_options()?;
-    Ok((engine, options))
+fn station_options(engine: &Engine) -> Result<StationOptions, Error> {
+    engine.station_options()
 }
 
 fn report(kind: &str, failures: &[String]) {
@@ -245,14 +232,12 @@ fn report(kind: &str, failures: &[String]) {
     );
 }
 
-#[test]
-#[ignore = "requires a live engine"]
 // A flat list of 27 audited options, one per statement. Splitting it into
 // "part 1 / part 2" would hide which options are covered without making any
 // of it simpler to read.
 #[allow(clippy::too_many_lines)]
-fn boolean_options_survive_a_write_of_their_own_value() -> Result<(), Error> {
-    let (_engine, options) = station_options()?;
+fn boolean_options_survive_a_write_of_their_own_value(engine: &Engine) -> Result<(), Error> {
+    let options = station_options(engine)?;
     let mut failures: Vec<String> = Vec::new();
 
     audit!(options, failures, tracing_enabled, set_tracing_enabled);
@@ -402,13 +387,11 @@ fn boolean_options_survive_a_write_of_their_own_value() -> Result<(), Error> {
     Ok(())
 }
 
-#[test]
-#[ignore = "requires a live engine"]
 // Exact comparison is the point: the same bits are written back, so anything
 // other than an identical read is the defect this test exists to catch.
 #[allow(clippy::float_cmp)]
-fn numeric_options_survive_a_write_of_their_own_value() -> Result<(), Error> {
-    let (_engine, options) = station_options()?;
+fn numeric_options_survive_a_write_of_their_own_value(engine: &Engine) -> Result<(), Error> {
+    let options = station_options(engine)?;
     let mut failures: Vec<String> = Vec::new();
 
     // The raw accessors: this audit checks the COM round-trip, not the
@@ -462,10 +445,8 @@ fn numeric_options_survive_a_write_of_their_own_value() -> Result<(), Error> {
     Ok(())
 }
 
-#[test]
-#[ignore = "requires a live engine"]
-fn string_options_survive_a_write_of_their_own_value() -> Result<(), Error> {
-    let (_engine, options) = station_options()?;
+fn string_options_survive_a_write_of_their_own_value(engine: &Engine) -> Result<(), Error> {
+    let options = station_options(engine)?;
     let mut failures: Vec<String> = Vec::new();
 
     audit_str!(options, failures, language, set_language);
@@ -497,10 +478,10 @@ fn string_options_survive_a_write_of_their_own_value() -> Result<(), Error> {
 /// The 32-bit affinity member stays in the API for a 32-bit engine, but a
 /// 64-bit engine rejects it. Pinning that prevents a later "fix" to the audit
 /// later by pointing it back at the broken member.
-#[test]
-#[ignore = "requires a live engine"]
-fn the_32bit_cpu_affinity_member_is_rejected_by_a_64bit_engine() -> Result<(), Error> {
-    let (engine, options) = station_options()?;
+fn the_32bit_cpu_affinity_member_is_rejected_by_a_64bit_engine(
+    engine: &Engine,
+) -> Result<(), Error> {
+    let options = station_options(engine)?;
     if !engine.is_64bit()? {
         eprintln!("skipped: this station's engine is 32-bit");
         return Ok(());
@@ -518,10 +499,10 @@ fn the_32bit_cpu_affinity_member_is_rejected_by_a_64bit_engine() -> Result<(), E
 /// re-writing the value it already holds is accepted as a no-op — so on its own
 /// that audit would wrongly suggest the setter works. This pins the real
 /// behavior: changing the value is refused.
-#[test]
-#[ignore = "requires a live engine"]
-fn recognize_mb_chars_refuses_a_real_change_on_a_modern_engine() -> Result<(), Error> {
-    let (engine, options) = station_options()?;
+fn recognize_mb_chars_refuses_a_real_change_on_a_modern_engine(
+    engine: &Engine,
+) -> Result<(), Error> {
+    let options = station_options(engine)?;
     if engine.major_version()? < 19 {
         eprintln!("skipped: engine predates the read-only change");
         return Ok(());
@@ -551,12 +532,71 @@ fn recognize_mb_chars_refuses_a_real_change_on_a_modern_engine() -> Result<(), E
 /// from the audits above on purpose: each takes a `(limit_type, limit_reason)`
 /// pair and has no paired getter, so there is no value to read back and compare.
 /// This records the gap rather than leaving it unexplained.
-#[test]
-#[ignore = "requires a live engine"]
-fn time_limit_setters_are_parameterised_and_have_no_readback() -> Result<(), Error> {
-    let (_engine, options) = station_options()?;
+fn time_limit_setters_are_parameterised_and_have_no_readback(engine: &Engine) -> Result<(), Error> {
+    let options = station_options(engine)?;
     // Only prove the object is reachable; calling the setters would change the
     // station's limits with no way to read the previous value and restore it.
     let _ = options.rte_option()?;
+    Ok(())
+}
+
+/// Every check in this file, over one engine.
+///
+/// A fresh engine costs about three seconds before it is usable, so sharing one
+/// takes this file from 24 seconds to a few.
+#[test]
+#[ignore = "requires a live engine"]
+fn station_options_behave_as_documented() -> Result<(), Error> {
+    type Step = (&'static str, fn(&Engine) -> Result<(), Error>);
+
+    let engine = Engine::new()?;
+    let steps: [Step; 10] = [
+        (
+            "boolean option round trips and restores",
+            boolean_option_round_trips_and_restores,
+        ),
+        (
+            "integer option round trips and restores",
+            integer_option_round_trips_and_restores,
+        ),
+        (
+            "string option round trips and restores",
+            string_option_round_trips_and_restores,
+        ),
+        (
+            "options persist into the engine reported config directory",
+            options_persist_into_the_engine_reported_config_directory,
+        ),
+        (
+            "string options survive a write of their own value",
+            string_options_survive_a_write_of_their_own_value,
+        ),
+        (
+            "the 32bit cpu affinity member is rejected by a 64bit engine",
+            the_32bit_cpu_affinity_member_is_rejected_by_a_64bit_engine,
+        ),
+        (
+            "recognize mb chars refuses a real change on a modern engine",
+            recognize_mb_chars_refuses_a_real_change_on_a_modern_engine,
+        ),
+        (
+            "time limit setters are parameterised and have no readback",
+            time_limit_setters_are_parameterised_and_have_no_readback,
+        ),
+        (
+            "boolean options survive a write of their own value",
+            boolean_options_survive_a_write_of_their_own_value,
+        ),
+        (
+            "numeric options survive a write of their own value",
+            numeric_options_survive_a_write_of_their_own_value,
+        ),
+    ];
+
+    for (label, step) in steps {
+        let started = Instant::now();
+        step(&engine)?;
+        println!("  ok: {label} ({:?})", started.elapsed());
+    }
     Ok(())
 }

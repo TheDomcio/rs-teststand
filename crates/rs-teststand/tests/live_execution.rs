@@ -73,15 +73,12 @@ fn run_to_end(engine: &Engine, deadline: Duration) -> Result<bool, Error> {
     Ok(false)
 }
 
-#[test]
-#[ignore = "requires a live engine"]
-fn an_execution_identifies_itself_the_way_a_front_end_needs() -> Result<(), Error> {
+fn an_execution_identifies_itself_the_way_a_front_end_needs(engine: &Engine) -> Result<(), Error> {
     // A host keys everything by execution id — that is how the reference user
     // interfaces route updates — so identity has to be readable immediately,
     // not only once the run finishes.
-    let engine = Engine::new()?;
     engine.set_ui_message_polling_enabled(true)?;
-    let sequence_file = runnable_file(&engine)?;
+    let sequence_file = runnable_file(engine)?;
     let execution = engine.new_execution(&sequence_file, "MainSequence", None, false, 0)?;
 
     let id = execution.id()?;
@@ -93,20 +90,17 @@ fn an_execution_identifies_itself_the_way_a_front_end_needs() -> Result<(), Erro
     assert!(!display_name.is_empty(), "a front end needs a name to show");
     assert!(threads >= 1, "an execution always has at least one thread");
 
-    assert!(run_to_end(&engine, Duration::from_secs(20))?);
+    assert!(run_to_end(engine, Duration::from_secs(20))?);
     engine.release_sequence_file_ex(sequence_file, NO_OPTIONS)?;
     Ok(())
 }
 
-#[test]
-#[ignore = "requires a live engine"]
-fn the_result_status_settles_once_the_run_is_over() -> Result<(), Error> {
-    let engine = Engine::new()?;
+fn the_result_status_settles_once_the_run_is_over(engine: &Engine) -> Result<(), Error> {
     engine.set_ui_message_polling_enabled(true)?;
-    let sequence_file = runnable_file(&engine)?;
+    let sequence_file = runnable_file(engine)?;
     let execution = engine.new_execution(&sequence_file, "MainSequence", None, false, 0)?;
 
-    assert!(run_to_end(&engine, Duration::from_secs(20))?);
+    assert!(run_to_end(engine, Duration::from_secs(20))?);
 
     let status = execution.result_status()?;
     println!("  final status: {status:?}");
@@ -125,17 +119,14 @@ fn the_result_status_settles_once_the_run_is_over() -> Result<(), Error> {
     Ok(())
 }
 
-#[test]
-#[ignore = "requires a live engine"]
-fn an_execution_reports_the_file_it_is_running() -> Result<(), Error> {
+fn an_execution_reports_the_file_it_is_running(engine: &Engine) -> Result<(), Error> {
     // A host serving several executions has to tell a client which file each
     // one came from, and the execution knows without being told.
-    let engine = Engine::new()?;
     engine.set_ui_message_polling_enabled(true)?;
     let path = std::env::temp_dir().join("rs_teststand_execution_probe.seq");
     let path = path.to_string_lossy().into_owned();
 
-    let sequence_file = runnable_file(&engine)?;
+    let sequence_file = runnable_file(engine)?;
     sequence_file.save(&path)?;
     let execution = engine.new_execution(&sequence_file, "MainSequence", None, false, 0)?;
 
@@ -146,21 +137,18 @@ fn an_execution_reports_the_file_it_is_running() -> Result<(), Error> {
         "expected {path}, got {reported}"
     );
 
-    assert!(run_to_end(&engine, Duration::from_secs(20))?);
+    assert!(run_to_end(engine, Duration::from_secs(20))?);
     engine.release_sequence_file_ex(sequence_file, NO_OPTIONS)?;
     let _ = std::fs::remove_file(&path);
     Ok(())
 }
 
-#[test]
-#[ignore = "requires a live engine"]
-fn timings_are_available_while_the_run_is_in_progress() -> Result<(), Error> {
-    let engine = Engine::new()?;
+fn timings_are_available_while_the_run_is_in_progress(engine: &Engine) -> Result<(), Error> {
     engine.set_ui_message_polling_enabled(true)?;
-    let sequence_file = runnable_file(&engine)?;
+    let sequence_file = runnable_file(engine)?;
     let execution = engine.new_execution(&sequence_file, "MainSequence", None, false, 0)?;
 
-    assert!(run_to_end(&engine, Duration::from_secs(20))?);
+    assert!(run_to_end(engine, Duration::from_secs(20))?);
 
     let executing = execution.seconds_executing()?;
     let suspended = execution.seconds_suspended()?;
@@ -175,14 +163,13 @@ fn timings_are_available_while_the_run_is_in_progress() -> Result<(), Error> {
     Ok(())
 }
 
-#[test]
-#[ignore = "requires a live engine"]
-fn a_thread_is_reachable_both_by_index_and_as_the_foreground_one() -> Result<(), Error> {
+fn a_thread_is_reachable_both_by_index_and_as_the_foreground_one(
+    engine: &Engine,
+) -> Result<(), Error> {
     // Two routes to the same thread. A host uses the foreground one to follow
     // what an operator would see; indexing is how it enumerates the rest.
-    let engine = Engine::new()?;
     engine.set_ui_message_polling_enabled(true)?;
-    let sequence_file = runnable_file(&engine)?;
+    let sequence_file = runnable_file(engine)?;
     let execution = engine.new_execution(&sequence_file, "MainSequence", None, false, 0)?;
 
     let by_index = execution.get_thread(0)?;
@@ -192,20 +179,19 @@ fn a_thread_is_reachable_both_by_index_and_as_the_foreground_one() -> Result<(),
     assert!(by_index.as_property_object().is_ok());
     assert!(foreground.as_property_object().is_ok());
 
-    assert!(run_to_end(&engine, Duration::from_secs(20))?);
+    assert!(run_to_end(engine, Duration::from_secs(20))?);
     engine.release_sequence_file_ex(sequence_file, NO_OPTIONS)?;
     Ok(())
 }
 
-#[test]
-#[ignore = "requires a live engine"]
-fn an_execution_exposes_its_own_property_tree_and_error_object() -> Result<(), Error> {
-    let engine = Engine::new()?;
+fn an_execution_exposes_its_own_property_tree_and_error_object(
+    engine: &Engine,
+) -> Result<(), Error> {
     engine.set_ui_message_polling_enabled(true)?;
-    let sequence_file = runnable_file(&engine)?;
+    let sequence_file = runnable_file(engine)?;
     let execution = engine.new_execution(&sequence_file, "MainSequence", None, false, 0)?;
 
-    assert!(run_to_end(&engine, Duration::from_secs(20))?);
+    assert!(run_to_end(engine, Duration::from_secs(20))?);
 
     // The error object exists whether or not anything went wrong; a host reads
     // its fields to decide, rather than treating its absence as success.
@@ -219,19 +205,16 @@ fn an_execution_exposes_its_own_property_tree_and_error_object() -> Result<(), E
     Ok(())
 }
 
-#[test]
-#[ignore = "requires a live engine"]
-fn terminating_a_run_is_asked_for_rather_than_immediate() -> Result<(), Error> {
+fn terminating_a_run_is_asked_for_rather_than_immediate(engine: &Engine) -> Result<(), Error> {
     // Termination is a request: cleanup still runs. A host that assumes the
     // execution is gone the moment terminate returns would report a state the
     // engine has not reached.
-    let engine = Engine::new()?;
     engine.set_ui_message_polling_enabled(true)?;
-    let sequence_file = runnable_file(&engine)?;
+    let sequence_file = runnable_file(engine)?;
     let execution = engine.new_execution(&sequence_file, "MainSequence", None, false, 0)?;
 
     execution.terminate()?;
-    let ended = run_to_end(&engine, Duration::from_secs(20))?;
+    let ended = run_to_end(engine, Duration::from_secs(20))?;
     assert!(ended, "the execution should still report its end");
 
     let status = execution.result_status()?;
@@ -241,14 +224,11 @@ fn terminating_a_run_is_asked_for_rather_than_immediate() -> Result<(), Error> {
     Ok(())
 }
 
-#[test]
-#[ignore = "requires a live engine"]
-fn a_thread_identifies_itself_and_reaches_its_context() -> Result<(), Error> {
+fn a_thread_identifies_itself_and_reaches_its_context(engine: &Engine) -> Result<(), Error> {
     // Every DISPID on Thread was verified against the type library after a
     // guessed one aborted the process here; this is what keeps them honest.
-    let engine = Engine::new()?;
     engine.set_ui_message_polling_enabled(true)?;
-    let sequence_file = runnable_file(&engine)?;
+    let sequence_file = runnable_file(engine)?;
     let execution = engine.new_execution(&sequence_file, "MainSequence", None, false, 0)?;
 
     let thread = execution.foreground_thread()?;
@@ -269,19 +249,16 @@ fn a_thread_identifies_itself_and_reaches_its_context() -> Result<(), Error> {
         "a thread should lead back to its own execution"
     );
 
-    assert!(run_to_end(&engine, Duration::from_secs(20))?);
+    assert!(run_to_end(engine, Duration::from_secs(20))?);
     engine.release_sequence_file_ex(sequence_file, NO_OPTIONS)?;
     Ok(())
 }
 
-#[test]
-#[ignore = "requires a live engine"]
-fn station_globals_outlive_a_run_but_file_globals_do_not() -> Result<(), Error> {
+fn station_globals_outlive_a_run_but_file_globals_do_not(engine: &Engine) -> Result<(), Error> {
     // The lifetime rule this crate documents, checked rather than quoted.
     // NI states StationGlobals exists before and persists after an execution,
     // while FileGlobals is the run's own copy. Getting this wrong is how a host
     // ends up holding a reference into a finished run.
-    let engine = Engine::new()?;
     engine.set_ui_message_polling_enabled(true)?;
     let sequence_file = engine.new_sequence_file()?;
     let main_sequence = sequence_file.get_sequence_by_name("MainSequence")?;
@@ -300,7 +277,7 @@ fn station_globals_outlive_a_run_but_file_globals_do_not() -> Result<(), Error> 
     main_sequence.insert_step(&step, 0, StepGroup::Main)?;
 
     let execution = engine.new_execution(&sequence_file, "MainSequence", None, false, 0)?;
-    assert!(run_to_end(&engine, Duration::from_secs(20))?);
+    assert!(run_to_end(engine, Duration::from_secs(20))?);
 
     // The run wrote to its own copy; the file's stored default is untouched.
     assert_eq!(
@@ -326,17 +303,14 @@ fn station_globals_outlive_a_run_but_file_globals_do_not() -> Result<(), Error> 
     Ok(())
 }
 
-#[test]
-#[ignore = "requires a live engine"]
-fn every_control_member_reaches_the_member_it_names() -> Result<(), Error> {
+fn every_control_member_reaches_the_member_it_names(engine: &Engine) -> Result<(), Error> {
     // This test exists because four Execution dispatch identifiers were once
     // guessed rather than read from the type library, and two of them landed on
     // the wrong member — `abort` invoked CancelTermination, `cancel_termination`
     // invoked ClearExtraResultList. Neither failed loudly. Calling each control
     // member on a real execution is what makes such a mix-up visible.
-    let engine = Engine::new()?;
     engine.set_ui_message_polling_enabled(true)?;
-    let sequence_file = runnable_file(&engine)?;
+    let sequence_file = runnable_file(engine)?;
     let execution = engine.new_execution(&sequence_file, "MainSequence", None, false, 0)?;
 
     // Only the members that do not change run state; suspending is a race and
@@ -350,25 +324,22 @@ fn every_control_member_reaches_the_member_it_names() -> Result<(), Error> {
     execution.as_property_object()?;
     execution.get_sequence_file()?;
 
-    assert!(run_to_end(&engine, Duration::from_secs(20))?);
+    assert!(run_to_end(engine, Duration::from_secs(20))?);
     engine.release_sequence_file_ex(sequence_file, NO_OPTIONS)?;
     Ok(())
 }
 
-#[test]
-#[ignore = "requires a live engine"]
-fn aborting_stops_a_run_without_its_cleanup() -> Result<(), Error> {
+fn aborting_stops_a_run_without_its_cleanup(engine: &Engine) -> Result<(), Error> {
     // Abort is the blunt one, and it must be the member it claims to be: an
     // identifier that silently selected CancelTermination instead would leave a
     // run going when a host believed it had stopped it.
-    let engine = Engine::new()?;
     engine.set_ui_message_polling_enabled(true)?;
-    let sequence_file = runnable_file(&engine)?;
+    let sequence_file = runnable_file(engine)?;
     let execution = engine.new_execution(&sequence_file, "MainSequence", None, false, 0)?;
 
     execution.abort()?;
     assert!(
-        run_to_end(&engine, Duration::from_secs(20))?,
+        run_to_end(engine, Duration::from_secs(20))?,
         "an aborted run should still report its end"
     );
     println!("  status after abort: {:?}", execution.result_status()?);
@@ -377,17 +348,14 @@ fn aborting_stops_a_run_without_its_cleanup() -> Result<(), Error> {
     Ok(())
 }
 
-#[test]
-#[ignore = "requires a live engine"]
-fn suspending_takes_effect_before_a_resume_is_safe() -> Result<(), Error> {
+fn suspending_takes_effect_before_a_resume_is_safe(engine: &Engine) -> Result<(), Error> {
     // Every control member is a request, not an action. Suspending and then
     // resuming straight away races: the resume can be processed before the
     // suspend takes hold, and the run then stays stopped for ever — which is
     // exactly how this test first failed. Waiting for the engine to confirm is
     // what makes the pair safe, and ExternallySuspended is the confirmation.
-    let engine = Engine::new()?;
     engine.set_ui_message_polling_enabled(true)?;
-    let sequence_file = runnable_file(&engine)?;
+    let sequence_file = runnable_file(engine)?;
     let execution = engine.new_execution(&sequence_file, "MainSequence", None, false, 0)?;
     let thread = execution.foreground_thread()?;
 
@@ -416,21 +384,18 @@ fn suspending_takes_effect_before_a_resume_is_safe() -> Result<(), Error> {
     execution.resume()?;
 
     assert!(
-        run_to_end(&engine, Duration::from_secs(20))?,
+        run_to_end(engine, Duration::from_secs(20))?,
         "the run should finish once resumed"
     );
     engine.release_sequence_file_ex(sequence_file, NO_OPTIONS)?;
     Ok(())
 }
 
-#[test]
-#[ignore = "requires a live engine"]
-fn results_parse_from_a_sequence_file_authored_in_the_editor() -> Result<(), Error> {
+fn results_parse_from_a_sequence_file_authored_in_the_editor(engine: &Engine) -> Result<(), Error> {
     // Building a sequence in code and running it proves the walk handles what
     // this crate itself produced. A file authored in the editor is the case a
     // host actually meets, and it carries things code-built files tend not to:
     // real step types, a step with recording switched off, editor defaults.
-    let engine = Engine::new()?;
     engine.set_ui_message_polling_enabled(true)?;
 
     let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -454,7 +419,7 @@ fn results_parse_from_a_sequence_file_authored_in_the_editor() -> Result<(), Err
         ConflictHandler::UseGlobalType,
     )?;
     let execution = engine.new_execution(&sequence_file, "MainSequence", None, false, 0)?;
-    assert!(run_to_end(&engine, Duration::from_secs(20))?);
+    assert!(run_to_end(engine, Duration::from_secs(20))?);
 
     let parsed = execution.result_list()?.parse()?;
     for result in &parsed {
@@ -479,9 +444,7 @@ fn results_parse_from_a_sequence_file_authored_in_the_editor() -> Result<(), Err
     Ok(())
 }
 
-#[test]
-#[ignore = "requires a live engine"]
-fn a_running_thread_hands_over_its_sequence_context() -> Result<(), Error> {
+fn a_running_thread_hands_over_its_sequence_context(engine: &Engine) -> Result<(), Error> {
     // Regression. `Thread.GetSequenceContext` declares two parameters: the call
     // stack index and an `[out]` frame id. Passing only the first is
     // DISP_E_BADPARAMCOUNT, and nothing exercised this member, so the wrapper
@@ -489,7 +452,6 @@ fn a_running_thread_hands_over_its_sequence_context() -> Result<(), Error> {
     //
     // Reaching a variable through the context is what proves it: the execution's
     // own property tree has no `Locals`, so a wrong object would fail here too.
-    let engine = Engine::new()?;
     engine.set_ui_message_polling_enabled(true)?;
 
     let sequence_file = engine.new_sequence_file()?;
@@ -543,5 +505,84 @@ fn a_running_thread_hands_over_its_sequence_context() -> Result<(), Error> {
         Some("found me"),
         "the context should resolve a local the sequence owns"
     );
+    Ok(())
+}
+
+/// Every execution behaviour, over one engine.
+///
+/// One engine, not fourteen. A fresh engine costs about three seconds before it
+/// is usable, so sharing one takes this file from 43 seconds to a few.
+#[test]
+#[ignore = "requires a live engine"]
+fn executions_behave_as_documented() -> Result<(), Error> {
+    type Step = (&'static str, fn(&Engine) -> Result<(), Error>);
+
+    let engine = Engine::new()?;
+    engine.set_ui_message_polling_enabled(true)?;
+
+    let steps: [Step; 14] = [
+        (
+            "an execution identifies itself the way a front end needs",
+            an_execution_identifies_itself_the_way_a_front_end_needs,
+        ),
+        (
+            "the result status settles once the run is over",
+            the_result_status_settles_once_the_run_is_over,
+        ),
+        (
+            "an execution reports the file it is running",
+            an_execution_reports_the_file_it_is_running,
+        ),
+        (
+            "timings are available while the run is in progress",
+            timings_are_available_while_the_run_is_in_progress,
+        ),
+        (
+            "a thread is reachable both by index and as the foreground one",
+            a_thread_is_reachable_both_by_index_and_as_the_foreground_one,
+        ),
+        (
+            "an execution exposes its own property tree and error object",
+            an_execution_exposes_its_own_property_tree_and_error_object,
+        ),
+        (
+            "terminating a run is asked for rather than immediate",
+            terminating_a_run_is_asked_for_rather_than_immediate,
+        ),
+        (
+            "a thread identifies itself and reaches its context",
+            a_thread_identifies_itself_and_reaches_its_context,
+        ),
+        (
+            "station globals outlive a run but file globals do not",
+            station_globals_outlive_a_run_but_file_globals_do_not,
+        ),
+        (
+            "every control member reaches the member it names",
+            every_control_member_reaches_the_member_it_names,
+        ),
+        (
+            "aborting stops a run without its cleanup",
+            aborting_stops_a_run_without_its_cleanup,
+        ),
+        (
+            "suspending takes effect before a resume is safe",
+            suspending_takes_effect_before_a_resume_is_safe,
+        ),
+        (
+            "results parse from a sequence file authored in the editor",
+            results_parse_from_a_sequence_file_authored_in_the_editor,
+        ),
+        (
+            "a running thread hands over its sequence context",
+            a_running_thread_hands_over_its_sequence_context,
+        ),
+    ];
+
+    for (label, step) in steps {
+        let started = Instant::now();
+        step(&engine)?;
+        println!("  ok: {label} ({:?})", started.elapsed());
+    }
     Ok(())
 }
