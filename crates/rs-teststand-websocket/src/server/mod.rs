@@ -31,8 +31,6 @@ use std::net::{SocketAddr, TcpListener as StdListener};
 use std::sync::mpsc;
 use std::thread;
 
-use futures_util::{SinkExt as _, StreamExt as _};
-use tokio::net::TcpListener;
 // Four things are easy to get wrong in a tokio websocket server, and each is
 // answered deliberately here rather than by accident. Changing this file means
 // keeping them true.
@@ -55,9 +53,8 @@ use tokio::net::TcpListener;
 // Locks across await points. There are none. State moves through channels.
 
 use tokio::sync::broadcast;
-use tokio_tungstenite::tungstenite::Message;
 
-use rs_teststand_bridge::{Ack, Command, Error, MessageEvent, Response};
+use rs_teststand_bridge::{Command, Error, MessageEvent, Response};
 
 /// How many events the fan-out holds before the slowest panel misses some.
 ///
@@ -97,6 +94,11 @@ const MAX_FRAME_BYTES: usize = MAX_MESSAGE_BYTES;
 const MAX_CLIENTS: usize = 64;
 
 /// What travels out to the panels: an event, or an answer to one of them.
+mod accept;
+mod session;
+
+use accept::serve;
+
 #[derive(Debug, Clone)]
 enum Outbound {
     /// Broadcast to everyone.
@@ -215,121 +217,4 @@ impl WebSocketBridge {
     pub fn next_command(&self) -> Option<Request> {
         self.commands.try_recv().ok()
     }
-}
-
-/// Accepts connections until the listener dies.
-async fn serve(
-    listener: StdListener,
-    outbound: broadcast::Sender<Outbound>,
-    commands: mpsc::Sender<Request>,
-) {
-    let Ok(listener) = TcpListener::from_std(listener) else {
-        return;
-    };
-    let mut next_client = 0_u64;
-    while let Ok((stream, _)) = listener.accept().await {
-        // Counted before subscribing, since subscribing is what makes a panel
-        // count. Dropping the stream closes it, so the client learns at once
-        // instead of holding a socket that will never be served.
-        if outbound.receiver_count() >= MAX_CLIENTS {
-            drop(stream);
-            continue;
-        }
-
-        next_client += 1;
-        let client = next_client;
-        let subscription = outbound.subscribe();
-        let commands = commands.clone();
-        // One task per panel, so a slow reader delays nobody else.
-        tokio::spawn(async move {
-            // Limits applied at the handshake, before any payload is read.
-            // Applying them afterwards would be too late: the allocation these
-            // prevent happens while the frame is being received.
-            let config = tokio_tungstenite::tungstenite::protocol::WebSocketConfig::default()
-                .max_message_size(Some(MAX_MESSAGE_BYTES))
-                .max_frame_size(Some(MAX_FRAME_BYTES));
-            if let Ok(websocket) =
-                tokio_tungstenite::accept_async_with_config(stream, Some(config)).await
-            {
-                serve_client(websocket, client, subscription, commands).await;
-            }
-        });
-    }
-}
-
-/// Serves one panel: events and replies out, commands in, until it leaves.
-async fn serve_client<S>(
-    websocket: tokio_tungstenite::WebSocketStream<S>,
-    client: u64,
-    mut outbound: broadcast::Receiver<Outbound>,
-    commands: mpsc::Sender<Request>,
-) where
-    S: tokio::io::AsyncRead + tokio::io::AsyncWrite + Unpin,
-{
-    let (mut sink, mut stream) = websocket.split();
-    loop {
-        tokio::select! {
-            // Something to send this panel.
-            received = outbound.recv() => {
-                let Ok(message) = received else {
-                    // Lagged past the backlog, or the host is finished. Either
-                    // way this panel is done: silently missing messages is worse
-                    // than a close it can react to.
-                    break;
-                };
-                let text = match message {
-                    Outbound::Event(event) => serde_json::to_string(&event),
-                    // A reply belongs to one panel; the others skip it.
-                    Outbound::Reply { client: target, response } if target == client => {
-                        // Converted at the wire boundary, so a host keeps
-                        // building `Response` while every client receives the
-                        // fixed five-field acknowledgement.
-                        serde_json::to_string(&Ack::from(response.as_ref()))
-                    }
-                    Outbound::Reply { .. } => continue,
-                };
-                let Ok(text) = text else { continue };
-                if sink.send(Message::text(text)).await.is_err() {
-                    break;
-                }
-            }
-            // Something the panel asked for.
-            received = stream.next() => {
-                let Some(Ok(frame)) = received else { break };
-                match frame {
-                    Message::Text(text) => match serde_json::from_str::<Command>(&text) {
-                        Ok(command) => {
-                            if commands.send(Request { client, command }).is_err() {
-                                // The host is gone; nothing left to serve.
-                                break;
-                            }
-                        }
-                        // A malformed command is the panel's mistake, not a
-                        // reason to drop it: say so and carry on.
-                        Err(error) => {
-                            let reply = Response::Failed {
-                                command: "unparsed".to_owned(),
-                                reason: error.to_string(),
-                            };
-                            let Ok(text) = serde_json::to_string(&reply) else { continue };
-                            if sink.send(Message::text(text)).await.is_err() {
-                                break;
-                            }
-                        }
-                    },
-                    // Breaking here reaches the `sink.close()` below, which
-                    // sends the Close that RFC 6455 section 5.5.1 requires in
-                    // reply. Returning early instead would leave the peer
-                    // waiting for it.
-                    Message::Close(_) => break,
-                    // Ping and pong are answered by the library; binary frames
-                    // are not part of this protocol.
-                    _ => {}
-                }
-            }
-        }
-    }
-    // Completes the closing handshake, whether this side started it or the
-    // client did. A failure means the peer has already gone.
-    let _ = sink.close().await;
 }
