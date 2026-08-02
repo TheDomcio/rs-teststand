@@ -341,9 +341,14 @@ fn every_control_member_reaches_the_member_it_names() -> Result<(), Error> {
 
     // Only the members that do not change run state; suspending is a race and
     // gets a test of its own.
+    //
+    // `cancel_termination` is deliberately absent. The reference says calling
+    // it from an application's main thread deadlocks, and it does: from this
+    // thread the call never returns, the run has to be killed, and the killed
+    // process leaves sequence files unreleased. It is only callable from inside
+    // a step, which a test on this thread cannot be.
     execution.as_property_object()?;
     execution.get_sequence_file()?;
-    execution.cancel_termination()?;
 
     assert!(run_to_end(&engine, Duration::from_secs(20))?);
     engine.release_sequence_file_ex(sequence_file, NO_OPTIONS)?;
