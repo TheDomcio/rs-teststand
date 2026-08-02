@@ -14,6 +14,14 @@ readme = "README.md"
 
 # On publish, cargo drops the `path` and resolves `rs-teststand-sys` by version
 # from crates.io, so `cargo add rs-teststand` pulls a self-contained crate.
+[package.metadata.docs.rs]
+# This crate wraps a Windows COM API and does not build for Linux, which is what
+# docs.rs targets by default. Point it at Windows so the documentation builds.
+default-target = "x86_64-pc-windows-msvc"
+# `default-target` is built as well as these, so it is not repeated here.
+targets = ["i686-pc-windows-msvc"]
+all-features = true
+
 [dependencies]
 rs-teststand-sys = { path = "../rs-teststand-sys", version = "0.0.9" }
 thiserror = "2.0.18"

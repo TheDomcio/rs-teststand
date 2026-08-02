@@ -15,6 +15,14 @@ readme = "README.md"
 # An addition to the binding, not part of it. `rs-teststand` stays free of an
 # async runtime and an RPC stack; a caller that only drives the engine in-process
 # pays for none of this.
+[package.metadata.docs.rs]
+# This crate wraps a Windows COM API and does not build for Linux, which is what
+# docs.rs targets by default. Point it at Windows so the documentation builds.
+default-target = "x86_64-pc-windows-msvc"
+# `default-target` is built as well as these, so it is not repeated here.
+targets = ["i686-pc-windows-msvc"]
+all-features = true
+
 [dependencies]
 rs-teststand = { path = "../rs-teststand", version = "0.0.9" }
 # The message pump: a background thread owning apartment-bound objects has to
