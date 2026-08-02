@@ -9,6 +9,16 @@
 //! variable part lives in `data` as a JSON string, so a client that only needs
 //! to know whether a command worked never parses it, and one that wants the
 //! detail parses it separately.
+//!
+//! # Telling an acknowledgement from an event
+//!
+//! Both travel the same socket, so a client has to sort them. Use the presence
+//! of `command`: an [`Ack`] always has one and a
+//! [`MessageEvent`](crate::MessageEvent) never does.
+//!
+//! Do not sort on `code`. Both carry a field with that name and they mean
+//! different things, an engine error code here and a UI message code there.
+//! A client keying on `code` reads every acknowledgement as an event.
 
 use serde::{Deserialize, Serialize};
 
@@ -195,6 +205,34 @@ mod tests {
         });
         assert_eq!(ack.data, r#"{"serial":"SN-1"}"#);
         assert_eq!(ack.command, "read_value");
+    }
+
+    #[test]
+    fn an_event_carries_no_command_so_the_two_can_be_told_apart() {
+        // The discriminator a client depends on. Both types have a `code`
+        // field meaning different things, so `command` is the only safe test,
+        // and it stops being safe the moment an event grows one.
+        let event = crate::MessageEvent {
+            code: 2,
+            numeric: 0.0,
+            text: String::new(),
+            payload: None,
+            synchronous: false,
+            execution_id: None,
+        };
+        let text = serde_json::to_string(&event).unwrap_or_default();
+        let parsed: serde_json::Value = serde_json::from_str(&text).unwrap_or_default();
+        assert!(
+            parsed.get("command").is_none(),
+            "an event must not carry `command`: {text}"
+        );
+
+        let ack = serde_json::to_string(&Ack::ok("start", "started")).unwrap_or_default();
+        let parsed: serde_json::Value = serde_json::from_str(&ack).unwrap_or_default();
+        assert!(
+            parsed.get("command").is_some(),
+            "an ack must carry `command`"
+        );
     }
 
     #[test]
