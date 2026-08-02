@@ -110,10 +110,11 @@ impl From<&Response> for Ack {
     /// happened rather than repeating the command name back.
     fn from(response: &Response) -> Self {
         match response {
-            Response::Hello { engine, is_64bit } => {
-                let width = if *is_64bit { "64-bit" } else { "32-bit" };
-                Self::ok("hello", format!("engine {engine}, {width}"))
-                    .with_data(serialize(response))
+            Response::Hello { engine, .. } => {
+                // The engine's own version string already ends in the process
+                // width, so appending it again reads as "64-bit, 64-bit".
+                // `is_64bit` stays in `data` for a client that wants the flag.
+                Self::ok("hello", format!("engine {engine}")).with_data(serialize(response))
             }
             Response::Started { execution_id } => {
                 Self::ok("start", format!("execution {execution_id} started"))
@@ -176,6 +177,18 @@ mod tests {
                 assert!(object.contains_key(field), "{field} missing from {text}");
             }
         }
+    }
+
+    #[test]
+    fn hello_does_not_repeat_the_process_width() {
+        // Measured against a live engine: the version string already ends in
+        // "64-bit", so composing the width in produced "64-bit, 64-bit".
+        let ack = Ack::from(&Response::Hello {
+            engine: "2026 Q1 (26.0.0.49152) 64-bit".to_owned(),
+            is_64bit: true,
+        });
+        assert_eq!(ack.description, "engine 2026 Q1 (26.0.0.49152) 64-bit");
+        assert!(ack.data.contains("is_64bit"), "the flag stays in data");
     }
 
     #[test]

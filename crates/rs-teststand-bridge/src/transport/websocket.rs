@@ -21,6 +21,11 @@
 //! - **The server thread** — a runtime of its own, accepting panels and moving
 //!   bytes. It never sees the engine; what crosses between the two is
 //!   [`MessageEvent`], [`Command`] and [`Response`], all plain data.
+//!
+//! Replies go out as [`Ack`](crate::Ack), a fixed five-field record, rather
+//! than as the `Response` enum whose fields vary by variant. A client sorts the
+//! two kinds of traffic on `command`: an acknowledgement always carries one and
+//! an event never does.
 
 use std::net::{SocketAddr, TcpListener as StdListener};
 use std::sync::mpsc;
@@ -209,7 +214,10 @@ async fn serve_client<S>(
                     Outbound::Event(event) => serde_json::to_string(&event),
                     // A reply belongs to one panel; the others skip it.
                     Outbound::Reply { client: target, response } if target == client => {
-                        serde_json::to_string(&response)
+                        // Converted at the wire boundary, so a host keeps
+                        // building `Response` while every client receives the
+                        // fixed five-field acknowledgement.
+                        serde_json::to_string(&crate::Ack::from(response.as_ref()))
                     }
                     Outbound::Reply { .. } => continue,
                 };
