@@ -39,6 +39,14 @@ futures-util = { version = "0.3", default-features = false, features = ["sink"] 
 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time", "net"] }
+# The host example drives a real engine and serialises what it reports.
+rs-teststand = { path = "../rs-teststand", version = "0.0.9" }
+rs-teststand-serde = { path = "../rs-teststand-serde", version = "0.0.9" }
+
+[[example]]
+name = "host"
+# The panel and README sit beside this file; see examples/README.md.
+path = "examples/host/main.rs"
 
 [lints]
 workspace = true

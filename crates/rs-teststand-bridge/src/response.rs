@@ -16,7 +16,7 @@ use serde::{Deserialize, Serialize};
 #[non_exhaustive]
 pub enum Response {
     /// The host is up, and this is what it is.
-    Hello {
+    VersionString {
         /// The engine's version string.
         engine: String,
         /// Whether the engine is the 64-bit build.
@@ -113,7 +113,7 @@ mod tests {
     #[test]
     fn responses_round_trip() {
         for response in [
-            Response::Hello {
+            Response::VersionString {
                 engine: "2026 Q1".to_owned(),
                 is_64bit: true,
             },

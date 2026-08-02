@@ -45,7 +45,7 @@
 <h1>Station panel</h1>
 <div class="muted" id="state">connecting…</div>
 <div id="controls">
-  <button data-command="hello">1. Hello</button>
+  <button data-command="version_string">1. Version</button>
   <input id="user" value="administrator" size="14" title="login name" />
   <input id="password" value="" placeholder="password (blank)" size="14" type="password" />
   <button data-command="login">2. Log in</button>
@@ -99,7 +99,7 @@
   // The whole orchestration, in the order a station actually does it:
   // greet the host, identify the operator, load a file, start it, watch.
   const commands = {
-    hello: () => ({ command: "hello" }),
+    version_string: () => ({ command: "hello" }),
     login: () => ({
       command: "login",
       user_name: el("user").value.trim(),

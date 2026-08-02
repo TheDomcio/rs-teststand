@@ -14,7 +14,7 @@
 //! wedged still counts as present here, which is the honest limit of a
 //! socket-level check: a closed connection is evidence, an idle one is not.
 //! A host that needs liveness rather than presence should have its panels send
-//! [`Command::Hello`](crate::Command::Hello) on a timer and reset the clock on
+//! [`Command::VersionString`](crate::Command::VersionString) on a timer and reset the clock on
 //! receipt.
 
 use std::time::{Duration, Instant};

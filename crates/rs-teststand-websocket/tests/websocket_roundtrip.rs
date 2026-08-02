@@ -245,7 +245,7 @@ async fn a_reply_goes_only_to_the_panel_that_asked() {
 
     asker
         .send(Message::text(
-            serde_json::to_string(&Command::Hello).expect("encode"),
+            serde_json::to_string(&Command::VersionString).expect("encode"),
         ))
         .await
         .expect("send");
@@ -261,7 +261,7 @@ async fn a_reply_goes_only_to_the_panel_that_asked() {
     let request = request.expect("command should arrive");
     bridge.reply(
         &request,
-        &Response::Hello {
+        &Response::VersionString {
             engine: "2026 Q1".to_owned(),
             is_64bit: true,
         },

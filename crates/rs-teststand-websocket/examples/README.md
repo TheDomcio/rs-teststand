@@ -22,7 +22,7 @@ The panel's buttons are real commands, answered on the engine's own thread:
 
 | button | command | what the host does |
 | ------ | ------- | ------------------ |
-| Hello | `hello` | reports the engine version and bitness |
+| VersionString | `version_string` | reports the engine version and bitness |
 | Run | `run` | loads a file (or builds the demo sequence) and starts it |
 | Read Locals.Result | `read_value` | resolves a property path and returns it as JSON |
 | Terminate | `terminate` | asks the running execution to stop; cleanup still runs |
