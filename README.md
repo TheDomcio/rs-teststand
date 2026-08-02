@@ -339,8 +339,9 @@ additions you can ignore until you need them.
 | [`rs-teststand-sys`](crates/rs-teststand-sys)     | [![crates.io](https://img.shields.io/crates/v/rs-teststand-sys.svg)](https://crates.io/crates/rs-teststand-sys)     | [![docs.rs](https://docs.rs/rs-teststand-sys/badge.svg)](https://docs.rs/rs-teststand-sys)     | The low-level COM interop layer. Every `unsafe` block in the workspace lives here. An implementation detail.                                    |
 | [`rs-teststand-serde`](crates/rs-teststand-serde) | [![crates.io](https://img.shields.io/crates/v/rs-teststand-serde.svg)](https://crates.io/crates/rs-teststand-serde) | [![docs.rs](https://docs.rs/rs-teststand-serde/badge.svg)](https://docs.rs/rs-teststand-serde) | Property trees to and from JSON, or any serde format.                                                                                           |
 | [`rs-teststand-bridge`](crates/rs-teststand-bridge)   | [![crates.io](https://img.shields.io/crates/v/rs-teststand-bridge.svg)](https://crates.io/crates/rs-teststand-bridge)   | [![docs.rs](https://docs.rs/rs-teststand-bridge/badge.svg)](https://docs.rs/rs-teststand-bridge)   | Serve the engine to other processes. Early; the host exists, the gRPC services do not yet. Unrelated to National Instruments' own gRPC project. |
+| [`rs-teststand-websocket`](crates/rs-teststand-websocket) | [![crates.io](https://img.shields.io/crates/v/rs-teststand-websocket.svg)](https://crates.io/crates/rs-teststand-websocket) | [![docs.rs](https://docs.rs/rs-teststand-websocket/badge.svg)](https://docs.rs/rs-teststand-websocket) | Serve the engine over `WebSocket`, to a browser panel or another process. Speaks the protocol, does not implement it: framing belongs to `tungstenite`. |
 
-All four share a version number and are published together.
+All five share a version number and are published together.
 
 The crates are published as `rs-teststand`, `rs-teststand-sys`,
 `rs-teststand-serde` and `rs-teststand-bridge`, and imported with underscores,
