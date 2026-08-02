@@ -66,6 +66,24 @@ use crate::{Command, Error, MessageEvent, Response};
 /// station to grow memory without limit.
 const EVENT_BACKLOG: usize = 256;
 
+/// Largest message a panel may send, in bytes.
+///
+/// Commands are small. A sequence path and a lookup string are the biggest
+/// parts of one, so a megabyte is generous by a wide margin. Without a limit a
+/// single frame can make the host allocate until it dies, and that needs no
+/// malice: a client with a loop bug reaches the same place.
+///
+/// This bounds what one panel can make the host hold. `EVENT_BACKLOG` bounds
+/// what a slow panel can make it keep.
+const MAX_MESSAGE_BYTES: usize = 1024 * 1024;
+
+/// Largest single frame accepted, in bytes.
+///
+/// Kept at the message limit. A message can arrive as several frames, so
+/// capping only the message would still let one frame be assembled unbounded
+/// before the total is known.
+const MAX_FRAME_BYTES: usize = MAX_MESSAGE_BYTES;
+
 /// What travels out to the panels: an event, or an answer to one of them.
 #[derive(Debug, Clone)]
 enum Outbound {
@@ -204,7 +222,15 @@ async fn serve(
         let commands = commands.clone();
         // One task per panel, so a slow reader delays nobody else.
         tokio::spawn(async move {
-            if let Ok(websocket) = tokio_tungstenite::accept_async(stream).await {
+            // Limits applied at the handshake, before any payload is read.
+            // Applying them afterwards would be too late: the allocation these
+            // prevent happens while the frame is being received.
+            let config = tokio_tungstenite::tungstenite::protocol::WebSocketConfig::default()
+                .max_message_size(Some(MAX_MESSAGE_BYTES))
+                .max_frame_size(Some(MAX_FRAME_BYTES));
+            if let Ok(websocket) =
+                tokio_tungstenite::accept_async_with_config(stream, Some(config)).await
+            {
                 serve_client(websocket, client, subscription, commands).await;
             }
         });
