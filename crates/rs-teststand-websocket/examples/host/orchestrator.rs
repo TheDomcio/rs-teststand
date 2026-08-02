@@ -79,7 +79,10 @@ impl Orchestrator {
         address: &str,
         timeout: ClientTimeout,
     ) -> Result<Self, Box<dyn std::error::Error>> {
-        let bridge = WebSocketBridge::bind(address)?;
+        let bridge = WebSocketBridge::bind_with_page(
+            address,
+            Some(include_str!("../panel.html").to_owned()),
+        )?;
         let engine = Engine::new()?;
         engine.set_ui_message_polling_enabled(true)?;
         Ok(Self {

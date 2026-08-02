@@ -7,6 +7,7 @@ use tokio::net::TcpListener;
 
 use tokio::sync::broadcast;
 
+use super::page::{Kind, classify, serve_page};
 use super::session::serve_client;
 use super::{MAX_CLIENTS, MAX_FRAME_BYTES, MAX_MESSAGE_BYTES, Outbound, Request};
 
@@ -15,6 +16,7 @@ pub(super) async fn serve(
     listener: StdListener,
     outbound: broadcast::Sender<Outbound>,
     commands: mpsc::Sender<Request>,
+    page: Option<String>,
 ) {
     let Ok(listener) = TcpListener::from_std(listener) else {
         return;
@@ -27,6 +29,15 @@ pub(super) async fn serve(
         if outbound.receiver_count() >= MAX_CLIENTS {
             drop(stream);
             continue;
+        }
+
+        // A browser asking for the page is not a panel and must not consume a
+        // connection slot or a subscription.
+        if let Some(body) = page.clone() {
+            if classify(&stream).await == Kind::Page {
+                tokio::spawn(async move { serve_page(stream, &body).await });
+                continue;
+            }
         }
 
         next_client += 1;

@@ -11,7 +11,7 @@ nothing but data between them.
 cargo run --manifest-path host/Cargo.toml
 ```
 
-Then open `panel.html` in a browser. Nothing is built for the panel — it is one
+Then open http://127.0.0.1:50751 in a browser. Nothing is built for the panel — it is one
 file with no dependencies and no toolchain.
 
 The host needs a registered engine. The panel needs a browser.

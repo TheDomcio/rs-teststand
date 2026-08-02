@@ -96,6 +96,7 @@ const MAX_CLIENTS: usize = 64;
 
 /// What travels out to the panels: an event, or an answer to one of them.
 mod accept;
+mod page;
 mod session;
 
 use accept::serve;
@@ -154,6 +155,23 @@ impl WebSocketBridge {
     /// [`Error::Transport`] if the address cannot be bound, or
     /// [`Error::ThreadNotStarted`] if the server thread cannot be created.
     pub fn bind(address: &str) -> Result<Self, Error> {
+        Self::bind_with_page(address, None)
+    }
+
+    /// Binds, and also serves `page` to a browser asking for the root.
+    ///
+    /// One address for both, so opening the host's address is the whole setup
+    /// and the panel need not be found on disk. It also gives the page and the
+    /// socket the same origin, which is what makes an origin check meaningful;
+    /// a page loaded from a file has an origin of `null`.
+    ///
+    /// A browser request never consumes a connection slot or a subscription: it
+    /// is answered and closed before either is taken.
+    ///
+    /// # Errors
+    /// [`Error::Transport`] if the address cannot be bound, or
+    /// [`Error::ThreadNotStarted`] if the server thread will not start.
+    pub fn bind_with_page(address: &str, page: Option<String>) -> Result<Self, Error> {
         let listener = StdListener::bind(address)?;
         listener.set_nonblocking(true)?;
         let address = listener.local_addr()?;
@@ -174,7 +192,7 @@ impl WebSocketBridge {
                 else {
                     return;
                 };
-                runtime.block_on(serve(listener, publisher, command_sender));
+                runtime.block_on(serve(listener, publisher, command_sender, page));
             })
             .map_err(|error| Error::ThreadNotStarted {
                 reason: error.to_string(),

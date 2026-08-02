@@ -49,6 +49,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         Some(limit) => println!("stops {limit:?} after the last client disconnects"),
         None => println!("runs until told to stop; no client timeout"),
     }
-    println!("open panel.html and use its buttons; Shutdown ends this process.");
+    println!(
+        "open http://{} in a browser; Shutdown ends this process.",
+        host.address().trim_start_matches("ws://")
+    );
     host.run()
 }
