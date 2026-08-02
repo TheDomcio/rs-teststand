@@ -59,8 +59,8 @@ pub use property::{
     PropertyObjectType, PropertyOptions, PropertyRepresentation,
 };
 pub use sequence::{
-    ConflictHandler, GetSeqFileOptions, ResultRecordingOption, RunMode, Sequence, SequenceFile,
-    Step,
+    BreakpointScope, ConflictHandler, GetSeqFileOptions, ResultRecordingOption, RunMode, Sequence,
+    SequenceFile, Step,
 };
 pub use station::{
     DebugOptions, ExecutionMask, RunTimeErrorOption, SearchDirectories, SearchDirectory,

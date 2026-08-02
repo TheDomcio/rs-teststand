@@ -215,4 +215,95 @@ impl Step {
     pub(crate) fn duplicate_dispatch(&self) -> Option<Box<dyn Dispatch>> {
         self.dispatch.duplicate()
     }
+    /// Whether this step carries a breakpoint (`Step.BreakOnStep`).
+    ///
+    /// Reads the step itself. To ask about one run instead, use
+    /// [`break_on_step_for`](Self::break_on_step_for).
+    ///
+    /// True here does not mean a run will stop. Breakpoints are only honored
+    /// while they are switched on, which
+    /// [`Engine::breakpoints_enabled`](crate::Engine::breakpoints_enabled)
+    /// controls for the session.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn break_on_step(&self) -> Result<bool, Error> {
+        Ok(self.dispatch.get(step::BREAK_ON_STEP)?.as_bool()?)
+    }
+
+    /// Whether this step carries a breakpoint in the given scope
+    /// (`Step.GetBreakOnStepEx`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn break_on_step_for(&self, scope: crate::BreakpointScope<'_>) -> Result<bool, Error> {
+        Ok(self
+            .dispatch
+            .call(step::GET_BREAK_ON_STEP_EX, &[scope.argument()])?
+            .as_bool()?)
+    }
+
+    /// Sets or clears the breakpoint on this step (`Step.SetBreakOnStepEx`).
+    ///
+    /// The scope decides how long it lasts.
+    /// [`BreakpointScope::Step`](crate::BreakpointScope::Step) writes it into
+    /// the step, so it survives the run and is saved with the sequence file.
+    /// [`BreakpointScope::Execution`](crate::BreakpointScope::Execution) scopes
+    /// it to one run and leaves the file alone, which is what a host debugging
+    /// for a remote panel should use.
+    ///
+    /// A stop announces itself as
+    /// [`UIMessageCode::BreakOnBreakpoint`](crate::UIMessageCode::BreakOnBreakpoint),
+    /// which arrived about 300 ms after the run started in a live measurement.
+    /// Continue with [`Execution::resume`](crate::Execution::resume), not
+    /// `Thread::resume`, which does not release a breakpoint stop.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_break_on_step(
+        &self,
+        enabled: bool,
+        scope: crate::BreakpointScope<'_>,
+    ) -> Result<(), Error> {
+        self.dispatch.call(
+            step::SET_BREAK_ON_STEP_EX,
+            &[Value::Bool(enabled), scope.argument()],
+        )?;
+        Ok(())
+    }
+
+    /// Sets a breakpoint together with its pass count and condition
+    /// (`Step.SetBreakSettings`).
+    ///
+    /// `is_set` places or removes the breakpoint and `enabled` decides whether
+    /// it is armed, so a breakpoint can stay in place while switched off.
+    /// `pass_count` stops on the nth arrival rather than the first.
+    /// `condition` is an expression the engine evaluates when it arrives; an
+    /// empty string means stop unconditionally.
+    ///
+    /// Reading these back needs `Step.GetBreakSettings`, which returns
+    /// everything through `[out]` parameters and is not wrapped yet.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_break_settings(
+        &self,
+        is_set: bool,
+        enabled: bool,
+        pass_count: i32,
+        condition: &str,
+        scope: crate::BreakpointScope<'_>,
+    ) -> Result<(), Error> {
+        self.dispatch.call(
+            step::SET_BREAK_SETTINGS,
+            &[
+                Value::Bool(is_set),
+                Value::Bool(enabled),
+                Value::I32(pass_count),
+                Value::Str(condition.to_owned()),
+                scope.argument(),
+            ],
+        )?;
+        Ok(())
+    }
 }
