@@ -234,8 +234,9 @@ fn report(kind: &str, failures: &[String]) {
 
 // A flat list of 27 audited options, one per statement. Splitting it into
 // "part 1 / part 2" would hide which options are covered without making any
-// of it simpler to read.
-#[allow(clippy::too_many_lines)]
+// of it simpler to read. The complexity score counts each option as a branch,
+// which is exactly the coverage this test exists to have.
+#[allow(clippy::too_many_lines, clippy::cognitive_complexity)]
 fn boolean_options_survive_a_write_of_their_own_value(engine: &Engine) -> Result<(), Error> {
     let options = station_options(engine)?;
     let mut failures: Vec<String> = Vec::new();
@@ -388,8 +389,10 @@ fn boolean_options_survive_a_write_of_their_own_value(engine: &Engine) -> Result
 }
 
 // Exact comparison is the point: the same bits are written back, so anything
-// other than an identical read is the defect this test exists to catch.
-#[allow(clippy::float_cmp)]
+// other than an identical read is the defect this test exists to catch. One
+// option per statement, so the complexity score tracks coverage rather than
+// tangled logic.
+#[allow(clippy::float_cmp, clippy::cognitive_complexity)]
 fn numeric_options_survive_a_write_of_their_own_value(engine: &Engine) -> Result<(), Error> {
     let options = station_options(engine)?;
     let mut failures: Vec<String> = Vec::new();
@@ -445,6 +448,9 @@ fn numeric_options_survive_a_write_of_their_own_value(engine: &Engine) -> Result
     Ok(())
 }
 
+// Same shape as the other two audits: one option per statement, so the
+// complexity score counts coverage rather than tangled logic.
+#[allow(clippy::cognitive_complexity)]
 fn string_options_survive_a_write_of_their_own_value(engine: &Engine) -> Result<(), Error> {
     let options = station_options(engine)?;
     let mut failures: Vec<String> = Vec::new();
