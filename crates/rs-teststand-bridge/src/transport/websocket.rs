@@ -250,6 +250,10 @@ async fn serve_client<S>(
                             }
                         }
                     },
+                    // Breaking here reaches the `sink.close()` below, which
+                    // sends the Close that RFC 6455 section 5.5.1 requires in
+                    // reply. Returning early instead would leave the peer
+                    // waiting for it.
                     Message::Close(_) => break,
                     // Ping and pong are answered by the library; binary frames
                     // are not part of this protocol.
@@ -258,5 +262,7 @@ async fn serve_client<S>(
             }
         }
     }
+    // Completes the closing handshake, whether this side started it or the
+    // client did. A failure means the peer has already gone.
     let _ = sink.close().await;
 }

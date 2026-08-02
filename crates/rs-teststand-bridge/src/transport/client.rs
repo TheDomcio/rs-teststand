@@ -116,11 +116,77 @@ impl Client {
         while let Some(frame) = self.socket.next().await {
             match frame.map_err(|error| transport(&error))? {
                 Message::Text(text) => return Inbound::parse(&text).map(Some),
-                Message::Close(_) => return Ok(None),
+                Message::Close(frame) => {
+                    // RFC 6455 section 5.5.1: an endpoint receiving a Close
+                    // that has not sent one MUST send one in response, and
+                    // typically echoes the status code it was given. Passing
+                    // the frame straight back does that. Skipping the reply
+                    // leaves the peer waiting until it times out instead of
+                    // closing cleanly. A send failure here means the peer has
+                    // already gone, which is the outcome being asked for.
+                    let _ = self.socket.send(Message::Close(frame)).await;
+                    return Ok(None);
+                }
+                // Ping and pong are answered inside the library, which owns the
+                // protocol layer. Binary frames are not part of this protocol.
                 _ => (),
             }
         }
         Ok(None)
+    }
+
+    /// Starts a close, then reads until the peer closes back.
+    ///
+    /// RFC 6455 section 5.5.1 makes closing a handshake rather than a hang-up:
+    /// each side sends a Close and waits for the other. Dropping the socket
+    /// without it leaves the peer to time out.
+    ///
+    /// No data frame goes out after the Close, which the same section forbids.
+    /// This only reads from that point on.
+    ///
+    /// Messages arriving before the peer's Close are handed to `observe`, since
+    /// a run can still be reporting when a client decides to leave.
+    ///
+    /// # Errors
+    /// [`Error::Transport`] if the Close cannot be sent.
+    pub async fn close(mut self, mut observe: impl FnMut(Inbound)) -> Result<(), Error> {
+        self.socket
+            .send(Message::Close(None))
+            .await
+            .map_err(|error| transport(&error))?;
+
+        while let Some(frame) = self.socket.next().await {
+            match frame {
+                Ok(Message::Close(_)) | Err(_) => break,
+                Ok(Message::Text(text)) => {
+                    if let Ok(inbound) = Inbound::parse(&text) {
+                        observe(inbound);
+                    }
+                }
+                Ok(_) => (),
+            }
+        }
+        Ok(())
+    }
+
+    /// Sends a ping carrying `payload`.
+    ///
+    /// RFC 6455 section 5.5.2: an endpoint receiving a Ping MUST answer with a
+    /// Pong, unless it has already received a Close. The section names this use
+    /// directly, as a keepalive or a way to check the peer still responds,
+    /// which is what a connection count alone cannot tell you.
+    ///
+    /// The pong is consumed by the library rather than surfaced here, so this
+    /// proves liveness by the absence of a transport error rather than by a
+    /// returned value.
+    ///
+    /// # Errors
+    /// [`Error::Transport`] if the ping cannot be sent.
+    pub async fn ping(&mut self, payload: Vec<u8>) -> Result<(), Error> {
+        self.socket
+            .send(Message::Ping(payload.into()))
+            .await
+            .map_err(|error| transport(&error))
     }
 
     /// Sends a command and reads until its acknowledgement arrives.
