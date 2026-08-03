@@ -9,7 +9,7 @@
 /// use rs_teststand_websocket::Options;
 ///
 /// let options = Options::default()
-///     .page(include_str!("../../examples/websocket-bridge/panel.html"))
+///     .page(include_str!("../../examples/panel.html"))
 ///     .allow_origin("http://192.0.2.10:50751");
 /// ```
 #[derive(Debug, Default, Clone)]
