@@ -9,7 +9,7 @@
 
 #![cfg(feature = "live-engine")]
 
-use rs_teststand::{AdapterKeyName, Engine, Error, RunMode};
+use rs_teststand::{AdapterKeyName, BreakpointScope, Engine, Error, RunMode};
 
 /// Every adapter key this build names.
 ///
@@ -172,6 +172,54 @@ fn every_run_mode_round_trips_through_the_engine() -> Result<(), Error> {
         step.set_run_mode(mode)?;
         assert_eq!(step.run_mode()?, Some(mode));
     }
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires a live engine"]
+fn the_ex_pair_round_trips_every_run_mode_too() -> Result<(), Error> {
+    // The pair that supersedes the obsolete property. Worth its own test rather
+    // than trusting the DISPIDs read from the type library: a wrong number on a
+    // late-bound call is not a compile error, it is a call to some other member
+    // or a failure at run time, and only a live engine can tell which.
+    let engine = Engine::new()?;
+    let step = engine.new_step(AdapterKeyName::NoneAdapter.as_str(), "PassFailTest")?;
+
+    for mode in [
+        RunMode::Skip,
+        RunMode::ForcePass,
+        RunMode::ForceFail,
+        RunMode::Normal,
+    ] {
+        step.set_run_mode_ex(mode, BreakpointScope::Step)?;
+        assert_eq!(step.run_mode_ex(BreakpointScope::Step)?, Some(mode));
+    }
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires a live engine"]
+fn the_ex_pair_and_the_obsolete_property_address_the_same_setting() -> Result<(), Error> {
+    // With no execution in play, the reference says the Ex pair reads and writes
+    // the sequence file's run mode, which is the only thing the obsolete
+    // property can reach. So the two must agree, in both directions. If they
+    // ever disagree, one of them is not talking about the step it was given.
+    let engine = Engine::new()?;
+    let step = engine.new_step(AdapterKeyName::NoneAdapter.as_str(), "PassFailTest")?;
+
+    step.set_run_mode(RunMode::Skip)?;
+    assert_eq!(
+        step.run_mode_ex(BreakpointScope::Step)?,
+        Some(RunMode::Skip),
+        "the Ex getter should see what the obsolete setter wrote"
+    );
+
+    step.set_run_mode_ex(RunMode::ForceFail, BreakpointScope::Step)?;
+    assert_eq!(
+        step.run_mode()?,
+        Some(RunMode::ForceFail),
+        "the obsolete getter should see what the Ex setter wrote"
+    );
     Ok(())
 }
 

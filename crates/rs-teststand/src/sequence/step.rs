@@ -2,6 +2,7 @@
 
 use rs_teststand_sys::{Dispatch, Value};
 
+use crate::BreakpointScope;
 use crate::Error;
 use crate::dispids::step;
 use crate::property::PropertyObject;
@@ -65,7 +66,53 @@ impl Step {
         Ok(())
     }
 
+    /// What the engine does with the step, for one execution or for the file
+    /// (`Step.GetRunModeEx`).
+    ///
+    /// The scope is the reason to prefer this over [`run_mode`](Self::run_mode).
+    /// [`BreakpointScope::Execution`] reads the mode set for that execution, so
+    /// a step can be skipped in one run without touching the file every other
+    /// run loads. [`BreakpointScope::Step`] reads the file's own mode, and so
+    /// does an execution that has no mode of its own.
+    ///
+    /// `None` means the engine reported a mode this build does not name, which
+    /// is worth telling apart from a failure to read it at all.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn run_mode_ex(&self, scope: BreakpointScope<'_>) -> Result<Option<crate::RunMode>, Error> {
+        let raw = self
+            .dispatch
+            .call(step::GET_RUN_MODE_EX, &[scope.argument()])?
+            .into_string()?;
+        Ok(crate::RunMode::from_value(&raw))
+    }
+
+    /// Sets the run mode, for one execution or for the file
+    /// (`Step.SetRunModeEx`).
+    ///
+    /// See [`run_mode_ex`](Self::run_mode_ex) for what the scope changes.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_run_mode_ex(
+        &self,
+        mode: crate::RunMode,
+        scope: BreakpointScope<'_>,
+    ) -> Result<(), Error> {
+        self.dispatch.call(
+            step::SET_RUN_MODE_EX,
+            &[Value::Str(mode.as_str().to_owned()), scope.argument()],
+        )?;
+        Ok(())
+    }
+
     /// What the engine does with the step when it reaches it (`Step.RunMode`).
+    ///
+    /// The vendor marks this property obsolete in favor of
+    /// [`run_mode_ex`](Self::run_mode_ex), and it is kept because it still
+    /// works and is the shorter call when the file's own mode is what you want.
+    /// It cannot reach an execution's mode at all.
     ///
     /// `None` means the engine reported a mode this build does not name, which
     /// is worth telling apart from a failure to read it at all.
@@ -78,6 +125,9 @@ impl Step {
     }
 
     /// Sets the run mode (`Step.RunMode`).
+    ///
+    /// Obsolete in favor of [`set_run_mode_ex`](Self::set_run_mode_ex), which
+    /// can also set the mode for a single execution.
     ///
     /// # Errors
     /// [`Error`] if the COM call fails.
@@ -234,7 +284,7 @@ impl Step {
     ///
     /// # Errors
     /// [`Error`] if the COM call fails or returns an unexpected type.
-    pub fn break_on_step_for(&self, scope: crate::BreakpointScope<'_>) -> Result<bool, Error> {
+    pub fn break_on_step_for(&self, scope: BreakpointScope<'_>) -> Result<bool, Error> {
         Ok(self
             .dispatch
             .call(step::GET_BREAK_ON_STEP_EX, &[scope.argument()])?
@@ -244,9 +294,9 @@ impl Step {
     /// Sets or clears the breakpoint on this step (`Step.SetBreakOnStepEx`).
     ///
     /// The scope decides how long it lasts.
-    /// [`BreakpointScope::Step`](crate::BreakpointScope::Step) writes it into
+    /// [`BreakpointScope::Step`] writes it into
     /// the step, so it survives the run and is saved with the sequence file.
-    /// [`BreakpointScope::Execution`](crate::BreakpointScope::Execution) scopes
+    /// [`BreakpointScope::Execution`] scopes
     /// it to one run and leaves the file alone, which is what a host debugging
     /// for a remote panel should use.
     ///
@@ -261,7 +311,7 @@ impl Step {
     pub fn set_break_on_step(
         &self,
         enabled: bool,
-        scope: crate::BreakpointScope<'_>,
+        scope: BreakpointScope<'_>,
     ) -> Result<(), Error> {
         self.dispatch.call(
             step::SET_BREAK_ON_STEP_EX,
@@ -290,7 +340,7 @@ impl Step {
         enabled: bool,
         pass_count: i32,
         condition: &str,
-        scope: crate::BreakpointScope<'_>,
+        scope: BreakpointScope<'_>,
     ) -> Result<(), Error> {
         self.dispatch.call(
             step::SET_BREAK_SETTINGS,
@@ -314,8 +364,7 @@ mod tests {
 
     use rs_teststand_sys::{ComError, Dispatch, Value};
 
-    use super::Step;
-    use crate::BreakpointScope;
+    use super::{BreakpointScope, Step};
     use crate::dispids::step as dispid;
     use crate::error::Error;
 
@@ -354,6 +403,32 @@ mod tests {
             sent: Rc::clone(&sent),
         };
         (Step::new(Box::new(dispatch)), sent)
+    }
+
+    #[test]
+    fn setting_a_run_mode_sends_the_mode_and_the_scope() -> Result<(), Error> {
+        // Two arguments, like the breakpoint pair, and for the same reason: an
+        // omitted execution is what tells the engine to edit the step itself.
+        let (step, sent) = step_recording(HashMap::new());
+        step.set_run_mode_ex(crate::RunMode::Skip, BreakpointScope::Step)?;
+        assert_eq!(
+            sent.borrow().as_slice(),
+            [(dispid::SET_RUN_MODE_EX, 2)],
+            "expected one call carrying the mode and the scope"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn reading_a_run_mode_sends_only_the_scope() {
+        let (step, sent) = step_recording(HashMap::new());
+        // The fake answers a bool, so decoding fails; the call is what matters.
+        let _ = step.run_mode_ex(BreakpointScope::Step);
+        assert_eq!(
+            sent.borrow().as_slice(),
+            [(dispid::GET_RUN_MODE_EX, 1)],
+            "the getter takes the scope and nothing else"
+        );
     }
 
     #[test]
