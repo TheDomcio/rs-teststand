@@ -532,6 +532,16 @@ pub(crate) mod step {
     /// `AsPropertyObject`, no params.
     pub(crate) const AS_PROPERTY_OBJECT: i32 = 0x1;
     /// `SetBreakOnStepEx`: sets or clears the breakpoint, optionally for one run.
+    /// `Step.SetRunModeEx`, which supersedes the obsolete `RunMode` property.
+    ///
+    /// Takes the mode and an optional execution.
+    pub(crate) const SET_RUN_MODE_EX: i32 = 0x4;
+
+    /// `Step.GetRunModeEx`, which supersedes the obsolete `RunMode` property.
+    ///
+    /// Takes an optional execution and returns a run mode string.
+    pub(crate) const GET_RUN_MODE_EX: i32 = 0x5;
+
     pub(crate) const SET_BREAK_ON_STEP_EX: i32 = 0x6;
     /// `GetBreakOnStepEx`: reads it back, optionally for one run.
     pub(crate) const GET_BREAK_ON_STEP_EX: i32 = 0x7;
