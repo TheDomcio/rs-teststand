@@ -17,7 +17,7 @@ publish = false
 # `path` is what makes this build inside the repository against the crate next
 # to it. If you copy this directory somewhere else, delete the `path`; the
 # version alone then resolves from crates.io, and that is the only edit needed.
-rs-teststand = { version = "0.12.0", path = "../../crates/rs-teststand" }
+rs-teststand = { version = "0.12.1", path = "../../crates/rs-teststand" }
 
 # The part worth copying. A library cannot set these for you: a profile is only
 # honored in the package that is the build root, so these belong to *your*

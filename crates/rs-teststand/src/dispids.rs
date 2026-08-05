@@ -225,12 +225,22 @@ pub(crate) mod property_object_file {
     pub(crate) const TYPE_USAGE_LIST: i32 = 0x65;
     /// `IncChangeCount`, no params.
     pub(crate) const INC_CHANGE_COUNT: i32 = 0x66;
+    /// `IsModified`, read-only.
+    pub(crate) const IS_MODIFIED: i32 = 0x67;
+    /// `ChangeCount`, read/write.
+    pub(crate) const CHANGE_COUNT: i32 = 0x6b;
     /// `Path`, read/write.
     pub(crate) const PATH: i32 = 0x6c;
     /// `Data`, read-only, the file's root property object.
     pub(crate) const DATA: i32 = 0x6e;
     /// `SaveFileIfModified`, one `VT_BOOL` param, returns `VT_BOOL`.
     pub(crate) const SAVE_FILE_IF_MODIFIED: i32 = 0x7a;
+    /// `IsDiskFileModified`, read-only.
+    pub(crate) const IS_DISK_FILE_MODIFIED: i32 = 0x77;
+    /// `IsDiskFileReadOnly`, read-only.
+    pub(crate) const IS_DISK_FILE_READ_ONLY: i32 = 0x79;
+    /// `Version`, read/write.
+    pub(crate) const VERSION: i32 = 0x7e;
 }
 
 /// `UsersFile` dispinterface members.
