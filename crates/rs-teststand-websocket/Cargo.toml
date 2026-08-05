@@ -21,7 +21,7 @@ targets = ["i686-pc-windows-msvc"]
 all-features = true
 
 [dependencies]
-rs-teststand-bridge = { path = "../rs-teststand-bridge", version = "0.12.1" }
+rs-teststand-bridge = { path = "../rs-teststand-bridge", version = "0.12.2" }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 # The transport. tokio-tungstenite is the tokio binding of tungstenite, which is
@@ -40,8 +40,8 @@ futures-util = { version = "0.3", default-features = false, features = ["sink"] 
 [dev-dependencies]
 tokio = { version = "1", features = ["macros", "rt-multi-thread", "time", "net"] }
 # The host example drives a real engine and serializes what it reports.
-rs-teststand = { path = "../rs-teststand", version = "0.12.1" }
-rs-teststand-serde = { path = "../rs-teststand-serde", version = "0.12.1" }
+rs-teststand = { path = "../rs-teststand", version = "0.12.2" }
+rs-teststand-serde = { path = "../rs-teststand-serde", version = "0.12.2" }
 
 [[example]]
 name = "host"

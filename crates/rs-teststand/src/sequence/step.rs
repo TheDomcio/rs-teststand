@@ -235,6 +235,28 @@ impl Step {
         Ok(())
     }
 
+    /// Whether each loop iteration gets its own result (`Step.RecordLoopIterationResults`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn record_loop_iteration_results(&self) -> Result<bool, Error> {
+        Ok(self
+            .dispatch
+            .get(step::RECORD_LOOP_ITERATION_RESULTS)?
+            .as_bool()?)
+    }
+
+    /// Sets whether each loop iteration gets its own result
+    /// (`Step.RecordLoopIterationResults`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_record_loop_iteration_results(&self, record: bool) -> Result<(), Error> {
+        self.dispatch
+            .put(step::RECORD_LOOP_ITERATION_RESULTS, Value::Bool(record))?;
+        Ok(())
+    }
+
     /// The step as a property tree (`Step.AsPropertyObject`).
     ///
     /// Type-specific settings live here, addressed by lookup path, /// `Limits.High` on a numeric limit test, for instance.

@@ -29,6 +29,8 @@ fn runnable_file(engine: &Engine) -> Result<SequenceFile, Error> {
     for index in 0..3 {
         let step = engine.new_step(AdapterKeyName::NoneAdapter.as_str(), "Statement")?;
         step.set_name(&format!("Work {index}"))?;
+        step.set_record_loop_iteration_results(true)?;
+        assert!(step.record_loop_iteration_results()?);
         step.as_property_object()?.set_val_string(
             "TS.PostExpr",
             INSERT_IF_MISSING,
@@ -492,7 +494,13 @@ fn a_running_thread_hands_over_its_sequence_context(engine: &Engine) -> Result<(
             reached = execution
                 .get_thread(0)
                 .and_then(|thread| thread.get_sequence_context(0))
-                .and_then(|context| context.locals())
+                .and_then(|context| {
+                    let _ = context.loop_index()?;
+                    let _ = context.next_step_index()?;
+                    let _ = context.previous_step_index()?;
+                    let _ = context.next_step()?;
+                    context.locals()
+                })
                 .and_then(|locals| locals.get_val_string("Marker", NO_OPTIONS))
                 .ok();
         }

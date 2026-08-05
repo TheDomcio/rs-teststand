@@ -183,6 +183,100 @@ impl SequenceContext {
         Ok(self.dispatch.get(sequence_context::STEP_INDEX)?.as_i32()?)
     }
 
+    /// The index the engine will execute next (`SequenceContext.NextStepIndex`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn next_step_index(&self) -> Result<i32, Error> {
+        Ok(self
+            .dispatch
+            .get(sequence_context::NEXT_STEP_INDEX)?
+            .as_i32()?)
+    }
+
+    /// The index executed immediately before this point (`SequenceContext.PreviousStepIndex`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn previous_step_index(&self) -> Result<i32, Error> {
+        Ok(self
+            .dispatch
+            .get(sequence_context::PREVIOUS_STEP_INDEX)?
+            .as_i32()?)
+    }
+
+    /// Changes the next step index (`SequenceContext.NextStepIndex`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_next_step_index(&self, index: i32) -> Result<(), Error> {
+        self.dispatch.put(
+            sequence_context::NEXT_STEP_INDEX,
+            rs_teststand_sys::Value::I32(index),
+        )?;
+        Ok(())
+    }
+
+    /// Changes the previous-step index (`SequenceContext.PreviousStepIndex`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_previous_step_index(&self, index: i32) -> Result<(), Error> {
+        self.dispatch.put(
+            sequence_context::PREVIOUS_STEP_INDEX,
+            rs_teststand_sys::Value::I32(index),
+        )?;
+        Ok(())
+    }
+
+    /// The loop position at this point (`SequenceContext.LoopIndex`).
+    ///
+    /// This view is a 32-bit integer. Read `RunState.LoopIndex` as a number
+    /// through [`as_property_object`](Self::as_property_object) when the
+    /// fractional or wider value matters.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn loop_index(&self) -> Result<i32, Error> {
+        Ok(self.dispatch.get(sequence_context::LOOP_INDEX)?.as_i32()?)
+    }
+
+    /// Changes the loop position (`SequenceContext.LoopIndex`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_loop_index(&self, index: i32) -> Result<(), Error> {
+        self.dispatch.put(
+            sequence_context::LOOP_INDEX,
+            rs_teststand_sys::Value::I32(index),
+        )?;
+        Ok(())
+    }
+
+    /// The next step, when one exists (`SequenceContext.NextStep`).
+    ///
+    /// # Errors
+    /// [`Error`] if the sequence is at its end or the COM call fails.
+    pub fn next_step(&self) -> Result<crate::Step, Error> {
+        Ok(crate::Step::new(
+            self.dispatch
+                .get(sequence_context::NEXT_STEP)?
+                .into_object()?,
+        ))
+    }
+
+    /// The preceding step, when one exists (`SequenceContext.PreviousStep`).
+    ///
+    /// # Errors
+    /// [`Error`] if the sequence is at its start or the COM call fails.
+    pub fn previous_step(&self) -> Result<crate::Step, Error> {
+        Ok(crate::Step::new(
+            self.dispatch
+                .get(sequence_context::PREVIOUS_STEP)?
+                .into_object()?,
+        ))
+    }
+
     /// How many steps have run so far (`SequenceContext.NumStepsExecuted`).
     ///
     /// # Errors
