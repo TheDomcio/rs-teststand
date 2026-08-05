@@ -474,6 +474,10 @@ pub(crate) mod thread {
 
 /// `SequenceContext` dispinterface members.
 pub(crate) mod sequence_context {
+    /// `PreviousStep`, read-only.
+    pub(crate) const PREVIOUS_STEP: i32 = 0x1f;
+    /// `NextStep`, read-only.
+    pub(crate) const NEXT_STEP: i32 = 0x20;
     /// `AsPropertyObject`, no params.
     pub(crate) const AS_PROPERTY_OBJECT: i32 = 0x1d;
     /// `Locals`, read-only.
@@ -496,10 +500,16 @@ pub(crate) mod sequence_context {
     pub(crate) const STEP: i32 = 0x1e;
     /// `StepIndex`, read-only.
     pub(crate) const STEP_INDEX: i32 = 0x23;
+    /// `PreviousStepIndex`, read/write.
+    pub(crate) const PREVIOUS_STEP_INDEX: i32 = 0x24;
+    /// `NextStepIndex`, read/write.
+    pub(crate) const NEXT_STEP_INDEX: i32 = 0x25;
     /// `NumStepsExecuted`, read-only.
     pub(crate) const NUM_STEPS_EXECUTED: i32 = 0x57;
     /// `CallStackDepth`, read-only.
     pub(crate) const CALL_STACK_DEPTH: i32 = 0x3a;
+    /// `LoopIndex`, read/write.
+    pub(crate) const LOOP_INDEX: i32 = 0x3b;
     /// `SequenceFailed`, read-only.
     pub(crate) const SEQUENCE_FAILED: i32 = 0x41;
     /// `ErrorReported`, read-only.
@@ -577,6 +587,8 @@ pub(crate) mod step {
     pub(crate) const NAME: i32 = 0x57;
     /// `ResultRecordingOption`, read/write.
     pub(crate) const RESULT_RECORDING_OPTION: i32 = 0xd2;
+    /// `RecordLoopIterationResults`, read/write.
+    pub(crate) const RECORD_LOOP_ITERATION_RESULTS: i32 = 0x92;
 }
 
 /// `Sequence` dispinterface members.
