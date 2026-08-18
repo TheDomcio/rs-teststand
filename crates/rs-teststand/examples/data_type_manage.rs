@@ -28,7 +28,7 @@ const IS_STRICT_ATTRIBUTE: &str = "TestStand.Enum.IsStrict";
 fn build_multimeter_type(engine: &Engine) -> Result<PropertyObject, rs_teststand::Error> {
     let data_type = engine.new_property_object(PropValType::Container, false, "", NO_OPTIONS)?;
     data_type.set_val_number("Resolution", INSERT_IF_MISSING, 6.5)?;
-    data_type.set_val_bool("AutoZero", INSERT_IF_MISSING, false)?;
+    data_type.set_val_boolean("AutoZero", INSERT_IF_MISSING, false)?;
     data_type.set_val_string("Mode", INSERT_IF_MISSING, "Voltage")?;
     data_type.set_val_number("Range", INSERT_IF_MISSING, 100.0)?;
     data_type.set_name("DigitalMultimeter")?;
@@ -55,7 +55,7 @@ fn enumerator_array(
     }
     array
         .attributes()?
-        .set_val_bool(IS_STRICT_ATTRIBUTE, INSERT_IF_MISSING, strict)?;
+        .set_val_boolean(IS_STRICT_ATTRIBUTE, INSERT_IF_MISSING, strict)?;
     Ok(array)
 }
 
@@ -87,7 +87,7 @@ fn print_enumerators(definition: &PropertyObject) -> Result<(), rs_teststand::Er
     let enumerators = definition.enumerators()?;
     let strict = enumerators
         .attributes()?
-        .get_val_bool(IS_STRICT_ATTRIBUTE, NO_OPTIONS)?;
+        .get_val_boolean(IS_STRICT_ATTRIBUTE, NO_OPTIONS)?;
     println!(
         "  {} v{} (strict={strict}):",
         definition.name()?,

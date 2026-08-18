@@ -115,6 +115,26 @@ impl SequenceContext {
         ))
     }
 
+    /// The runtime state tree a running sequence sees as `RunState`.
+    ///
+    /// Not a COM member: `RunState` carries no DISPID in any supported type
+    /// library, it is a node in the context's property tree, which is why this
+    /// goes through the property object rather than a dispatch call. The vendor
+    /// reaches it the same way, by lookup string.
+    ///
+    /// Under it sit the things a host reports on that have no member of their
+    /// own, notably `TestSockets` for a multi-UUT panel, alongside duplicates
+    /// of members this type already exposes directly, such as `Sequence` and
+    /// `CallStackDepth`. Prefer the direct accessors where they exist, and
+    /// reach through here for the rest.
+    ///
+    /// # Errors
+    /// [`Error`] if the context carries no `RunState` or a COM call fails.
+    pub fn run_state(&self) -> Result<crate::PropertyObject, Error> {
+        self.as_property_object()?
+            .get_property_object("RunState", crate::property::PropertyOptions::NONE.bits())
+    }
+
     /// The execution this context belongs to (`SequenceContext.Execution`).
     ///
     /// # Errors

@@ -38,6 +38,17 @@ impl SequenceFile {
         Ok(self.dispatch.get(sequence_file::NUM_SEQUENCES)?.as_i32()?)
     }
 
+    /// Whether any execution is currently running this file (`IsExecuting`).
+    ///
+    /// A host checks this before unloading or replacing a file: the engine
+    /// still holds it while a run is in flight.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn is_executing(&self) -> Result<bool, Error> {
+        Ok(self.dispatch.get(sequence_file::IS_EXECUTING)?.as_bool()?)
+    }
+
     /// Adds a sequence to the file (`SequenceFile.InsertSequence`).
     ///
     /// # Errors
@@ -182,6 +193,7 @@ mod tests {
     struct Fake {
         path: &'static str,
         sequences: i32,
+        executing: bool,
     }
 
     impl Dispatch for Fake {
@@ -192,6 +204,9 @@ mod tests {
                 }
                 d if d == crate::dispids::sequence_file::NUM_SEQUENCES => {
                     Ok(Value::I32(self.sequences))
+                }
+                d if d == crate::dispids::sequence_file::IS_EXECUTING => {
+                    Ok(Value::Bool(self.executing))
                 }
                 _ => Err(ComError::hresult(-17000, "fake: unscripted")),
             }
@@ -210,7 +225,21 @@ mod tests {
         SequenceFile::new(Box::new(Fake {
             path: r"T:\seq\demo.seq",
             sequences: 3,
+            executing: false,
         }))
+    }
+
+    #[test]
+    fn reports_whether_the_file_is_still_executing() -> Result<(), Error> {
+        assert!(!file().is_executing()?);
+
+        let busy = SequenceFile::new(Box::new(Fake {
+            path: r"T:\seq\demo.seq",
+            sequences: 3,
+            executing: true,
+        }));
+        assert!(busy.is_executing()?);
+        Ok(())
     }
 
     #[test]

@@ -354,7 +354,7 @@ fn set_member(object: &PropertyObject, name: &str, value: &PropertyValue) -> Res
         // A null restores the engine's own "not a number": that is what it
         // came from, and what a consumer means by null in this position.
         PropertyValue::Null => object.set_val_number(name, INSERT_IF_MISSING, f64::NAN),
-        PropertyValue::Bool(flag) => object.set_val_bool(name, INSERT_IF_MISSING, *flag),
+        PropertyValue::Bool(flag) => object.set_val_boolean(name, INSERT_IF_MISSING, *flag),
         PropertyValue::Number(number) => object.set_val_number(name, INSERT_IF_MISSING, *number),
         PropertyValue::Integer(number) => {
             object.set_val_integer64(name, INSERT_IF_MISSING, *number)
@@ -410,7 +410,7 @@ fn set_array_member(
         let element = array.get_property_object_by_offset(offset, NO_OPTIONS)?;
         match item {
             PropertyValue::Container(_) => element.apply_value(item)?,
-            PropertyValue::Bool(flag) => element.set_val_bool("", NO_OPTIONS, *flag)?,
+            PropertyValue::Bool(flag) => element.set_val_boolean("", NO_OPTIONS, *flag)?,
             PropertyValue::Number(number) => element.set_val_number("", NO_OPTIONS, *number)?,
             PropertyValue::Integer(number) => {
                 element.set_val_integer64("", NO_OPTIONS, *number)?;
@@ -487,7 +487,9 @@ fn walk(object: &PropertyObject, remaining: usize, path: &str) -> Result<Propert
     }
 
     match value_type {
-        Ok(PropValType::Boolean) => Ok(PropertyValue::Bool(object.get_val_bool("", NO_OPTIONS)?)),
+        Ok(PropValType::Boolean) => {
+            Ok(PropertyValue::Bool(object.get_val_boolean("", NO_OPTIONS)?))
+        }
         Ok(PropValType::Number) => number_to_value(object, &property_type),
         // Strings read directly. Anything else that is still a leaf, // an object reference, an enumeration, is not a string and
         // `GetValString` refuses it, so fall back to the formatted value,

@@ -11,10 +11,11 @@
 //! `VARIANT` and clears it on drop, on every path.
 
 use windows::Win32::Foundation::VARIANT_BOOL;
-use windows::Win32::System::Com::IDispatch;
+use windows::Win32::System::Com::{IDispatch, SAFEARRAY};
+use windows::Win32::System::Ole::{SafeArrayGetElement, SafeArrayGetLBound, SafeArrayGetUBound};
 use windows::Win32::System::Variant::{
-    VARIANT, VT_BOOL, VT_BSTR, VT_DISPATCH, VT_EMPTY, VT_I4, VT_I8, VT_NULL, VT_R8, VT_UI8,
-    VT_UNKNOWN, VariantClear,
+    VARIANT, VT_ARRAY, VT_BOOL, VT_BSTR, VT_DISPATCH, VT_EMPTY, VT_I4, VT_I8, VT_NULL, VT_R8,
+    VT_UI8, VT_UNKNOWN, VariantClear,
 };
 use windows_core::{BSTR, Interface as _};
 
@@ -100,6 +101,16 @@ impl OwnedVariant {
                     inner.vt = VT_BSTR;
                     inner.Anonymous.bstrVal = std::mem::ManuallyDrop::new(BSTR::from(text));
                 }
+                Value::I32Array(_) => {
+                    // Reading arrays is what the engine's id lists need;
+                    // nothing in this API takes one as an argument, so building
+                    // a SAFEARRAY to send is unwritten rather than unsupported
+                    // in principle. Reported rather than silently sent as empty.
+                    return Err(ComError::UnexpectedType {
+                        expected: "a VARIANT type this layer can send",
+                        actual: "an array, which is read-only here",
+                    });
+                }
                 Value::Object(object) => {
                     let Some(dispatch) = object.as_idispatch() else {
                         return Err(ComError::UnexpectedType {
@@ -171,6 +182,13 @@ impl OwnedVariant {
                             })?,
                     ))),
                 },
+                // A one-dimensional SAFEARRAY of `i32`, which is how the engine
+                // returns id lists such as `Execution.ThreadIds`. Matched by
+                // computed discriminant because `VT_ARRAY | VT_I4` is not a
+                // named constant.
+                variant_type if variant_type.0 == VT_ARRAY.0 | VT_I4.0 => {
+                    Value::I32Array(read_i32_array(slot.parray)?)
+                }
                 _ => {
                     return Err(ComError::UnexpectedType {
                         expected: "a VARIANT type this layer models",
@@ -186,6 +204,51 @@ impl OwnedVariant {
     /// for the `rgvarg` argument array (which COM takes as `*mut`).
     pub(crate) const fn as_mut_ptr(&mut self) -> *mut VARIANT {
         &raw mut self.0
+    }
+}
+
+/// Copies a one-dimensional `VT_I4` SAFEARRAY into a `Vec`.
+///
+/// Element-at-a-time rather than locking the buffer: `SafeArrayGetElement` has
+/// no lock to pair with an unlock, so there is no unlock to miss on an early
+/// return. These arrays hold execution and thread ids, tens of elements at
+/// most, so the per-element call costs nothing worth optimising.
+///
+/// # Errors
+/// [`ComError`] if the array is null or its bounds cannot be read.
+fn read_i32_array(array: *mut SAFEARRAY) -> Result<Vec<i32>, ComError> {
+    if array.is_null() {
+        return Err(ComError::UnexpectedType {
+            expected: "a SAFEARRAY of i32",
+            actual: "a null array pointer",
+        });
+    }
+
+    // SAFETY: `array` is non-null and, because `vt` said `VT_ARRAY | VT_I4`,
+    // points to a live one-dimensional SAFEARRAY of `i32` owned by the variant.
+    // Dimension 1 is the only dimension. Every index passed to
+    // `SafeArrayGetElement` lies within the bounds just read, and the
+    // destination addresses a live `i32`, matching the array's element type.
+    unsafe {
+        let lower = SafeArrayGetLBound(array, 1)
+            .map_err(|error| ComError::hresult(error.code().0, "SafeArray"))?;
+        let upper = SafeArrayGetUBound(array, 1)
+            .map_err(|error| ComError::hresult(error.code().0, "SafeArray"))?;
+
+        // An empty array reports an upper bound below its lower one. That is a
+        // real answer, an execution with no children, not a malformed array.
+        if upper < lower {
+            return Ok(Vec::new());
+        }
+
+        let mut elements = Vec::with_capacity((upper - lower + 1).unsigned_abs() as usize);
+        for index in lower..=upper {
+            let mut element: i32 = 0;
+            SafeArrayGetElement(array, &raw const index, (&raw mut element).cast())
+                .map_err(|error| ComError::hresult(error.code().0, "SafeArray"))?;
+            elements.push(element);
+        }
+        Ok(elements)
     }
 }
 
@@ -211,6 +274,56 @@ mod tests {
     /// object calls.
     fn round_trip(value: &Value) -> Result<Value, ComError> {
         OwnedVariant::from_value(value)?.to_value()
+    }
+
+    /// A `VT_ARRAY | VT_I4` variant, built the way the engine hands one back.
+    ///
+    /// `SafeArrayCreateVector` is an OLE allocator call like the ones above, so
+    /// this needs no engine and no apartment. The variant takes ownership of
+    /// the array and frees it on drop.
+    fn i32_array_variant(elements: &[i32]) -> Result<OwnedVariant, ComError> {
+        use windows::Win32::System::Ole::{SafeArrayCreateVector, SafeArrayPutElement};
+        use windows::Win32::System::Variant::{VARENUM, VT_ARRAY, VT_I4};
+
+        // SAFETY: `SafeArrayCreateVector` returns a one-dimensional array of
+        // `count` `VT_I4` elements with lower bound 0, or null on failure. Each
+        // `SafeArrayPutElement` writes one in-range index, and the pointer
+        // handed to it addresses a live `i32`. The array is then stored as the
+        // variant's own payload with a matching `vt`, so `VariantClear` in
+        // `Drop` destroys it exactly once.
+        unsafe {
+            let count = u32::try_from(elements.len()).unwrap_or(0);
+            let array = SafeArrayCreateVector(VT_I4, 0, count);
+            assert!(!array.is_null(), "the OLE allocator refused a small array");
+            for (index, element) in elements.iter().enumerate() {
+                let position = i32::try_from(index).unwrap_or(0);
+                SafeArrayPutElement(array, &raw const position, (&raw const *element).cast())
+                    .map_err(|error| ComError::hresult(error.code().0, "SafeArrayPutElement"))?;
+            }
+            let mut owned = OwnedVariant::empty();
+            let inner = &mut owned.0.Anonymous.Anonymous;
+            inner.vt = VARENUM(VT_ARRAY.0 | VT_I4.0);
+            inner.Anonymous.parray = array;
+            Ok(owned)
+        }
+    }
+
+    #[test]
+    fn an_i32_array_variant_reads_back_as_its_elements() -> Result<(), ComError> {
+        let elements = i32_array_variant(&[7, 11, 13])?
+            .to_value()?
+            .into_i32_array()?;
+        assert_eq!(elements, vec![7, 11, 13]);
+        Ok(())
+    }
+
+    #[test]
+    fn an_empty_i32_array_is_empty_rather_than_an_error() -> Result<(), ComError> {
+        // An execution with no child executions hands back a zero-length array,
+        // which is an ordinary answer and not a failure.
+        let elements = i32_array_variant(&[])?.to_value()?.into_i32_array()?;
+        assert!(elements.is_empty());
+        Ok(())
     }
 
     #[test]

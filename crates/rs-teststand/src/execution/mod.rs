@@ -11,7 +11,7 @@ mod termination_option;
 pub(crate) mod thread;
 
 pub use execution::Execution;
-pub use result_list::{ResultList, ResultValue, StepResult};
+pub use result_list::{Limits, ResultError, ResultList, ResultValue, StepResult};
 pub use sequence_context::SequenceContext;
 pub use termination_option::ThreadTerminationOption;
 pub use thread::Thread;

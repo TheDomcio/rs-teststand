@@ -43,14 +43,14 @@ pub use enums::{
 };
 pub use error::Error;
 pub use execution::{
-    Execution, ResultList, ResultValue, SequenceContext, StepResult, Thread,
+    Execution, Limits, ResultError, ResultList, ResultValue, SequenceContext, StepResult, Thread,
     ThreadTerminationOption,
 };
 pub use expression::{
     ArithmeticOperator, Arity, ArrayFunction, AssignmentOperator, BitwiseOperator, ColorConstant,
-    ComparisonOperator, LogicalOperator, NumericFunction, Operator, OperatorClass, OtherConstant,
-    OtherFunction, OtherOperator, PropertyFunction, StringFunction, SwitchingFunction,
-    TimeFunction,
+    ComparisonOperator, DecimalPointLocalizationOption, Expression, LogicalOperator,
+    NumericFunction, Operator, OperatorClass, OtherConstant, OtherFunction, OtherOperator,
+    PropertyFunction, StringFunction, SwitchingFunction, TimeFunction,
 };
 pub use license::{AcquireLicenseOptions, ApplicationLicense, HeldLicense, LicenseType};
 pub use messaging::{UIMessage, UIMessageCode, pump_thread_messages};

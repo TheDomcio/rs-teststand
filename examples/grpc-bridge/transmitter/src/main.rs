@@ -64,7 +64,7 @@ fn build_sequence(engine: &Engine) -> Result<rs_teststand::SequenceFile, rs_test
     result.set_val_string("SerialNumber", insert_if_missing(), "SN-0042")?;
     result.set_val_string("Station", insert_if_missing(), "BENCH-01")?;
     result.set_val_number("Measured", insert_if_missing(), 1.5)?;
-    result.set_val_bool("Passed", insert_if_missing(), true)?;
+    result.set_val_boolean("Passed", insert_if_missing(), true)?;
     // A 64-bit count, to show it crosses without being rounded through a double.
     result.set_val_integer64("Cycles", insert_if_missing(), 9_007_199_254_740_993)?;
 

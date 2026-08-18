@@ -90,7 +90,7 @@ pub(crate) fn build(engine: &Engine) -> Result<SequenceFile, rs_teststand::Error
     let result = locals.get_property_object("Result", 0)?;
     result.set_val_string("SerialNumber", insert_if_missing(), "SN-0042")?;
     result.set_val_string("Station", insert_if_missing(), "BENCH-01")?;
-    result.set_val_bool("Calibrated", insert_if_missing(), true)?;
+    result.set_val_boolean("Calibrated", insert_if_missing(), true)?;
     // 2^53 + 1: a value a double cannot represent, so it proves the integer
     // path survives all the way to the browser.
     result.set_val_integer64("Cycles", insert_if_missing(), 9_007_199_254_740_993)?;

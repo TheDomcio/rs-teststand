@@ -287,7 +287,7 @@ fn a_sequence_can_hand_the_host_a_whole_container() -> Result<(), Error> {
     let payload = locals.get_property_object("Payload", NO_OPTIONS)?;
     payload.set_val_string("SerialNumber", INSERT_IF_MISSING, "SN-0042")?;
     payload.set_val_number("Measured", INSERT_IF_MISSING, 1.5)?;
-    payload.set_val_bool("Passed", INSERT_IF_MISSING, true)?;
+    payload.set_val_boolean("Passed", INSERT_IF_MISSING, true)?;
 
     // A property path is enough: the engine passes the container by reference,
     // it does not flatten it to a value.
@@ -317,7 +317,7 @@ fn a_sequence_can_hand_the_host_a_whole_container() -> Result<(), Error> {
                     Some(container) => Some((
                         container.get_val_string("SerialNumber", NO_OPTIONS)?,
                         container.get_val_number("Measured", NO_OPTIONS)?,
-                        container.get_val_bool("Passed", NO_OPTIONS)?,
+                        container.get_val_boolean("Passed", NO_OPTIONS)?,
                     )),
                     None => None,
                 };

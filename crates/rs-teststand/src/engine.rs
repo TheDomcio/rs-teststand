@@ -921,6 +921,109 @@ impl Engine {
         ))
     }
 
+    /// Looks up a running execution by its id (`Engine.GetExecution`).
+    ///
+    /// The engine exposes no collection of executions, so a host that wants to
+    /// address one later keeps the id from [`Self::new_execution`] and resolves
+    /// it here. Returns `None` when the engine no longer knows the id, which is
+    /// an ordinary result of holding one across the end of a run rather than a
+    /// failure.
+    ///
+    /// **Resolving does not mean running.** A finished execution was observed
+    /// still resolving on one run and absent on another against the same engine
+    /// version, so how long the engine keeps one addressable is not something
+    /// to depend on. Read [`Execution::result_status`](crate::Execution::result_status)
+    /// to find out whether it is still going.
+    ///
+    /// Not available on every supported engine: the member is absent from the
+    /// TestStand 2016 type library and present in 2026, so a call on an older
+    /// engine fails rather than returning `None`. Check
+    /// [`major_version`](Self::major_version) before relying on it.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn get_execution(&self, execution_id: i32) -> Result<Option<crate::Execution>, Error> {
+        match self
+            .dispatch
+            .call(dispid::GET_EXECUTION, &[Value::I32(execution_id)])?
+        {
+            Value::Object(dispatch) => Ok(Some(crate::Execution::new(dispatch))),
+            Value::Null | Value::Empty => Ok(None),
+            other => Err(Error::UnexpectedType {
+                expected: "Object or Null",
+                actual: other.kind(),
+            }),
+        }
+    }
+
+    /// Creates an empty expression object (`Engine.NewExpression`).
+    ///
+    /// Set its text, then evaluate it as often as needed: the engine keeps the
+    /// parsed form, unlike
+    /// [`PropertyObject::evaluate_ex`](crate::PropertyObject::evaluate_ex),
+    /// which re-parses on every call.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn new_expression(&self) -> Result<crate::Expression, Error> {
+        Ok(crate::Expression::new(
+            self.dispatch
+                .call(dispid::NEW_EXPRESSION, &[])?
+                .into_object()?,
+        ))
+    }
+
+    /// Converts expression text to the station's locale
+    /// (`Engine.LocalizeExpression`).
+    ///
+    /// Expression text is not locale-neutral: the decimal separator and list
+    /// separator differ. A host that shows an expression to an operator, or
+    /// accepts one typed by them, converts rather than assuming a point.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn localize_expression(
+        &self,
+        expression: &str,
+        decimal_point_option: crate::DecimalPointLocalizationOption,
+    ) -> Result<String, Error> {
+        Ok(self
+            .dispatch
+            .call(
+                dispid::LOCALIZE_EXPRESSION,
+                &[
+                    Value::Str(expression.to_owned()),
+                    Value::I32(decimal_point_option.bits()),
+                ],
+            )?
+            .into_string()?)
+    }
+
+    /// Converts locale-specific expression text back to the neutral form
+    /// (`Engine.DelocalizeExpression`).
+    ///
+    /// The inverse of [`localize_expression`](Self::localize_expression). Store
+    /// the delocalized form; show the localized one.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn delocalize_expression(
+        &self,
+        localized_expression: &str,
+        decimal_point_option: crate::DecimalPointLocalizationOption,
+    ) -> Result<String, Error> {
+        Ok(self
+            .dispatch
+            .call(
+                dispid::DELOCALIZE_EXPRESSION,
+                &[
+                    Value::Str(localized_expression.to_owned()),
+                    Value::I32(decimal_point_option.bits()),
+                ],
+            )?
+            .into_string()?)
+    }
+
     /// Finds a user by login name (`Engine.GetUser`).
     ///
     /// Returns `None` when no user has that name, rather than erroring.
@@ -1370,6 +1473,20 @@ mod tests {
     fn major_version_reads_i4_property() -> Result<(), Error> {
         let engine = engine_with([(dispid::MAJOR_VERSION, Scripted::I32(26))]);
         assert_eq!(engine.major_version()?, 26);
+        Ok(())
+    }
+
+    #[test]
+    fn get_execution_asks_by_id_and_reports_a_stale_id_as_absent() -> Result<(), Error> {
+        let (engine, written) = engine_recording([]);
+        // An id the engine no longer knows is a normal outcome for a host that
+        // kept an id across the execution ending, not a failure.
+        assert!(engine.get_execution(7)?.is_none());
+        assert!(
+            wrote(&written, dispid::GET_EXECUTION, &Sent::I32(7)),
+            "expected the execution id to be sent, got {:?}",
+            written.borrow(),
+        );
         Ok(())
     }
 
