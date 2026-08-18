@@ -80,7 +80,7 @@ fn build(engine: &Engine) -> Result<rs_teststand::SequenceFile, rs_teststand::Er
     let complex = locals.get_property_object("ComplexData", 0)?;
     complex.set_val_string("SerialNumber", insert_if_missing(), "SN-0042")?;
     complex.set_val_number("Measured", insert_if_missing(), 1.5)?;
-    complex.set_val_bool("Passed", insert_if_missing(), true)?;
+    complex.set_val_boolean("Passed", insert_if_missing(), true)?;
     complex.set_val_integer64("Cycles", insert_if_missing(), 9_007_199_254_740_993)?;
 
     let add = |name: &str, expression: &str| -> Result<(), rs_teststand::Error> {

@@ -160,6 +160,19 @@ impl Execution {
         Ok(self.dispatch.get(execution::NUM_THREADS)?.as_i32()?)
     }
 
+    /// The ids of this execution's threads (`Execution.ThreadIds`).
+    ///
+    /// A host that reports per-thread state addresses threads by id rather than
+    /// by index, because an index shifts as threads come and go while an id
+    /// does not. The engine returns these as a `VT_ARRAY | VT_I4` SAFEARRAY,
+    /// copied out here so the list outlives the call.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn thread_ids(&self) -> Result<Vec<i32>, Error> {
+        Ok(self.dispatch.get(execution::THREAD_IDS)?.into_i32_array()?)
+    }
+
     /// Seconds spent executing (`Execution.SecondsExecuting`).
     ///
     /// # Errors

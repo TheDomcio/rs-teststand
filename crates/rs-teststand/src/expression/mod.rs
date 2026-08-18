@@ -34,10 +34,18 @@
 //! and this note is the record of why.
 
 pub mod constant;
+pub mod decimal_point;
+#[expect(
+    clippy::module_inception,
+    reason = "the domain module holds the type the domain is named for, as in execution::execution"
+)]
+pub mod expression;
 pub mod function;
 pub mod operator;
 
 pub use constant::{ColorConstant, OtherConstant};
+pub use decimal_point::DecimalPointLocalizationOption;
+pub use expression::Expression;
 pub use function::{
     ArrayFunction, NumericFunction, OtherFunction, PropertyFunction, StringFunction,
     SwitchingFunction, TimeFunction,

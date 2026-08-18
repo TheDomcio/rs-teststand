@@ -19,12 +19,12 @@ fn property_object_builds_and_reads_a_typed_tree() -> Result<(), Error> {
 
     root.set_val_string("Mode", insert, "hello")?;
     root.set_val_number("Resolution", insert, 42.5)?;
-    root.set_val_bool("Enabled", insert, true)?;
+    root.set_val_boolean("Enabled", insert, true)?;
 
     assert!(root.exists("Mode", options)?);
     assert_eq!(root.get_val_string("Mode", options)?, "hello");
     assert!((root.get_val_number("Resolution", options)? - 42.5).abs() < f64::EPSILON);
-    assert!(root.get_val_bool("Enabled", options)?);
+    assert!(root.get_val_boolean("Enabled", options)?);
     assert_eq!(root.get_num_sub_properties("")?, 3);
 
     root.delete_sub_property("Enabled", options)?;

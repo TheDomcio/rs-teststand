@@ -111,7 +111,7 @@ impl PropertyObject {
     ///
     /// # Errors
     /// [`Error`] if the COM call fails or returns an unexpected type.
-    pub fn get_val_bool(&self, lookup_string: &str, options: i32) -> Result<bool, Error> {
+    pub fn get_val_boolean(&self, lookup_string: &str, options: i32) -> Result<bool, Error> {
         Ok(self
             .dispatch
             .call(
@@ -125,7 +125,7 @@ impl PropertyObject {
     ///
     /// # Errors
     /// [`Error`] if the COM call fails.
-    pub fn set_val_bool(
+    pub fn set_val_boolean(
         &self,
         lookup_string: &str,
         options: i32,

@@ -43,6 +43,10 @@ define_dispid_group! {
         NEW_SEQUENCE_FILE = 0x000b;
         NEW_SEQUENCE = 0x001e;
         NEW_EXECUTION = 0x006e;
+        GET_EXECUTION = 0x046b;
+        NEW_EXPRESSION = 0x023a;
+        LOCALIZE_EXPRESSION = 0x0191;
+        DELOCALIZE_EXPRESSION = 0x0192;
         GET_UI_MESSAGE = 0x00bf;
         UI_MESSAGE_POLLING_ENABLED = 0x017c;
         IS_UI_MESSAGE_QUEUE_EMPTY = 0x017d;
@@ -411,6 +415,8 @@ pub(crate) mod execution {
     pub(crate) const DISPLAY_NAME: i32 = 0x7c;
     /// `NumThreads`, read-only.
     pub(crate) const NUM_THREADS: i32 = 0x32;
+    /// `ThreadIds`, read-only, returns `VT_ARRAY | VT_I4`.
+    pub(crate) const THREAD_IDS: i32 = 0xce;
     /// `ForegroundThread`, read-only.
     pub(crate) const FOREGROUND_THREAD: i32 = 0x85;
     /// `SequenceFilePath`, read-only string.
@@ -593,6 +599,14 @@ pub(crate) mod step {
 
 /// `Sequence` dispinterface members.
 pub(crate) mod sequence {
+    /// `EvalEntryPointNameExpression`, 1 parameter, returns BSTR.
+    pub(crate) const EVAL_ENTRY_POINT_NAME_EXPRESSION: i32 = 0x8;
+    /// `EvalEntryPointEnabledExpression`, 1 parameter, returns `VT_BOOL`.
+    pub(crate) const EVAL_ENTRY_POINT_ENABLED_EXPRESSION: i32 = 0x9;
+    /// `EvalEntryPointNameExpressionEx`, 1 parameter, returns BSTR.
+    pub(crate) const EVAL_ENTRY_POINT_NAME_EXPRESSION_EX: i32 = 0x11;
+    /// `EvalEntryPointEnabledExpressionEx`, 1 parameter, returns `VT_BOOL`.
+    pub(crate) const EVAL_ENTRY_POINT_ENABLED_EXPRESSION_EX: i32 = 0x12;
     /// `Parameters`, read-only.
     pub(crate) const PARAMETERS: i32 = 0x32;
     /// `Locals`, read-only.
@@ -625,10 +639,22 @@ pub(crate) mod sequence_file {
     pub(crate) const NUM_SEQUENCES: i32 = 0x32;
     /// `Path`, read-only.
     pub(crate) const PATH: i32 = 0x34;
+    /// `IsExecuting`, read-only.
+    pub(crate) const IS_EXECUTING: i32 = 0x39;
     /// `InsertSequence`, 1 param.
     pub(crate) const INSERT_SEQUENCE: i32 = 0x4;
     /// `FileGlobalsDefaultValues`, read-only.
     pub(crate) const FILE_GLOBALS_DEFAULT_VALUES: i32 = 0x33;
     /// `GetSequenceIndex`, 1 parameter.
     pub(crate) const GET_SEQUENCE_INDEX: i32 = 0xc;
+}
+
+/// Members of the `Expression` object.
+pub(crate) mod expression {
+    /// `Text`, read/write, the expression source.
+    pub(crate) const TEXT: i32 = 0x1;
+    /// `NumTokens`, read-only.
+    pub(crate) const NUM_TOKENS: i32 = 0x2;
+    /// `Evaluate`, 2 parameters, returns a property object.
+    pub(crate) const EVALUATE: i32 = 0x6;
 }

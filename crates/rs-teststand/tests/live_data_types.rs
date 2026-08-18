@@ -27,7 +27,7 @@ fn enumerator_array(
     }
     array
         .attributes()?
-        .set_val_bool(IS_STRICT_ATTRIBUTE, INSERT_IF_MISSING, strict)?;
+        .set_val_boolean(IS_STRICT_ATTRIBUTE, INSERT_IF_MISSING, strict)?;
     Ok(array)
 }
 
@@ -104,7 +104,7 @@ fn enumerators_apply_to_the_registered_definition() -> Result<(), Error> {
     assert!(
         enumerators
             .attributes()?
-            .get_val_bool(IS_STRICT_ATTRIBUTE, NO_OPTIONS)?,
+            .get_val_boolean(IS_STRICT_ATTRIBUTE, NO_OPTIONS)?,
         "the strictness attribute should survive"
     );
 

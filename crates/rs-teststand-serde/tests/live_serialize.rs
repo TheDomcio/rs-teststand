@@ -29,7 +29,7 @@ fn rich_tree(engine: &Engine) -> Result<PropertyObject, Error> {
     let root = engine.new_property_object(PropValType::Container, false, "", none())?;
 
     root.set_val_string("Text", insert_if_missing(), "SN-0042")?;
-    root.set_val_bool("Flag", insert_if_missing(), true)?;
+    root.set_val_boolean("Flag", insert_if_missing(), true)?;
     root.set_val_number("Float", insert_if_missing(), 1.5)?;
 
     // The three numeric storages the engine matches strictly. Collapsing these
@@ -158,7 +158,7 @@ fn an_edited_json_document_updates_the_real_variables() -> Result<(), Box<dyn st
     tree.apply_value(&edited)?;
 
     assert_eq!(tree.get_val_string("Text", none())?, "SN-9999");
-    assert!(!tree.get_val_bool("Flag", none())?);
+    assert!(!tree.get_val_boolean("Flag", none())?);
     // Members the document did not mention are left alone.
     assert!((tree.get_val_number("Float", none())? - 1.5).abs() < f64::EPSILON);
     Ok(())
@@ -196,7 +196,7 @@ fn a_container_posted_by_a_sequence_becomes_transportable_json()
     let payload = locals.get_property_object("Payload", none())?;
     payload.set_val_string("SerialNumber", insert_if_missing(), "SN-0042")?;
     payload.set_val_number("Measured", insert_if_missing(), 1.5)?;
-    payload.set_val_bool("Passed", insert_if_missing(), true)?;
+    payload.set_val_boolean("Passed", insert_if_missing(), true)?;
     // A 64-bit count, to show the reason this crate exists survives the trip.
     payload.set_val_integer64("Cycles", insert_if_missing(), i64::MAX)?;
 

@@ -38,6 +38,11 @@ pub enum Value {
     Str(String),
     /// `VT_DISPATCH`, a nested COM object, ready to wrap.
     Object(Box<dyn Dispatch>),
+    /// `VT_ARRAY | VT_I4`, a one-dimensional SAFEARRAY of 32-bit integers.
+    ///
+    /// Copied out rather than borrowed: the SAFEARRAY belongs to the VARIANT
+    /// that carried it, and that is freed as soon as the call returns.
+    I32Array(Vec<i32>),
 }
 
 impl Value {
@@ -55,6 +60,7 @@ impl Value {
             Self::NullObject => "NullObject",
             Self::U64(_) => "U64",
             Self::Object(_) => "Object",
+            Self::I32Array(_) => "I32Array",
         }
     }
 
@@ -109,6 +115,20 @@ impl Value {
             Self::Bool(value) => Ok(*value),
             other => Err(ComError::UnexpectedType {
                 expected: "Bool",
+                actual: other.kind(),
+            }),
+        }
+    }
+
+    /// Consumes the value as a list of 32-bit integers (`VT_ARRAY | VT_I4`).
+    ///
+    /// # Errors
+    /// [`ComError::UnexpectedType`] if the value is not an integer array.
+    pub fn into_i32_array(self) -> Result<Vec<i32>, ComError> {
+        match self {
+            Self::I32Array(elements) => Ok(elements),
+            other => Err(ComError::UnexpectedType {
+                expected: "I32Array",
                 actual: other.kind(),
             }),
         }

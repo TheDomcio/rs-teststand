@@ -20,10 +20,96 @@ pub struct Sequence {
     dispatch: Box<dyn Dispatch>,
 }
 
+/// The engine's code for "this expression is empty".
+///
+/// A sequence that is not an entry point has no entry point expression, and the
+/// engine reports that by failing the evaluation rather than returning nothing.
+/// Measured on a live engine: iterating a process model's sequences raises this
+/// on the first ordinary sequence.
+const EMPTY_EXPRESSION: i32 = -17347;
+
+/// Turns "the expression was empty" into absence, and leaves other failures
+/// alone.
+///
+/// Not an error worth propagating: asking a sequence whether it is an entry
+/// point is a reasonable question, and "no" is a reasonable answer.
+fn empty_expression_as_absent<T>(error: rs_teststand_sys::ComError) -> Result<Option<T>, Error> {
+    let converted = Error::from(error);
+    if matches!(converted, Error::Engine { code, .. } if code == EMPTY_EXPRESSION) {
+        return Ok(None);
+    }
+    Err(converted)
+}
+
 impl Sequence {
     /// Wraps a dispatch handle returned by the engine.
     pub(crate) fn new(dispatch: Box<dyn Dispatch>) -> Self {
         Self { dispatch }
+    }
+
+    /// Evaluates this sequence's entry point name expression
+    /// (`Sequence.EvalEntryPointNameExpression`).
+    ///
+    /// An entry point's label is an expression, not a literal, so a host that
+    /// offers "Test UUTs" and "Single Pass" as fixed strings is guessing at
+    /// both the wording and the language: on a real model the label differs
+    /// from the sequence name, `Configure Result Processing` presents as
+    /// `&Result Processing...`.
+    ///
+    /// Returns `None` for a sequence that is not an entry point. The engine
+    /// signals that by failing with an empty-expression error rather than
+    /// returning nothing, which is folded into absence here so that walking a
+    /// model's sequences does not have to distinguish the two.
+    ///
+    /// # Errors
+    /// [`Error`] if the file is not a live object or the COM call fails for a
+    /// reason other than the sequence having no entry point expression.
+    pub fn eval_entry_point_name_expression(
+        &self,
+        sequence_file: &crate::SequenceFile,
+    ) -> Result<Option<String>, Error> {
+        let file = sequence_file
+            .duplicate_dispatch()
+            .ok_or(Error::UnexpectedType {
+                expected: "a live sequence file",
+                actual: "a test fake with no COM identity",
+            })?;
+        match self.dispatch.call(
+            sequence::EVAL_ENTRY_POINT_NAME_EXPRESSION,
+            &[Value::Object(file)],
+        ) {
+            Ok(value) => Ok(Some(value.into_string()?)),
+            Err(error) => empty_expression_as_absent::<String>(error),
+        }
+    }
+
+    /// Evaluates whether this entry point is currently enabled
+    /// (`Sequence.EvalEntryPointEnabledExpression`).
+    ///
+    /// Also an expression: whether an entry point may be run can depend on the
+    /// logged-in user's privileges or on station state, so this is asked rather
+    /// than assumed. A host greys out what this reports as `false`.
+    ///
+    /// # Errors
+    /// [`Error`] if the file is not a live object or the COM call fails for a
+    /// reason other than the sequence having no entry point expression.
+    pub fn eval_entry_point_enabled_expression(
+        &self,
+        sequence_file: &crate::SequenceFile,
+    ) -> Result<Option<bool>, Error> {
+        let file = sequence_file
+            .duplicate_dispatch()
+            .ok_or(Error::UnexpectedType {
+                expected: "a live sequence file",
+                actual: "a test fake with no COM identity",
+            })?;
+        match self.dispatch.call(
+            sequence::EVAL_ENTRY_POINT_ENABLED_EXPRESSION,
+            &[Value::Object(file)],
+        ) {
+            Ok(value) => Ok(Some(value.as_bool()?)),
+            Err(error) => empty_expression_as_absent::<bool>(error),
+        }
     }
 
     /// The sequence's name (`Sequence.Name`).

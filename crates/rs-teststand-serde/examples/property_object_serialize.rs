@@ -21,7 +21,7 @@ fn build(engine: &Engine) -> Result<PropertyObject, rs_teststand::Error> {
     let data = engine.new_property_object(PropValType::Container, false, "", NO_OPTIONS)?;
 
     data.set_val_string("SerialNumber", INSERT_IF_MISSING, "SN-001")?;
-    data.set_val_bool("Passed", INSERT_IF_MISSING, true)?;
+    data.set_val_boolean("Passed", INSERT_IF_MISSING, true)?;
     data.set_val_number("Measurement", INSERT_IF_MISSING, 1.5)?;
 
     // Both 64-bit representations. A double cannot hold either exactly.
@@ -89,7 +89,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
     println!(
         "Passed         = {}",
-        variables.get_val_bool("Passed", NO_OPTIONS)?
+        variables.get_val_boolean("Passed", NO_OPTIONS)?
     );
     println!(
         "StatusRegister = {} (from \"0x2a\")",

@@ -115,7 +115,7 @@ fn show_station_globals(engine: &Engine) -> Result<(), rs_teststand::Error> {
     // a count and a flag without three separate globals.
     set_string(&station_info, "StationName", "STATION_01")?;
     station_info.set_val_number("CalibrationIntervalDays", INSERT_IF_MISSING, 90.0)?;
-    station_info.set_val_bool("FixtureInstalled", INSERT_IF_MISSING, true)?;
+    station_info.set_val_boolean("FixtureInstalled", INSERT_IF_MISSING, true)?;
 
     // A 64-bit count. `SetValNumber` stores a double, which starts losing whole
     // numbers past 2^53, so anything that counts for the life of a station wants
@@ -147,7 +147,7 @@ fn show_station_globals(engine: &Engine) -> Result<(), rs_teststand::Error> {
     );
     println!(
         "  FixtureInstalled        = {}",
-        station_info.get_val_bool("FixtureInstalled", 0)?
+        station_info.get_val_boolean("FixtureInstalled", 0)?
     );
     println!(
         "  UnitsTestedTotal        = {}",
