@@ -64,6 +64,20 @@ impl TypeUsageList {
             .as_i32()?)
     }
 
+    /// Whether the type at a position is attached to the file (`GetIsTypeAttachedToFile`).
+    ///
+    /// # Errors
+    /// [`Error`] if the index is out of range, the COM call fails or returns an unexpected type.
+    pub fn get_is_type_attached_to_file(&self, index: i32) -> Result<bool, Error> {
+        Ok(self
+            .dispatch
+            .call(
+                type_usage_list::GET_IS_TYPE_ATTACHED_TO_FILE,
+                &[Value::I32(index)],
+            )?
+            .as_bool()?)
+    }
+
     /// Registers a type in the file (`InsertType`).
     ///
     /// The object must already carry a name, an unnamed one is refused. Pass

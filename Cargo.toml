@@ -6,6 +6,7 @@ members = [
     "crates/rs-teststand-serde",
     "crates/rs-teststand-bridge",
     "crates/rs-teststand-websocket",
+    "crates/rs-teststand-autodoc",
 ]
 exclude = ["tmp", "examples"]
 
@@ -106,3 +107,9 @@ lossy_float_literal = "deny"
 fn_to_numeric_cast_any = "deny"
 verbose_file_reads = "deny"
 dbg_macro = "deny"
+
+[profile.dev]
+debug = 1
+
+[profile.test]
+debug = 1
