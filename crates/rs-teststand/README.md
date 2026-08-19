@@ -25,7 +25,7 @@ fn main() -> Result<(), rs_teststand::Error> {
 **Windows only.** Requires a registered TestStand™ engine at runtime (2016, 2026,
 32- or 64-bit); no TestStand™ installation is needed to build.
 
-See the [repository](https://github.com/TheDomcio/rs-teststand) for the roadmap
+See the repository for the roadmap
 and contribution guide. For authoritative API semantics, refer to National
 Instruments' own TestStand™ API Reference documentation.
 

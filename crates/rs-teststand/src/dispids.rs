@@ -273,6 +273,8 @@ pub(crate) mod type_usage_list {
     pub(crate) const INSERT_TYPE: i32 = 0x4;
     /// `RemoveType`, 1 param.
     pub(crate) const REMOVE_TYPE: i32 = 0x5;
+    /// `GetIsTypeAttachedToFile`, 1 param, returns `VT_BOOL`.
+    pub(crate) const GET_IS_TYPE_ATTACHED_TO_FILE: i32 = 0x7;
     /// `ChangeCount`, read-only.
     pub(crate) const CHANGE_COUNT: i32 = 0x9;
 }

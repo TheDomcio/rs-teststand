@@ -66,6 +66,11 @@ doc-valid-idents = [
     "ISearchDirectories",
     "ISearchDirectory",
     "StationID",
+    "FileGlobals",
+    "LabVIEW",
+    "MessagePopup",
+    "SequenceCall",
+    "ElseIf",
     "..",
 ]
 

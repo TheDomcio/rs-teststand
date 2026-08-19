@@ -8,7 +8,7 @@
 //! parameters everywhere and call sites reading `set_val_string(path, 1, text)`,
 //! where `1` is meaningful only to someone holding the constant table.
 //!
-//! The [`bitflags`](https://docs.rs/bitflags) crate is this project'''s choice, not
+//! The `bitflags` crate is this project's choice, not
 //! a mirror of anything in the COM API. It keeps the engine'''s own numbering
 //! exactly, so the value crossing the boundary is identical, while giving the
 //! Rust side named constants, combination with `|`, membership tests with
