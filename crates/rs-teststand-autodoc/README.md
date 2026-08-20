@@ -34,9 +34,15 @@ cargo add rs-teststand-autodoc
 
 `rs-teststand-autodoc` reads sequence files through the National Instruments TestStand™ COM API (via [`rs-teststand`][parent]).
 
-- **Runtime requirement:** A registered TestStand™ engine (versions 2016 through 2026 Q1, 32-bit or 64-bit) must be installed on the Windows machine where documentation is generated.
-- **No TestStand license consumed for reading:** Opening and inspecting sequence files through the API uses standard engine file access.
-- **No external services:** Flowchart diagrams and HTML are rendered 100% locally with pure Rust. PDF generation uses your locally installed browser in headless mode.
+Documentation is generated on a Windows machine with a registered TestStand™
+engine, versions 2016 through 2026 Q1, either 32-bit or 64-bit. Your own
+licensing terms with National Instruments govern what that engine may be used
+for; this tool makes no claim about them.
+
+Nothing is fetched while a document is produced or while one is read. Diagrams
+are rendered to SVG in Rust and the stylesheet is embedded, so the HTML has no
+script tag, no stylesheet link and no web font. PDF is printed by a browser you
+already have installed, running headless against a local file.
 
 ## CLI examples
 
@@ -164,10 +170,19 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 ## How it works
 
-- **COM-driven extraction:** The TestStand™ COM API opens `.seq` files to accurately resolve step types, expressions, module parameters, and type palettes.
-- **Markdown source of truth:** HTML is compiled directly from the generated Markdown, and PDF is printed directly from that HTML.
-- **Pure-Rust Mermaid rendering:** Control flow diagrams compile into inline SVG via embedded Rust code with no Node.js or web dependencies.
-- **Module inspection:** Detects LabVIEW VI paths, C/CVI/DLL functions, Python calls, and .NET member calls directly from step properties.
+Sequence files are read through the TestStand™ COM API rather than parsed, so
+step types, expressions, module parameters and type palettes come from the
+engine that owns them.
+
+Markdown is the source of truth. HTML is compiled from it and the PDF is
+printed from that HTML, so the three cannot disagree about what a sequence
+does. Diagrams become inline SVG through a Rust renderer, with no Node.js
+involved.
+
+The module a step calls is read from its own properties: the VI for a LabVIEW
+step, the function for C, CVI and DLL steps, and the called member for Python
+and .NET. A LabVIEW step reports no separate function because the VI is the
+callable unit.
 
 ## License
 
