@@ -69,8 +69,18 @@ jobs:
           rustup toolchain install 1.85 --profile minimal --no-self-update
           rustup run 1.85 rustc --version
 
+      # The documentation generator is excluded on purpose: it is a tool, not
+      # a published library, and its diagram renderer needs a much newer
+      # toolchain. Checking it here would either fail the job or force the
+      # libraries' floor up for something nobody depends on.
       - name: Check
-        run: rustup run 1.85 cargo check --workspace --all-features
+        run: >
+          rustup run 1.85 cargo check --all-features
+          -p rs-teststand-sys
+          -p rs-teststand
+          -p rs-teststand-serde
+          -p rs-teststand-bridge
+          -p rs-teststand-websocket
 
   examples:
     name: Reference applications

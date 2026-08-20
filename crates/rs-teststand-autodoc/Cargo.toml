@@ -7,7 +7,11 @@ authors.workspace = true
 description = "Generate Markdown documentation from National Instruments TestStand™ sequence files"
 documentation = "https://docs.rs/rs-teststand-autodoc"
 repository.workspace = true
-rust-version.workspace = true
+# Not the workspace floor. This crate renders diagrams through `merman`,
+# whose current alpha needs a far newer toolchain than the libraries promise.
+# The published libraries keep their own lower floor, which the MSRV job
+# checks; this tool is excluded from that job rather than dragging them up.
+rust-version = "1.95"
 keywords = ["teststand", "documentation", "markdown", "test-automation", "ni"]
 categories = ["command-line-utilities", "os::windows-apis"]
 readme = "README.md"
