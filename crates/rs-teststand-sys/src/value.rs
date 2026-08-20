@@ -162,3 +162,18 @@ impl Value {
         }
     }
 }
+
+/// The kind of value an engine member writes back through a by-reference
+/// argument.
+///
+/// Some members report their result in the return value and their explanation
+/// in out-parameters: an expression check answers pass or fail, then says what
+/// was wrong and where. Reading only the return value throws that away.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum OutKind {
+    /// A string the engine allocates, `VT_BYREF | VT_BSTR`.
+    Text,
+    /// A 32-bit integer, `VT_BYREF | VT_I4`.
+    Int,
+}

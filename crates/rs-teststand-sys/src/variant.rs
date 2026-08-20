@@ -14,8 +14,8 @@ use windows::Win32::Foundation::VARIANT_BOOL;
 use windows::Win32::System::Com::{IDispatch, SAFEARRAY};
 use windows::Win32::System::Ole::{SafeArrayGetElement, SafeArrayGetLBound, SafeArrayGetUBound};
 use windows::Win32::System::Variant::{
-    VARIANT, VT_ARRAY, VT_BOOL, VT_BSTR, VT_DISPATCH, VT_EMPTY, VT_I4, VT_I8, VT_NULL, VT_R8,
-    VT_UI8, VT_UNKNOWN, VariantClear,
+    VARIANT, VT_ARRAY, VT_BOOL, VT_BSTR, VT_BYREF, VT_DISPATCH, VT_EMPTY, VT_I4, VT_I8, VT_NULL,
+    VT_R8, VT_UI8, VT_UNKNOWN, VariantClear,
 };
 use windows_core::{BSTR, Interface as _};
 
@@ -51,6 +51,44 @@ impl OwnedVariant {
     #[must_use]
     pub(crate) fn empty() -> Self {
         Self(VARIANT::default())
+    }
+
+    /// A `VT_BYREF | VT_BSTR` variant pointing at caller-owned storage.
+    ///
+    /// The engine allocates the string and writes the pointer into `cell`;
+    /// freeing it is then the caller's job, which the `BSTR` behind `cell` does
+    /// when it drops. `VariantClear` leaves by-reference payloads alone, so
+    /// there is no double free.
+    ///
+    /// # Safety
+    /// `cell` must be valid and must outlive the call this variant is passed to.
+    #[must_use]
+    pub(crate) unsafe fn byref_text(cell: *mut BSTR) -> Self {
+        let mut owned = Self::empty();
+        // SAFETY: writing the discriminant and the matching pointer field of a
+        // freshly zeroed VARIANT, per the caller's guarantee about `cell`.
+        unsafe {
+            let inner = &mut owned.0.Anonymous.Anonymous;
+            inner.vt = windows::Win32::System::Variant::VARENUM(VT_BYREF.0 | VT_BSTR.0);
+            inner.Anonymous.pbstrVal = cell;
+        }
+        owned
+    }
+
+    /// A `VT_BYREF | VT_I4` variant pointing at caller-owned storage.
+    ///
+    /// # Safety
+    /// `cell` must be valid and must outlive the call this variant is passed to.
+    #[must_use]
+    pub(crate) unsafe fn byref_i32(cell: *mut i32) -> Self {
+        let mut owned = Self::empty();
+        // SAFETY: as above; `plVal` is the field `VT_BYREF | VT_I4` names.
+        unsafe {
+            let inner = &mut owned.0.Anonymous.Anonymous;
+            inner.vt = windows::Win32::System::Variant::VARENUM(VT_BYREF.0 | VT_I4.0);
+            inner.Anonymous.plVal = cell;
+        }
+        owned
     }
 
     /// Builds a variant carrying `value`.
@@ -255,10 +293,21 @@ fn read_i32_array(array: *mut SAFEARRAY) -> Result<Vec<i32>, ComError> {
 impl Drop for OwnedVariant {
     fn drop(&mut self) {
         // SAFETY: `self.0` is always a valid, initialized VARIANT (constructed
-        // zeroed and only ever written through the checked paths above).
-        // `VariantClear` frees an owned BSTR or releases an owned interface and
-        // resets the variant to VT_EMPTY, so a second clear would be a no-op.
-        // A failure cannot be acted on inside `drop`, so it is ignored.
+        // zeroed and only ever written through the checked paths above), and
+        // `vt` is a plain discriminant that interprets no union payload.
+        let variant_type = unsafe { self.0.Anonymous.Anonymous.vt };
+
+        // A by-reference variant owns nothing: the storage behind the pointer
+        // belongs to the caller and frees itself. Clearing one would at best do
+        // nothing and at worst free storage that is about to be freed again.
+        if variant_type.0 & VT_BYREF.0 != 0 {
+            return;
+        }
+
+        // SAFETY: as above. `VariantClear` frees an owned BSTR or releases an
+        // owned interface and resets the variant to VT_EMPTY, so a second clear
+        // would be a no-op. A failure cannot be acted on inside `drop`, so it
+        // is ignored.
         let _ = unsafe { VariantClear(&raw mut self.0) };
     }
 }
@@ -274,6 +323,59 @@ mod tests {
     /// object calls.
     fn round_trip(value: &Value) -> Result<Value, ComError> {
         OwnedVariant::from_value(value)?.to_value()
+    }
+
+    /// A by-reference string slot points at the caller's storage, and whatever
+    /// the callee writes there is what the caller reads back.
+    ///
+    /// The engine's side of this is `SysAllocString` into `*pbstrVal`, which is
+    /// what the assignment below stands in for.
+    #[test]
+    fn a_by_reference_string_slot_carries_what_the_callee_writes() {
+        use windows::Win32::System::Variant::{VT_BSTR, VT_BYREF};
+        use windows_core::BSTR;
+
+        let mut cell = Box::new(BSTR::new());
+        // SAFETY: `cell` is boxed and outlives `slot`.
+        let slot = unsafe { OwnedVariant::byref_text(&raw mut *cell) };
+
+        // SAFETY: `slot` was built over `cell`, which is still alive.
+        unsafe {
+            let inner = &slot.0.Anonymous.Anonymous;
+            assert_eq!(
+                inner.vt.0,
+                VT_BYREF.0 | VT_BSTR.0,
+                "the slot should be a by-reference BSTR",
+            );
+            let written = inner.Anonymous.pbstrVal;
+            *written = BSTR::from("expression is not valid");
+        }
+
+        assert_eq!(cell.to_string(), "expression is not valid");
+    }
+
+    /// The same for an integer slot, which is how positions come back.
+    #[test]
+    fn a_by_reference_integer_slot_carries_what_the_callee_writes() {
+        use windows::Win32::System::Variant::{VT_BYREF, VT_I4};
+
+        let mut cell = Box::new(0_i32);
+        // SAFETY: `cell` is boxed and outlives `slot`.
+        let slot = unsafe { OwnedVariant::byref_i32(&raw mut *cell) };
+
+        // SAFETY: `slot` was built over `cell`, which is still alive.
+        unsafe {
+            let inner = &slot.0.Anonymous.Anonymous;
+            assert_eq!(
+                inner.vt.0,
+                VT_BYREF.0 | VT_I4.0,
+                "the slot should be a by-reference i32",
+            );
+            let written = inner.Anonymous.plVal;
+            *written = 12;
+        }
+
+        assert_eq!(*cell, 12);
     }
 
     /// A `VT_ARRAY | VT_I4` variant, built the way the engine hands one back.

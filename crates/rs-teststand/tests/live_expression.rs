@@ -12,7 +12,8 @@
 use std::path::PathBuf;
 
 use rs_teststand::{
-    ConflictHandler, DecimalPointLocalizationOption, Engine, Error, GetSeqFileOptions,
+    ConflictHandler, DecimalPointLocalizationOption, Engine, Error, EvaluationOptions,
+    GetSeqFileOptions,
 };
 
 const NO_OPTIONS: i32 = 0;
@@ -111,9 +112,105 @@ fn expression_text_round_trips_through_localization(engine: &Engine) -> Result<(
     Ok(())
 }
 
+/// A syntax check reports where the error is, not only that there is one.
+///
+/// The position pair is the whole point of the out-parameters: a host that only
+/// learns "invalid" cannot show the operator what to fix.
+fn a_syntax_error_reports_its_message_and_position(engine: &Engine) -> Result<(), Error> {
+    assert_eq!(
+        engine.check_expr_syntax("1 + 2")?,
+        None,
+        "a well-formed expression should report no error",
+    );
+
+    let broken = "1 + + ";
+    let error = engine
+        .check_expr_syntax(broken)?
+        .ok_or(Error::UnexpectedType {
+            expected: "a syntax error",
+            actual: "no error at all",
+        })?;
+    println!("  {broken:?} -> {error}, span {:?}", error.span(broken));
+    assert!(
+        !error.description.is_empty(),
+        "the engine should describe the syntax error",
+    );
+    assert!(
+        error.end >= error.start,
+        "the error should not end before it begins, got {} to {}",
+        error.start,
+        error.end,
+    );
+    Ok(())
+}
+
+/// A syntax check accepts a name that does not exist; a context check does not.
+///
+/// This is the documented difference between the two members, and it is what
+/// makes the context worth passing.
+fn checking_against_a_context_catches_names_a_syntax_check_accepts(
+    engine: &Engine,
+) -> Result<(), Error> {
+    let absent = "Locals.ThisDoesNotExist == 1";
+
+    assert_eq!(
+        engine.check_expr_syntax(absent)?,
+        None,
+        "an undefined name is still valid syntax",
+    );
+
+    let context =
+        engine.new_property_object(rs_teststand::PropValType::Container, false, "", NO_OPTIONS)?;
+    let error = engine
+        .check_expression(Some(&context), absent, EvaluationOptions::NONE)?
+        .ok_or(Error::UnexpectedType {
+            expected: "an error about the undefined name",
+            actual: "no error at all",
+        })?;
+    println!("  {absent:?} against an empty context -> {error}");
+
+    // Passing no context is documented as equivalent to a syntax check, so the
+    // same expression has to pass.
+    assert_eq!(
+        engine.check_expression(None, absent, EvaluationOptions::NONE)?,
+        None,
+        "with no context, only the syntax is checked",
+    );
+    Ok(())
+}
+
+/// The by-reference machinery survives being used over and over.
+///
+/// Each failing check has the engine allocate a fresh string and hand ownership
+/// across the boundary. Getting that ownership wrong frees the same string
+/// twice, which corrupts the heap rather than returning an error, so the only
+/// honest test is repetition.
+fn checking_repeatedly_does_not_corrupt_the_heap(engine: &Engine) -> Result<(), Error> {
+    const REPETITIONS: usize = 500;
+
+    let mut first: Option<String> = None;
+    for _ in 0..REPETITIONS {
+        let error = engine
+            .check_expr_syntax("1 + + ")?
+            .ok_or(Error::UnexpectedType {
+                expected: "a syntax error",
+                actual: "no error at all",
+            })?;
+        match &first {
+            None => first = Some(error.description),
+            Some(expected) => assert_eq!(
+                &error.description, expected,
+                "the same expression should describe the same error every time",
+            ),
+        }
+    }
+    println!("  {REPETITIONS} checks returned a stable description");
+    Ok(())
+}
+
 type Check = (&'static str, fn(&Engine) -> Result<(), Error>);
 
-fn checks() -> [Check; 3] {
+fn checks() -> [Check; 6] {
     [
         (
             "entry_points_report_their_name_and_whether_they_are_enabled",
@@ -126,6 +223,18 @@ fn checks() -> [Check; 3] {
         (
             "expression_text_round_trips_through_localization",
             expression_text_round_trips_through_localization,
+        ),
+        (
+            "a_syntax_error_reports_its_message_and_position",
+            a_syntax_error_reports_its_message_and_position,
+        ),
+        (
+            "checking_against_a_context_catches_names_a_syntax_check_accepts",
+            checking_against_a_context_catches_names_a_syntax_check_accepts,
+        ),
+        (
+            "checking_repeatedly_does_not_corrupt_the_heap",
+            checking_repeatedly_does_not_corrupt_the_heap,
         ),
     ]
 }

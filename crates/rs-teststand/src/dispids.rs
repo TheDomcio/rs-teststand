@@ -47,6 +47,8 @@ define_dispid_group! {
         NEW_EXPRESSION = 0x023a;
         LOCALIZE_EXPRESSION = 0x0191;
         DELOCALIZE_EXPRESSION = 0x0192;
+        CHECK_EXPR_SYNTAX = 0x0118;
+        CHECK_EXPRESSION = 0x01fe;
         GET_UI_MESSAGE = 0x00bf;
         UI_MESSAGE_POLLING_ENABLED = 0x017c;
         IS_UI_MESSAGE_QUEUE_EMPTY = 0x017d;

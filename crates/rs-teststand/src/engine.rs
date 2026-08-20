@@ -1,6 +1,6 @@
 //! The `Engine`, root of the object model and factory for everything else.
 
-use rs_teststand_sys::{Dispatch, Value, create_dispatch};
+use rs_teststand_sys::{Dispatch, OutKind, Value, create_dispatch};
 
 #[path = "engine_startup.rs"]
 mod startup;
@@ -9,6 +9,7 @@ use rs_teststand_sys::DialogInfo;
 
 use crate::dispids::engine as dispid;
 use crate::error::Error;
+use crate::expression::{EvaluationOptions, ExpressionError};
 
 /// ProgID of the version-independent engine coclass. Resolves to the active
 /// installation's `teapi.dll` via the registry.
@@ -973,6 +974,57 @@ impl Engine {
         ))
     }
 
+    /// Checks an expression's syntax (`Engine.CheckExprSyntax`).
+    ///
+    /// Returns `None` when the syntax is correct, or the error and the span it
+    /// covers when it is not. Only the syntax is checked: an expression naming
+    /// a variable that does not exist still passes, which is what
+    /// [`Self::check_expression`] is for.
+    ///
+    /// # Errors
+    /// [`Error`] if the engine cannot perform the check.
+    pub fn check_expr_syntax(&self, expression: &str) -> Result<Option<ExpressionError>, Error> {
+        let (valid, written) = self.dispatch.call_with_outputs(
+            dispid::CHECK_EXPR_SYNTAX,
+            &[Value::Str(expression.to_owned())],
+            &[OutKind::Text, OutKind::Int, OutKind::Int],
+        )?;
+        expression_check_result(&valid, written)
+    }
+
+    /// Checks an expression against a context (`Engine.CheckExpression`).
+    ///
+    /// Like [`Self::check_expr_syntax`], but it also resolves the variables the
+    /// expression names against `evaluation_context`. Pass `None` for the
+    /// context to check the syntax alone.
+    ///
+    /// Returns `None` when the expression is correct, or the error otherwise.
+    ///
+    /// # Errors
+    /// [`Error`] if the engine cannot perform the check.
+    pub fn check_expression(
+        &self,
+        evaluation_context: Option<&crate::PropertyObject>,
+        expression: &str,
+        evaluation_options: EvaluationOptions,
+    ) -> Result<Option<ExpressionError>, Error> {
+        // "Check the syntax only" is a null object reference: a VT_DISPATCH
+        // carrying no pointer, which is a different type from VT_NULL.
+        let context = evaluation_context
+            .and_then(crate::PropertyObject::duplicate_dispatch)
+            .map_or(Value::NullObject, Value::Object);
+        let (valid, written) = self.dispatch.call_with_outputs(
+            dispid::CHECK_EXPRESSION,
+            &[
+                context,
+                Value::Str(expression.to_owned()),
+                Value::I32(evaluation_options.bits()),
+            ],
+            &[OutKind::Text, OutKind::Int, OutKind::Int],
+        )?;
+        expression_check_result(&valid, written)
+    }
+
     /// Converts expression text to the station's locale
     /// (`Engine.LocalizeExpression`).
     ///
@@ -1361,6 +1413,39 @@ impl Engine {
             startup_dialogs: Vec::new(),
         }
     }
+}
+
+/// Folds the engine's answer to an expression check into one value.
+///
+/// Both checks report the same way: `True` and nothing more when the expression
+/// is fine, `False` plus a description and a span when it is not.
+fn expression_check_result(
+    valid: &Value,
+    written: Vec<Value>,
+) -> Result<Option<ExpressionError>, Error> {
+    if valid.as_bool()? {
+        return Ok(None);
+    }
+    let mut written = written.into_iter();
+    let description = written
+        .next()
+        .ok_or(Error::UnexpectedType {
+            expected: "an error description",
+            actual: "nothing",
+        })?
+        .into_string()?;
+    let mut position = || -> Result<i32, Error> {
+        Ok(written
+            .next()
+            .ok_or(Error::UnexpectedType {
+                expected: "an error position",
+                actual: "nothing",
+            })?
+            .as_i32()?)
+    };
+    let start = position()?;
+    let end = position()?;
+    Ok(Some(ExpressionError::new(description, start, end)))
 }
 
 #[cfg(test)]

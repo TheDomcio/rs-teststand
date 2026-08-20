@@ -16,10 +16,10 @@ use windows::Win32::System::Com::{
     DISPPARAMS, EXCEPINFO, IDispatch,
 };
 use windows::Win32::System::Variant::VARIANT;
-use windows_core::{GUID, HSTRING};
+use windows_core::{BSTR, GUID, HSTRING};
 
 use crate::error::ComError;
-use crate::value::Value;
+use crate::value::{OutKind, Value};
 use crate::variant::OwnedVariant;
 
 /// The named-argument dispatch id a property put must supply
@@ -56,6 +56,29 @@ pub trait Dispatch: fmt::Debug {
     /// [`ComError::Hresult`] if the COM call fails, or
     /// [`ComError::UnexpectedType`] if the returned value has an unmodeled type.
     fn call(&self, dispid: i32, args: &[Value]) -> Result<Value, ComError>;
+
+    /// Calls a member that reports part of its answer through by-reference
+    /// arguments.
+    ///
+    /// The `outputs` describe slots appended after `args`, in declaration
+    /// order. Returns the member's own result together with what it wrote into
+    /// each slot.
+    ///
+    /// # Errors
+    /// [`ComError`] if the call fails, or [`ComError::UnexpectedType`] on a
+    /// dispatch that has no COM identity to call through.
+    fn call_with_outputs(
+        &self,
+        dispid: i32,
+        args: &[Value],
+        outputs: &[OutKind],
+    ) -> Result<(Value, Vec<Value>), ComError> {
+        let _ = (dispid, args, outputs);
+        Err(ComError::UnexpectedType {
+            expected: "a live COM object",
+            actual: "a dispatch with no by-reference support",
+        })
+    }
 
     /// An owned handle to the same COM object, when there is one.
     ///
@@ -209,6 +232,92 @@ impl Dispatch for ComDispatch {
         // `arguments` stays alive until here, then each variant clears itself.
         drop(arguments);
         result.to_value()
+    }
+
+    fn call_with_outputs(
+        &self,
+        dispid: i32,
+        args: &[Value],
+        outputs: &[OutKind],
+    ) -> Result<(Value, Vec<Value>), ComError> {
+        let mut slots: Vec<OutSlot> = outputs.iter().copied().map(OutSlot::new).collect();
+
+        let mut arguments = args
+            .iter()
+            .map(OwnedVariant::from_value)
+            .collect::<Result<Vec<_>, _>>()?;
+        arguments.extend(slots.iter_mut().map(OutSlot::as_variant));
+        // COM reads rgvarg back to front, so the whole list is reversed once.
+        arguments.reverse();
+
+        let count = u32::try_from(arguments.len())
+            .map_err(|_| ComError::hresult(-2_147_024_809, "argument count exceeds COM limit"))?;
+        let params = DISPPARAMS {
+            rgvarg: arguments.as_mut_ptr().cast::<VARIANT>(),
+            rgdispidNamedArgs: std::ptr::null_mut(),
+            cArgs: count,
+            cNamedArgs: 0,
+        };
+
+        let result = self.invoke(
+            dispid,
+            DISPATCH_METHOD | DISPATCH_PROPERTYGET,
+            &params,
+            "IDispatch::Invoke (call with outputs)",
+        )?;
+        // The by-reference variants stay alive until the engine has written
+        // through them, which is why this is dropped only now.
+        drop(arguments);
+
+        let written = slots.iter().map(OutSlot::to_value).collect();
+        Ok((result.to_value()?, written))
+    }
+}
+
+/// Storage an engine member writes back through, and the variant pointing at it.
+///
+/// Boxed so the address handed to COM survives the argument vector being built
+/// and reversed. The engine allocates any string itself and hands ownership to
+/// the caller, so the `BSTR` here frees what comes back.
+enum OutSlot {
+    /// A `VT_BYREF | VT_BSTR` slot.
+    Text(Box<BSTR>),
+    /// A `VT_BYREF | VT_I4` slot.
+    Int(Box<i32>),
+}
+
+impl OutSlot {
+    /// An empty slot of the requested kind.
+    fn new(kind: OutKind) -> Self {
+        match kind {
+            OutKind::Text => Self::Text(Box::new(BSTR::new())),
+            OutKind::Int => Self::Int(Box::new(0)),
+        }
+    }
+
+    /// The by-reference variant to pass for this slot.
+    ///
+    /// Takes `&mut self` to mark the slot as handed over for writing. The
+    /// variant carries a raw pointer, so the borrow ends when this returns and
+    /// keeping the storage alive across the call stays the caller's job.
+    fn as_variant(&mut self) -> OwnedVariant {
+        // SAFETY: each pointer refers to this slot's own boxed storage, which
+        // outlives the returned variant because the caller keeps `self` alive
+        // across the call and drops the variants first.
+        unsafe {
+            match self {
+                Self::Text(cell) => OwnedVariant::byref_text(&raw mut **cell),
+                Self::Int(cell) => OwnedVariant::byref_i32(&raw mut **cell),
+            }
+        }
+    }
+
+    /// What the engine wrote into this slot.
+    fn to_value(&self) -> Value {
+        match self {
+            Self::Text(cell) => Value::Str(cell.to_string()),
+            Self::Int(cell) => Value::I32(**cell),
+        }
     }
 }
 

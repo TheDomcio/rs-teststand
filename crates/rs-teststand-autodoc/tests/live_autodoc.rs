@@ -16,6 +16,7 @@ use rs_teststand::{Engine, StepGroup};
 use rs_teststand_autodoc::data::{ExtractorConfig, Profile};
 use rs_teststand_autodoc::extraction::HierarchyExtractor;
 use rs_teststand_autodoc::rendering::Formatter;
+use rs_teststand_autodoc::rules::DocumentRules;
 
 type Fallible = Result<(), Box<dyn Error>>;
 
@@ -122,7 +123,28 @@ fn live_extract_synthetic_sequence_hierarchy() -> Fallible {
     assert!(markdown.contains("# SyntheticTest.seq"));
     assert!(markdown.contains("Initialize Hardware"));
     assert!(markdown.contains("Measure Voltage"));
-    assert!(markdown.contains("```mermaid"));
+    // The engineer profile is read beside the sequence and fed to a model, so
+    // it stays textual: a diagram flattens steps into node ids and loses the
+    // detail the table carries. Asking for flowcharts does not override the
+    // profile, which is the point of the rules being the policy.
+    assert!(
+        !markdown.contains("```mermaid"),
+        "the engineer profile should not draw a flowchart",
+    );
+
+    // A caller who does want one says so through the rules rather than the
+    // profile, which is the documented way to depart from a preset.
+    let mut rules = DocumentRules::for_profile(Profile::Engineer);
+    rules.flowcharts = true;
+    let with_diagram = ExtractorConfig {
+        rules,
+        ..config
+    };
+    let diagrammed = Formatter::generate(&files, &with_diagram, Some(&engine));
+    assert!(
+        diagrammed.contains("```mermaid"),
+        "turning the rule on should draw the flowchart the profile withholds",
+    );
 
     // The engineer profile carries full step detail, so each step it documents
     // must appear by name.
@@ -136,9 +158,16 @@ fn live_extract_synthetic_sequence_hierarchy() -> Fallible {
     let html =
         rs_teststand_autodoc::rendering::markdown_to_html(&markdown, Some("SyntheticTest.seq"));
     assert!(html.contains("<!doctype html>"));
-    assert!(html.contains("<div class=\"mermaid-diagram\">"));
-    assert!(html.contains("<svg"));
-    assert!(html.contains("flowchart"), "diagram source must survive");
+
+    // A diagram has to reach the page as rendered SVG. Passing it through the
+    // Markdown compiler as text escapes the `<style>` element and every edge
+    // loses its stroke, so this checks the drawn form, not the fence.
+    let drawn = rs_teststand_autodoc::rendering::markdown_to_html(
+        &diagrammed,
+        Some("SyntheticTest.seq"),
+    );
+    assert!(drawn.contains("<div class=\"mermaid-diagram\">"));
+    assert!(drawn.contains("<svg"));
 
     let _ = fs::remove_file(&temp_file);
     let _ = fs::remove_dir(&temp_dir);

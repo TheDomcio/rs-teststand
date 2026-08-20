@@ -33,6 +33,7 @@
 //! So the lint is allowed at the workspace level rather than silenced per item,
 //! and this note is the record of why.
 
+pub mod check;
 pub mod constant;
 pub mod decimal_point;
 #[expect(
@@ -43,6 +44,7 @@ pub mod expression;
 pub mod function;
 pub mod operator;
 
+pub use check::{EvaluationOptions, ExpressionError};
 pub use constant::{ColorConstant, OtherConstant};
 pub use decimal_point::DecimalPointLocalizationOption;
 pub use expression::Expression;

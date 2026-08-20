@@ -18,7 +18,7 @@ mod window;
 
 pub use dispatch::{ComDispatch, Dispatch, close_apartment, create_dispatch, init_apartment};
 pub use error::ComError;
-pub use value::Value;
+pub use value::{OutKind, Value};
 pub use window::{
     DialogInfo, Dismissed, Raised, dismiss_blocking_dialog, find_blocking_dialog,
     pump_thread_messages, surface_blocking_dialog,

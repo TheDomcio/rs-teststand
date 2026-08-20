@@ -90,10 +90,15 @@ async fn an_unknown_origin_is_refused_with_403() {
         ),
         other => panic!("expected an HTTP rejection, got {other:?}"),
     }
+    // A panel is counted only where the handshake succeeded, so any count here
+    // means a refusal admitted somebody. This has been seen once under a loaded
+    // full-workspace run and never reproduced in isolation, so if it fires
+    // again, treat it as a real admission and look at the accept path before
+    // assuming a timing artefact.
+    let counted = bridge.client_count();
     assert_eq!(
-        bridge.client_count(),
-        0,
-        "a refused panel must not register"
+        counted, 0,
+        "a refused panel registered anyway: {counted} subscriber(s) after a 403"
     );
 }
 
