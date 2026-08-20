@@ -23,7 +23,7 @@ targets = ["i686-pc-windows-msvc"]
 all-features = true
 
 [dependencies]
-rs-teststand-sys = { path = "../rs-teststand-sys", version = "0.12.2" }
+rs-teststand-sys = { path = "../rs-teststand-sys", version = "0.13.0" }
 thiserror = "2.0.18"
 bitflags = "2.13.1"
 
@@ -31,7 +31,5 @@ bitflags = "2.13.1"
 # Enables tests that instantiate the live TestStand(TM) Engine.
 live-engine = []
 
-
 [lints]
 workspace = true
-

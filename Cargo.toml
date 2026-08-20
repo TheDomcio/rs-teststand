@@ -11,7 +11,7 @@ members = [
 exclude = ["tmp", "examples"]
 
 [workspace.package]
-version = "0.12.2"
+version = "0.13.0"
 edition = "2024"
 license = "MIT"
 authors = ["Dominik Rajchel"]

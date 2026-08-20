@@ -688,7 +688,7 @@ impl<'a> FlowchartBuilder<'a> {
         } else {
             "box"
         };
-        let mut main_label = diagram_label(
+        let main_label = diagram_label(
             &step.name,
             if step.step_type.is_empty() {
                 "Step"
