@@ -156,19 +156,6 @@ pub mod property_path {
     pub const PYTHON_CLASS: &str = "TS.SData.PythonCall.ClassName";
     /// Code module library path.
     pub const CALL_LIB_PATH: &str = "TS.SData.Call.LibPath";
-    // The three paths below are unverified. None of them appears in any
-    // sequence file shipped with the installation, and being property-tree
-    // paths rather than COM members they are absent from the type library too,
-    // so neither source confirms them. They are kept because the lookup is a
-    // fallback chain: an unknown path simply fails and the next is tried, so a
-    // wrong one costs nothing while removing a right one would silently lose an
-    // adapter. Confirm against a real step before relying on any of them.
-    /// Python script path. Unverified.
-    pub const CALL_SCRIPT_PATH: &str = "TS.SData.Call.ScriptPath";
-    /// CVI or DLL code file path. Unverified.
-    pub const CALL_CODE_FILE_PATH: &str = "TS.SData.Call.CodeFilePath";
-    /// Module name. Unverified.
-    pub const CALL_MODULE_NAME: &str = "TS.SData.Call.ModuleName";
     /// Project file path for LabVIEW / .NET modules.
     pub const CALL_PROJECT_PATH: &str = "TS.SData.Call.ProjectPath";
 
