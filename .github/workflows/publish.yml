@@ -5,11 +5,11 @@ name: Publish
 # Publishing is permanent. A released version can be yanked, which stops new
 # dependants resolving it, but it can never be replaced or deleted. Everything
 # below runs before the first byte is uploaded, because the failure that matters
-# is not "the release failed" but "two of four crates are published and the
-# other two cannot be".
+# is not "the release failed" but "some crates are published and the
+# others cannot be".
 #
 # Order is not scripted here: `cargo publish --workspace` resolves it from the
-# dependency graph (sys, then rs-teststand, then serde, then bridge) and waits
+# dependency graph (sys, then rs-teststand, then serde, bridge, websocket, autodoc) and waits
 # for each crate to appear in the index before building the next.
 
 on:
@@ -54,7 +54,7 @@ jobs:
           rustc --version
           cargo --version
 
-      # Guards the mistake this layout invites: four crates that must move
+      # Guards the mistake this layout invites: crates that must move
       # together, all inheriting the workspace version except one that used to
       # hardcode it. A tag that disagrees with the manifests would publish a
       # version nobody asked for.
@@ -86,7 +86,7 @@ jobs:
       - name: Test
         run: cargo test --workspace --all-features
 
-      # Packages and verifies all four without uploading. This is the step that
+      # Packages and verifies all crates without uploading. This is the step that
       # makes a partial release impossible: a packaging fault in the last crate
       # is found here, while nothing has been sent yet.
       - name: Dry run

@@ -58,7 +58,7 @@ pub(super) async fn serve(
 
         next_client += 1;
         let client = next_client;
-        let subscription = outbound.subscribe();
+        let outbound_for_client = outbound.clone();
         let commands = commands.clone();
         let allowed_origins = allowed_origins.clone();
         // One task per panel, so a slow reader delays nobody else.
@@ -98,6 +98,7 @@ pub(super) async fn serve(
             if let Ok(websocket) =
                 tokio_tungstenite::accept_hdr_async_with_config(stream, screen, Some(config)).await
             {
+                let subscription = outbound_for_client.subscribe();
                 serve_client(websocket, client, subscription, commands).await;
             }
         });

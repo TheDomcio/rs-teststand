@@ -76,6 +76,21 @@ The package is named `rs-teststand` (with a dash), referencing its sibling proje
 | **[`tonic`](https://crates.io/crates/tonic)** | gRPC over HTTP/2 implementation         |
 | **[`prost`](https://crates.io/crates/prost)** | Protocol Buffers implementation         |
 
+#### [`rs-teststand-websocket`](./crates/rs-teststand-websocket)
+
+| Tool / Crate                                                        | Purpose                                  |
+| :------------------------------------------------------------------ | :--------------------------------------- |
+| **[`tokio-tungstenite`](https://crates.io/crates/tokio-tungstenite)** | RFC 6455 WebSocket client/server framing |
+| **[`tokio`](https://crates.io/crates/tokio)**                       | Background async runtime                 |
+
+#### [`rs-teststand-autodoc`](./crates/rs-teststand-autodoc)
+
+| Tool / Crate                                      | Purpose                                        |
+| :------------------------------------------------ | :--------------------------------------------- |
+| **[`clap`](https://crates.io/crates/clap)**       | Command-line argument parsing with derive mode |
+| **[`merman`](https://crates.io/crates/merman)**   | Embedded pure-Rust Mermaid to SVG rendering    |
+| **[`markdown`](https://crates.io/crates/markdown)** | Markdown parser and HTML generator           |
+
 ## ⚠️ Transparency
 
 ### 🚧 Project status
@@ -120,8 +135,10 @@ cargo add rs-teststand
 The extensions are separate, and optional:
 
 ```text
-cargo add rs-teststand-serde   # property trees as JSON
-cargo add rs-teststand-bridge    # serve the engine to other processes
+cargo add rs-teststand-serde       # property trees as JSON
+cargo add rs-teststand-bridge      # serve the engine to other processes
+cargo add rs-teststand-websocket   # serve over WebSocket
+cargo add rs-teststand-autodoc     # sequence documentation generator
 ```
 
 Drive the TestStand™ engine from Rust:
@@ -329,8 +346,8 @@ hear how it goes.
 
 ## 📦 Repository structure
 
-Four crates in one repository. Start with `rs-teststand`. The `-sys` crate is an
-implementation detail you never depend on directly, and the last two are optional
+Six crates in one repository. Start with `rs-teststand`. The `-sys` crate is an
+implementation detail you never depend on directly, and the last four are optional
 additions you can ignore until you need them.
 
 | Crate                                             | crates.io                                                                                                           | Docs                                                                                           | What it is                                                                                                                                      |
@@ -340,8 +357,9 @@ additions you can ignore until you need them.
 | [`rs-teststand-serde`](crates/rs-teststand-serde) | [![crates.io](https://img.shields.io/crates/v/rs-teststand-serde.svg)](https://crates.io/crates/rs-teststand-serde) | [![docs.rs](https://docs.rs/rs-teststand-serde/badge.svg)](https://docs.rs/rs-teststand-serde) | Property trees to and from JSON, or any serde format.                                                                                           |
 | [`rs-teststand-bridge`](crates/rs-teststand-bridge)   | [![crates.io](https://img.shields.io/crates/v/rs-teststand-bridge.svg)](https://crates.io/crates/rs-teststand-bridge)   | [![docs.rs](https://docs.rs/rs-teststand-bridge/badge.svg)](https://docs.rs/rs-teststand-bridge)   | Serve the engine to other processes. Early; the host exists, the gRPC services do not yet. Unrelated to National Instruments' own gRPC project. |
 | [`rs-teststand-websocket`](crates/rs-teststand-websocket) | [![crates.io](https://img.shields.io/crates/v/rs-teststand-websocket.svg)](https://crates.io/crates/rs-teststand-websocket) | [![docs.rs](https://docs.rs/rs-teststand-websocket/badge.svg)](https://docs.rs/rs-teststand-websocket) | Serve the engine over `WebSocket`, to a browser panel or another process. Speaks the protocol, does not implement it: framing belongs to `tungstenite`. |
+| [`rs-teststand-autodoc`](crates/rs-teststand-autodoc) | [![crates.io](https://img.shields.io/crates/v/rs-teststand-autodoc.svg)](https://crates.io/crates/rs-teststand-autodoc) | [![docs.rs](https://docs.rs/rs-teststand-autodoc/badge.svg)](https://docs.rs/rs-teststand-autodoc) | Fast, native documentation generator (Markdown, HTML, PDF) from `.seq` sequence files. |
 
-All five share a version number and are published together.
+All six share a version number and are published together.
 
 The crates are published as `rs-teststand`, `rs-teststand-sys`,
 `rs-teststand-serde` and `rs-teststand-bridge`, and imported with underscores,
