@@ -1,139 +1,88 @@
 # rs-teststand-autodoc
 
-Generate Markdown, HTML, and PDF documentation from National Instruments TestStand™ sequence files (`.seq`).
+Generates Markdown, HTML and PDF documentation from National Instruments
+TestStand sequence files.
 
-An **addition to** [`rs-teststand`][parent]
+Built on [`rs-teststand`][parent].
 
-## Installation
+## Transparency
 
-### As a standalone CLI tool
+This does not parse `.seq` files. It reads them through the TestStand COM API,
+so step types, expressions, module parameters and type palettes come from the
+engine that owns them rather than from a guess about the file format.
 
-Install the binary directly with Cargo:
+That means you need Windows, a registered TestStand engine, and whatever
+[licence][licensing] your agreement with National Instruments requires. This
+project makes no claim about your licensing terms.
+
+## Offline
+
+Nothing is fetched while a document is produced or read. Diagrams render to
+inline SVG in Rust, with no Node.js and no Mermaid script tag. The stylesheet is
+embedded. The generated HTML has no script tag, no stylesheet link and no web
+font.
+
+PDF is printed by a browser you already have, running headless against a local
+file. Edge and Chrome are found automatically; nothing is downloaded.
+
+## Install
 
 ```text
 cargo install rs-teststand-autodoc
 ```
 
-This puts `rs-teststand-autodoc.exe` into your Cargo bin directory (usually `%USERPROFILE%\.cargo\bin`), which is typically in your `PATH`.
-
-To update an existing installation:
-
-```text
-cargo install rs-teststand-autodoc --force
-```
-
-### As a library dependency
-
-Add the crate to your `Cargo.toml`:
+As a library:
 
 ```text
 cargo add rs-teststand-autodoc
 ```
 
-## Runtime requirement: TestStand COM engine
-
-`rs-teststand-autodoc` reads sequence files through the National Instruments TestStand™ COM API (via [`rs-teststand`][parent]).
-
-Documentation is generated on a Windows machine with a registered TestStand™
-engine, versions 2016 through 2026 Q1, either 32-bit or 64-bit. Your own
-licensing terms with National Instruments govern what that engine may be used
-for; this tool makes no claim about them.
-
-Nothing is fetched while a document is produced or while one is read. Diagrams
-are rendered to SVG in Rust and the stylesheet is embedded, so the HTML has no
-script tag, no stylesheet link and no web font. PDF is printed by a browser you
-already have installed, running headless against a local file.
-
-## CLI examples
-
-### Basic generation
-
-Document a sequence file to Markdown in an output directory:
+## Usage
 
 ```text
-rs-teststand-autodoc MySequence.seq -o docs/
+rs-teststand-autodoc <file.seq>... [options]
 ```
 
-### HTML output with embedded styling
-
-Generate a self-contained HTML report with inline SVG diagrams and dark/light CSS:
+The output format comes from `--format`, not from the file extension. Naming a
+file `report.html` without `--format html` writes Markdown into it.
 
 ```text
-rs-teststand-autodoc MySequence.seq -o docs/report.html
+rs-teststand-autodoc Main.seq -o docs/
+rs-teststand-autodoc Main.seq --format html -o docs/report.html
+rs-teststand-autodoc Main.seq --format pdf -o docs/report.pdf
 ```
 
-### PDF generation
+Passing a directory to `-o` names the file after the sequence and appends the
+right extension. Omitting `-o` prints to stdout, except for PDF.
 
-Print a clean PDF document using your default installed browser (Edge, Chrome, or Firefox):
+### Options
 
-```text
-rs-teststand-autodoc MySequence.seq -o docs/report.pdf
-```
+| Option | Effect |
+| :--- | :--- |
+| `--format <markdown\|html\|pdf>` | Output format. Default `markdown`. |
+| `--profile <engineer\|business\|station>` | Rule set. Default `engineer`. |
+| `--sequence <NAME>` | Document only this sequence. Repeatable. |
+| `--max-depth <N>` | How deep to follow subsequence calls. |
+| `--no-recurse` | Document the named file only. |
+| `--no-flowcharts` | Suppress diagrams the profile would otherwise draw. |
+| `--include-station-options` | Append station settings. |
+| `--include-types` | Append the type report. |
+| `--include-file-custom-data-types` | Include types defined in the file. |
+| `--show-paths` | Print sequence file paths under headings. |
+| `--author`, `--company`, `--email`, `--doc-version`, `--logo` | Header metadata. |
 
-### Tailoring by audience profile
+## Profiles
 
-Use the `business` profile for non-technical stakeholders or `station` for lab configuration:
+A profile is a set of rules, not a code path. Pick one, then override any rule
+you disagree with.
 
-```text
-# High-level overview (numbered steps, control flow, no raw expressions or code paths)
-rs-teststand-autodoc MySequence.seq --profile business -o summary.md
+| Profile | For | Contains |
+| :--- | :--- | :--- |
+| `engineer` | Test engineers, and language models | Step tables, module calls, limits, pre and post expressions, variables, parameters, custom data types. No diagrams: they flatten steps into node ids and lose what the tables carry. |
+| `business` | Managers, customers, auditors | Numbered chronology, control flow diagrams, step names. No variables, expressions, paths or callbacks. |
+| `station` | Station configuration | Station options, execution settings, search directories. No step detail. |
 
-# Station configuration report (search paths, station globals, model settings)
-rs-teststand-autodoc MySequence.seq --profile station -o station.md
-```
-
-### Metadata and branding
-
-Attach author, company, logo, and document version to the report header:
-
-```text
-rs-teststand-autodoc MainSequence.seq \
-  --author "Dominik Rajchel" \
-  --company "Acme Testing Labs" \
-  --email "dominik@example.com" \
-  --doc-version "2.1.0" \
-  --logo "assets/logo.png" \
-  -o docs/MainReport.html
-```
-
-### Filtering and subsequence depth
-
-Document only specific sequences or control how deep to traverse called sub-sequences:
-
-```text
-# Document only MainSequence and CleanupSequence
-rs-teststand-autodoc Main.seq --sequence MainSequence --sequence CleanupSequence -o out.md
-
-# Limit subsequence recursion to 2 levels deep
-rs-teststand-autodoc Main.seq --max-depth 2 -o docs/
-
-# Disable recursive traversal entirely (document only the root file)
-rs-teststand-autodoc Main.seq --no-recurse -o root_only.md
-```
-
-### Including types and station options
-
-Include station settings and custom data types in an engineering report:
-
-```text
-rs-teststand-autodoc Main.seq \
-  --include-station-options \
-  --include-types \
-  --include-file-custom-data-types \
-  -o full_spec.md
-```
-
-### JSON AST export for CI pipelines
-
-Dump the extracted sequence model as raw JSON for ingestion into other tools:
-
-```text
-rs-teststand-autodoc Main.seq --format json -o sequence_data.json
-```
-
-## Library usage
-
-Drive extraction and formatting programmatically in Rust:
+## Library
 
 ```rust,no_run
 use std::path::PathBuf;
@@ -141,18 +90,21 @@ use rs_teststand::Engine;
 use rs_teststand_autodoc::data::{ExtractorConfig, Profile};
 use rs_teststand_autodoc::extraction::HierarchyExtractor;
 use rs_teststand_autodoc::rendering::Formatter;
+use rs_teststand_autodoc::rules::DocumentRules;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // 1. Initialize TestStand COM engine
     let engine = Engine::new()?;
 
-    // 2. Select document profile rules
-    let config = ExtractorConfig::for_profile(Profile::Engineer);
+    // Start from a profile, then depart from it where you need to.
+    let mut rules = DocumentRules::for_profile(Profile::Engineer);
+    rules.flowcharts = true;
 
-    // 3. Extract sequence data and traverse calls
+    let config = ExtractorConfig {
+        rules,
+        ..ExtractorConfig::for_profile(Profile::Engineer)
+    };
+
     let files = HierarchyExtractor::extract(&engine, &[PathBuf::from("Main.seq")], &config)?;
-
-    // 4. Render Markdown document
     let markdown = Formatter::generate(&files, &config, Some(&engine));
 
     println!("{markdown}");
@@ -160,32 +112,53 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 ```
 
-## Profiles
+## Output
 
-| Profile | Intended audience | Included content |
-| :--- | :--- | :--- |
-| **`engineer`** (default) | Test engineers and developers | Step detail tables, module paths, limits, pre/post expressions, local variables, parameters, file globals, and custom data types. |
-| **`business`** | Managers, customers, and auditors | Visual flowcharts, sequence hierarchy, and numbered step descriptions. Omits internal variables, expressions, and engine callbacks. |
-| **`station`** | Production line operators | Station options, execution settings, and configured search directories without sequence-level step details. |
+Markdown is the source of truth. HTML is compiled from it, and the PDF is
+printed from that HTML, so the three cannot disagree about what a sequence does.
 
-## How it works
+The Markdown is meant to be fed to a static site generator such as
+[Material for MkDocs][mkdocs] or [Zensical][zensical], or handed to a language
+model. The PDF is meant for readers who do not know TestStand.
 
-Sequence files are read through the TestStand™ COM API rather than parsed, so
-step types, expressions, module parameters and type palettes come from the
-engine that owns them.
+The module a step calls is read from the step's own properties: the VI for
+LabVIEW, the function for C, CVI and DLL, the called member for .NET and Python.
+A LabVIEW step reports no separate function because the VI is the callable unit.
 
-Markdown is the source of truth. HTML is compiled from it and the PDF is
-printed from that HTML, so the three cannot disagree about what a sequence
-does. Diagrams become inline SVG through a Rust renderer, with no Node.js
-involved.
+## Compatibility
 
-The module a step calls is read from its own properties: the VI for a LabVIEW
-step, the function for C, CVI and DLL steps, and the called member for Python
-and .NET. A LabVIEW step reports no separate function because the VI is the
-callable unit.
+| Component | Versions |
+| :--- | :--- |
+| Windows | 7 to 11, 32 and 64 bit |
+| TestStand | 2016 to 2026 |
+| Rust | 1.95 |
 
-## License
+The libraries this builds on hold a lower floor of 1.85. This crate is a tool
+rather than a dependency, so it is allowed to need a newer compiler.
 
-MIT. TestStand™ is a trademark of National Instruments. This project is not affiliated with or endorsed by National Instruments.
+## Status
+
+A hobby project, maintained when there is time. Behaviour may change between
+releases. Workspace files (`.tsw`) are not supported yet; it documents
+individual `.seq` files.
+
+Large language models were used for audits, test generation and documentation
+drafts. Everything is reviewed by hand. This is an independent project and has
+no connection to NI's own tooling.
+
+## Legal
+
+TestStand is a registered trademark of
+[National Instruments Corporation](https://www.ni.com). This is an independent
+project, not affiliated with, endorsed by or maintained by National Instruments
+or [Emerson](https://www.emerson.com). References to the TestStand API are made
+for interoperability.
+
+## Licence
+
+MIT.
 
 [parent]: https://crates.io/crates/rs-teststand
+[licensing]: https://www.ni.com/docs/en-US/bundle/teststand/page/teststand-licensing-options.html
+[mkdocs]: https://squidfunk.github.io/mkdocs-material/
+[zensical]: https://zensical.org/
