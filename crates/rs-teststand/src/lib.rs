@@ -49,9 +49,9 @@ pub use execution::{
 pub use expression::{
     ArithmeticOperator, Arity, ArrayFunction, AssignmentOperator, BitwiseOperator, ColorConstant,
     ComparisonOperator, DecimalPointLocalizationOption, EvaluationOptions, Expression,
-    ExpressionError, LogicalOperator,
-    NumericFunction, Operator, OperatorClass, OtherConstant, OtherFunction, OtherOperator,
-    PropertyFunction, StringFunction, SwitchingFunction, TimeFunction,
+    ExpressionError, LogicalOperator, NumericFunction, Operator, OperatorClass, OtherConstant,
+    OtherFunction, OtherOperator, PropertyFunction, StringFunction, SwitchingFunction,
+    TimeFunction,
 };
 pub use license::{AcquireLicenseOptions, ApplicationLicense, HeldLicense, LicenseType};
 pub use messaging::{UIMessage, UIMessageCode, pump_thread_messages};

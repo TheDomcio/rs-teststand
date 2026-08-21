@@ -136,10 +136,7 @@ fn live_extract_synthetic_sequence_hierarchy() -> Fallible {
     // profile, which is the documented way to depart from a preset.
     let mut rules = DocumentRules::for_profile(Profile::Engineer);
     rules.flowcharts = true;
-    let with_diagram = ExtractorConfig {
-        rules,
-        ..config
-    };
+    let with_diagram = ExtractorConfig { rules, ..config };
     let diagrammed = Formatter::generate(&files, &with_diagram, Some(&engine));
     assert!(
         diagrammed.contains("```mermaid"),
@@ -162,10 +159,8 @@ fn live_extract_synthetic_sequence_hierarchy() -> Fallible {
     // A diagram has to reach the page as rendered SVG. Passing it through the
     // Markdown compiler as text escapes the `<style>` element and every edge
     // loses its stroke, so this checks the drawn form, not the fence.
-    let drawn = rs_teststand_autodoc::rendering::markdown_to_html(
-        &diagrammed,
-        Some("SyntheticTest.seq"),
-    );
+    let drawn =
+        rs_teststand_autodoc::rendering::markdown_to_html(&diagrammed, Some("SyntheticTest.seq"));
     assert!(drawn.contains("<div class=\"mermaid-diagram\">"));
     assert!(drawn.contains("<svg"));
 

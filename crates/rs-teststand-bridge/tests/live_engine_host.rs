@@ -88,10 +88,7 @@ async fn dropping_the_host_finishes_instead_of_deadlocking() -> Result<(), Error
         .map_err(|_| Error::ResultLost)?;
 
     println!("  the host dropped in {elapsed:?}");
-    assert!(
-        elapsed < GENEROUS,
-        "dropping the host took {elapsed:?}",
-    );
+    assert!(elapsed < GENEROUS, "dropping the host took {elapsed:?}");
     Ok(())
 }
 
