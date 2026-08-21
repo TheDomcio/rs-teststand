@@ -9,7 +9,7 @@ Built on [`rs-teststand`][parent].
 
 This does not parse `.seq` files. It reads them through the TestStand COM API,
 so step types, expressions, module parameters and type palettes come from the
-engine that owns them rather than from a guess about the file format.
+engine.
 
 That means you need Windows, a registered TestStand engine, and whatever
 [licence][licensing] your agreement with National Instruments requires. This
@@ -73,12 +73,11 @@ right extension. Omitting `-o` prints to stdout, except for PDF.
 
 ## Profiles
 
-A profile is a set of rules, not a code path. Pick one, then override any rule
-you disagree with.
+A profile is a set of rules. Pick one, then override individual rules.
 
 | Profile | For | Contains |
 | :--- | :--- | :--- |
-| `engineer` | Test engineers, and language models | Step tables, module calls, limits, pre and post expressions, variables, parameters, custom data types. No diagrams: they flatten steps into node ids and lose what the tables carry. |
+| `engineer` | Test engineers, and language models | Step tables, limits, pre and post expressions, variables, parameters, custom data types, and a summary of every code module called. Modules are listed by technology (LabVIEW, C, CVI, DLL, .NET, Python) with the VI or function named, not by adapter. No diagrams. |
 | `business` | Managers, customers, auditors | Numbered chronology, control flow diagrams, step names. No variables, expressions, paths or callbacks. |
 | `station` | Station configuration | Station options, execution settings, search directories. No step detail. |
 
@@ -115,15 +114,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 ## Output
 
 Markdown is the source of truth. HTML is compiled from it, and the PDF is
-printed from that HTML, so the three cannot disagree about what a sequence does.
+printed from that HTML.
 
-The Markdown is meant to be fed to a static site generator such as
-[Material for MkDocs][mkdocs] or [Zensical][zensical], or handed to a language
-model. The PDF is meant for readers who do not know TestStand.
-
-The module a step calls is read from the step's own properties: the VI for
-LabVIEW, the function for C, CVI and DLL, the called member for .NET and Python.
-A LabVIEW step reports no separate function because the VI is the callable unit.
+The Markdown is GitHub Flavored: tables, plus diagrams in ```mermaid fences.
 
 ## Compatibility
 
@@ -132,9 +125,6 @@ A LabVIEW step reports no separate function because the VI is the callable unit.
 | Windows | 7 to 11, 32 and 64 bit |
 | TestStand | 2016 to 2026 |
 | Rust | 1.95 |
-
-The libraries this builds on hold a lower floor of 1.85. This crate is a tool
-rather than a dependency, so it is allowed to need a newer compiler.
 
 ## Status
 
@@ -160,5 +150,3 @@ MIT.
 
 [parent]: https://crates.io/crates/rs-teststand
 [licensing]: https://www.ni.com/docs/en-US/bundle/teststand/page/teststand-licensing-options.html
-[mkdocs]: https://squidfunk.github.io/mkdocs-material/
-[zensical]: https://zensical.org/
