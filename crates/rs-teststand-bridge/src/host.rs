@@ -61,7 +61,8 @@ type Job = Box<dyn FnOnce(&Engine) + Send>;
 /// layer needs and what a single-threaded caller cannot do.
 #[derive(Debug)]
 pub struct EngineHost {
-    jobs: mpsc::Sender<Job>,
+    /// Taken and dropped before the worker is joined. See [`Drop`].
+    jobs: Option<mpsc::Sender<Job>>,
     messages: broadcast::Sender<MessageEvent>,
     /// Kept so the thread is joined when the host is dropped.
     worker: Option<thread::JoinHandle<()>>,
@@ -92,7 +93,7 @@ impl EngineHost {
         // dead thread behind a healthy-looking handle.
         match ready_receiver.recv() {
             Ok(Ok(())) => Ok(Self {
-                jobs: job_sender,
+                jobs: Some(job_sender),
                 messages: message_sender,
                 worker: Some(worker),
             }),
@@ -122,7 +123,11 @@ impl EngineHost {
             // A closed receiver only means the caller stopped waiting.
             let _ = result_sender.send(work(engine));
         });
-        self.jobs.send(job).map_err(|_| Error::HostStopped)?;
+        self.jobs
+            .as_ref()
+            .ok_or(Error::HostStopped)?
+            .send(job)
+            .map_err(|_| Error::HostStopped)?;
         result_receiver.await.map_err(|_| Error::ResultLost)
     }
 
@@ -232,8 +237,16 @@ impl EngineHost {
 
 impl Drop for EngineHost {
     fn drop(&mut self) {
-        // Dropping the sender ends the loop; joining lets the engine release
-        // its COM references on the thread that created them.
+        // Order matters, and it is not the order the fields are written in.
+        // `Drop::drop` runs before a struct's own fields are dropped, so the
+        // job sender is still alive here. The engine thread leaves its loop
+        // only when every sender is gone, so joining first waits for a
+        // disconnect that this very value is preventing, and the thread and
+        // the joiner deadlock.
+        drop(self.jobs.take());
+
+        // Now the loop can end. Joining lets the engine release its COM
+        // references on the thread that created them.
         if let Some(worker) = self.worker.take() {
             let _ = worker.join();
         }

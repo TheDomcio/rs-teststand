@@ -52,6 +52,49 @@ async fn work_submitted_from_a_task_runs_on_the_engine_thread() -> Result<(), Er
     Ok(())
 }
 
+/// Dropping the host has to finish, and that is not automatic.
+///
+/// The engine thread leaves its loop only once every job sender is gone, and
+/// `Drop::drop` runs before a struct's own fields are dropped. A `Drop` that
+/// joins the worker before releasing the sender waits on a disconnect that it
+/// is itself preventing, so the process wedges at teardown after the work has
+/// already succeeded. That failure is invisible to an ordinary test, which
+/// passes its assertions and then never returns.
+///
+/// In the healthy case this measures the drop and finishes in about a second.
+/// A regression cannot be reported tidily: the deadlocked engine thread cannot
+/// be killed, so the process aborts on its way out with
+/// `STATUS_STACK_BUFFER_OVERRUN` whatever this test decides. That abort is the
+/// signal. It looks like memory corruption and is not, which is what made the
+/// original so hard to place.
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
+#[ignore = "requires a live engine"]
+async fn dropping_the_host_finishes_instead_of_deadlocking() -> Result<(), Error> {
+    const GENEROUS: Duration = Duration::from_secs(30);
+
+    let host = EngineHost::start()?;
+    host.with_engine(rs_teststand::Engine::version_string)
+        .await??;
+
+    let timed = tokio::task::spawn_blocking(move || {
+        let started = std::time::Instant::now();
+        drop(host);
+        started.elapsed()
+    });
+
+    let elapsed = tokio::time::timeout(GENEROUS, timed)
+        .await
+        .map_err(|_| Error::HostStopped)?
+        .map_err(|_| Error::ResultLost)?;
+
+    println!("  the host dropped in {elapsed:?}");
+    assert!(
+        elapsed < GENEROUS,
+        "dropping the host took {elapsed:?}",
+    );
+    Ok(())
+}
+
 #[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 #[ignore = "requires a live engine"]
 async fn many_tasks_share_one_engine_without_contention() -> Result<(), Error> {
