@@ -22,6 +22,21 @@ fn action_label(code: &str) -> &str {
     }
 }
 
+/// What to call a step's main expression, given the step.
+///
+/// "Expression" is right for a Statement and wrong for an If, where the same
+/// field decides which branch runs. A Select switches on a value and a Case
+/// lists the values it answers to, so neither is a condition either.
+fn expression_label(step_type: &str) -> &'static str {
+    match step_type {
+        "NI_Flow_If" | "NI_Flow_ElseIf" | "NI_Flow_While" | "NI_Flow_DoWhile" => "Condition",
+        "NI_Flow_Select" => "Switches on",
+        "NI_Flow_Case" => "Matches",
+        "NI_Flow_ForEach" => "Iterates",
+        _ => "Expression",
+    }
+}
+
 fn code_span(s: &str) -> String {
     format!("`{}`", sanitize(s))
 }
@@ -244,7 +259,10 @@ pub fn append_step_extras(
 
     if let Some(expr) = step.expressions.get("expression") {
         if !expr.is_empty() && step.step_type != "MessagePopup" {
-            out.extend(code_block_admonition("Expression", expr));
+            out.extend(code_block_admonition(
+                expression_label(&step.step_type),
+                expr,
+            ));
         }
     }
     if let Some(pre) = step.expressions.get("pre_expr") {

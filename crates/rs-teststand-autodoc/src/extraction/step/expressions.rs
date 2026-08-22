@@ -27,46 +27,42 @@ fn extract_step_type_expressions(
         }
     } else if step_type.starts_with("NI_Flow_If")
         || step_type.starts_with("NI_Flow_ElseIf")
-        || step_type == "NI_Flow_Select"
+        || step_type == "NI_Flow_While"
+        || step_type == "NI_Flow_DoWhile"
     {
-        if let Some(cond) = try_get_prop(po, &["TS.SData.Condition", "TS.SData.Expr", "Condition"])
-        {
-            exprs.insert("expression".to_owned(), cond);
+        // A flow control step keeps its condition at the root of the step, not
+        // under TS. Read live from a shipped example: an If, an Else If, a
+        // While and a Do While all report it as `ConditionExpr`, while their
+        // `TS.LoopWhile` is empty and `TS.LoopType` says NoLooping, because the
+        // step-level loop properties describe a step repeating itself rather
+        // than the branch or loop this step is.
+        if let Some(condition) = try_get_prop(po, &["ConditionExpr"]) {
+            exprs.insert("expression".to_owned(), condition);
+        }
+    } else if step_type == "NI_Flow_Select" || step_type == "NI_Flow_Case" {
+        // A Select names the value it switches on; a Case names the values it
+        // matches, as an array literal.
+        if let Some(item) = try_get_prop(po, &["ItemExpr"]) {
+            exprs.insert("expression".to_owned(), item);
         }
     } else if step_type == "NI_Flow_For" {
-        if let Some(init) = try_get_prop(po, &["TS.SData.For.Init", "TS.SData.Init"]) {
+        if let Some(init) = try_get_prop(po, &["InitializationExpr"]) {
             exprs.insert("for_init".to_owned(), init);
         }
-        if let Some(cond) = try_get_prop(po, &["TS.SData.For.Cond", "TS.SData.Condition"]) {
-            exprs.insert("for_condition".to_owned(), cond);
+        if let Some(condition) = try_get_prop(po, &["ConditionExpr"]) {
+            exprs.insert("for_condition".to_owned(), condition);
         }
-        if let Some(inc) = try_get_prop(po, &["TS.SData.For.Inc", "TS.SData.Increment"]) {
-            exprs.insert("for_increment".to_owned(), inc);
+        if let Some(increment) = try_get_prop(po, &["IncrementExpr"]) {
+            exprs.insert("for_increment".to_owned(), increment);
         }
     } else if step_type == "NI_Flow_ForEach" {
-        let item =
-            try_get_prop(po, &["TS.SData.ForEach.ItemExpr", "TS.SData.Item"]).unwrap_or_default();
-        let coll = try_get_prop(
-            po,
-            &["TS.SData.ForEach.CollectionExpr", "TS.SData.Collection"],
-        )
-        .unwrap_or_default();
-        if !item.is_empty() && !coll.is_empty() {
-            exprs.insert("expression".to_owned(), format!("{item} in {coll}"));
-        } else if !coll.is_empty() {
-            exprs.insert("expression".to_owned(), coll);
-        }
-    } else if step_type == "NI_Flow_While" || step_type == "NI_Flow_DoWhile" {
-        if let Some(cond) = try_get_prop(
-            po,
-            &[
-                "TS.SData.While.Cond",
-                "TS.SData.DoWhile.Cond",
-                "TS.SData.Condition",
-                "TS.SData.Expr",
-            ],
-        ) {
-            exprs.insert("while_condition".to_owned(), cond);
+        // The element variable takes each entry of the array in turn.
+        let element = try_get_prop(po, &["ArrayElementExpr"]).unwrap_or_default();
+        let array = try_get_prop(po, &["ArrayExpr"]).unwrap_or_default();
+        if !element.is_empty() && !array.is_empty() {
+            exprs.insert("expression".to_owned(), format!("{element} in {array}"));
+        } else if !array.is_empty() {
+            exprs.insert("expression".to_owned(), array);
         }
     } else if step_type == "Wait" || step_type == "NI_Wait" {
         if let Some(time) = try_get_prop(po, &["TS.SData.TimeExpr", "TimeExpr", "TS.SData.Expr"]) {
