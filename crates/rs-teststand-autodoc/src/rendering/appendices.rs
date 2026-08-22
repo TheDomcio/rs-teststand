@@ -195,15 +195,16 @@ pub fn append_modules(md: &mut Vec<String>, modules_by_file: &BTreeMap<String, V
 
     md.push("### Technology usage".to_owned());
     md.push(String::new());
-    md.push(format_row(["Technology", "Modules", "Calls", "Share"]));
+    md.push(format_row(["Technology", "Modules", "Calls", "% of calls"]));
     md.push(format_sep(4));
 
-    // A share answers what the counts only hint at: how much of this test is
-    // written in what. Over the calls rather than the modules, because one
-    // module called forty times is a bigger dependency than forty called once.
+    // The proportion answers what the counts only hint at: how much of this
+    // test is written in what. Taken over calls rather than modules, because
+    // one module called forty times is a bigger dependency than forty called
+    // once. The header names which column it divides, since both are numbers.
     let total_calls: usize = totals.values().map(|(_, calls)| *calls).sum();
     for (technology, (modules, calls)) in totals {
-        let share = if total_calls == 0 {
+        let proportion = if total_calls == 0 {
             "-".to_owned()
         } else {
             #[expect(
@@ -217,7 +218,7 @@ pub fn append_modules(md: &mut Vec<String>, modules_by_file: &BTreeMap<String, V
             technology,
             &modules.to_string(),
             &calls.to_string(),
-            &share,
+            &proportion,
         ]));
     }
     md.push(String::new());
