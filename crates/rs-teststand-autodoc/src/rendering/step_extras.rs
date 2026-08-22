@@ -86,27 +86,27 @@ fn code_block_admonition(label: &str, code: &str) -> Vec<String> {
 }
 
 fn format_custom_condition(step: &StepData, out: &mut Vec<String>, names: &StepNames<'_>) {
-    if let Some(cond) = step.expressions.get("custom_condition") {
-        if !cond.is_empty() {
-            out.extend(code_block_admonition("Custom condition", cond));
-            if let Some(act) = step.expressions.get("custom_true_action") {
-                let suffix = target_suffix(
-                    step.expressions
-                        .get("custom_true_target")
-                        .map_or("", String::as_str),
-                    names,
-                );
-                out.push(format!("> - **If true**: {}{suffix}", action_label(act)));
-            }
-            if let Some(act) = step.expressions.get("custom_false_action") {
-                let suffix = target_suffix(
-                    step.expressions
-                        .get("custom_false_target")
-                        .map_or("", String::as_str),
-                    names,
-                );
-                out.push(format!("> - **If false**: {}{suffix}", action_label(act)));
-            }
+    if let Some(cond) = step.expressions.get("custom_condition")
+        && !cond.is_empty()
+    {
+        out.extend(code_block_admonition("Custom condition", cond));
+        if let Some(act) = step.expressions.get("custom_true_action") {
+            let suffix = target_suffix(
+                step.expressions
+                    .get("custom_true_target")
+                    .map_or("", String::as_str),
+                names,
+            );
+            out.push(format!("> - **If true**: {}{suffix}", action_label(act)));
+        }
+        if let Some(act) = step.expressions.get("custom_false_action") {
+            let suffix = target_suffix(
+                step.expressions
+                    .get("custom_false_target")
+                    .map_or("", String::as_str),
+                names,
+            );
+            out.push(format!("> - **If false**: {}{suffix}", action_label(act)));
         }
     }
 }
@@ -142,25 +142,25 @@ fn format_loop_expressions(step: &StepData, out: &mut Vec<String>) {
     if let Some(loop_type) = step.expressions.get("loop_type") {
         out.push(format!("> - **Loop Type**: {loop_type}"));
     }
-    if let Some(while_cond) = step.expressions.get("while_condition") {
-        if !while_cond.is_empty() {
-            out.extend(code_block_admonition("While condition", while_cond));
-        }
+    if let Some(while_cond) = step.expressions.get("while_condition")
+        && !while_cond.is_empty()
+    {
+        out.extend(code_block_admonition("While condition", while_cond));
     }
-    if let Some(init) = step.expressions.get("for_init") {
-        if !init.is_empty() {
-            out.extend(code_block_admonition("For loop init", init));
-        }
+    if let Some(init) = step.expressions.get("for_init")
+        && !init.is_empty()
+    {
+        out.extend(code_block_admonition("For loop init", init));
     }
-    if let Some(cond) = step.expressions.get("for_condition") {
-        if !cond.is_empty() {
-            out.extend(code_block_admonition("For loop condition", cond));
-        }
+    if let Some(cond) = step.expressions.get("for_condition")
+        && !cond.is_empty()
+    {
+        out.extend(code_block_admonition("For loop condition", cond));
     }
-    if let Some(inc) = step.expressions.get("for_increment") {
-        if !inc.is_empty() {
-            out.extend(code_block_admonition("For loop increment", inc));
-        }
+    if let Some(inc) = step.expressions.get("for_increment")
+        && !inc.is_empty()
+    {
+        out.extend(code_block_admonition("For loop increment", inc));
     }
 }
 
@@ -188,25 +188,29 @@ fn format_message_popup_details(step: &StepData, out: &mut Vec<String>) {
     if !buttons.is_empty() {
         out.push(format!("> - **Buttons**: {}", buttons.join(", ")));
     }
-    if let Some(def_btn) = step.expressions.get("default_button") {
-        if def_btn != "0" && !def_btn.is_empty() {
-            out.push(format!("> - **Default Button**: Button {def_btn}"));
-        }
+    if let Some(def_btn) = step.expressions.get("default_button")
+        && def_btn != "0"
+        && !def_btn.is_empty()
+    {
+        out.push(format!("> - **Default Button**: Button {def_btn}"));
     }
-    if let Some(tim_btn) = step.expressions.get("timer_button") {
-        if tim_btn != "0" && !tim_btn.is_empty() {
-            out.push(format!("> - **Timer Button**: Button {tim_btn}"));
-        }
+    if let Some(tim_btn) = step.expressions.get("timer_button")
+        && tim_btn != "0"
+        && !tim_btn.is_empty()
+    {
+        out.push(format!("> - **Timer Button**: Button {tim_btn}"));
     }
-    if let Some(wait) = step.expressions.get("time_to_wait") {
-        if wait != "0" && wait != "0.0" && !wait.is_empty() {
-            out.push(format!("> - **Time to Wait**: {wait}s"));
-        }
+    if let Some(wait) = step.expressions.get("time_to_wait")
+        && wait != "0"
+        && wait != "0.0"
+        && !wait.is_empty()
+    {
+        out.push(format!("> - **Time to Wait**: {wait}s"));
     }
-    if let Some(resp) = step.expressions.get("response") {
-        if !resp.is_empty() {
-            out.push(format!("> - **Response Store**: {}", code_span(resp)));
-        }
+    if let Some(resp) = step.expressions.get("response")
+        && !resp.is_empty()
+    {
+        out.push(format!("> - **Response Store**: {}", code_span(resp)));
     }
 }
 
@@ -257,23 +261,24 @@ pub fn append_step_extras(
 
     format_message_popup_details(step, &mut out);
 
-    if let Some(expr) = step.expressions.get("expression") {
-        if !expr.is_empty() && step.step_type != "MessagePopup" {
-            out.extend(code_block_admonition(
-                expression_label(&step.step_type),
-                expr,
-            ));
-        }
+    if let Some(expr) = step.expressions.get("expression")
+        && !expr.is_empty()
+        && step.step_type != "MessagePopup"
+    {
+        out.extend(code_block_admonition(
+            expression_label(&step.step_type),
+            expr,
+        ));
     }
-    if let Some(pre) = step.expressions.get("pre_expr") {
-        if !pre.is_empty() {
-            out.extend(code_block_admonition("Pre-expression", pre));
-        }
+    if let Some(pre) = step.expressions.get("pre_expr")
+        && !pre.is_empty()
+    {
+        out.extend(code_block_admonition("Pre-expression", pre));
     }
-    if let Some(post) = step.expressions.get("post_expr") {
-        if !post.is_empty() {
-            out.extend(code_block_admonition("Post-expression", post));
-        }
+    if let Some(post) = step.expressions.get("post_expr")
+        && !post.is_empty()
+    {
+        out.extend(code_block_admonition("Post-expression", post));
     }
 
     format_custom_condition(step, &mut out, names);
@@ -287,10 +292,10 @@ pub fn append_step_extras(
         }
     }
 
-    if let Some(mutex) = step.expressions.get("mutex") {
-        if !mutex.is_empty() {
-            out.push(format!("> - **Mutex Lock**: {}", code_span(mutex)));
-        }
+    if let Some(mutex) = step.expressions.get("mutex")
+        && !mutex.is_empty()
+    {
+        out.push(format!("> - **Mutex Lock**: {}", code_span(mutex)));
     }
     // Whether a result is stored is an engine setting, not a fact about the
     // logic, so it is left out the same way the sequence-level flag is.

@@ -4,10 +4,11 @@
 # tunes the *parameters* of individual lints.
 
 # ── MSRV ─────────────────────────────────────────────────────────────
-# Clippy reads rust-version from Cargo.toml by default, but stating it
-# explicitly keeps all MSRV-aware lints honest even when invoked from
-# outside a Cargo context.
-msrv = "1.85"
+# Deliberately not set. Clippy reads `rust-version` from each package, and
+# the workspace does not share one: the published libraries floor at 1.85
+# while the documentation tool needs more for its diagram renderer. Pinning
+# a single number here lints one of them against a floor it does not have,
+# and clippy says so on every run.
 
 # ── doc_markdown: domain idents that are not typos ───────────────────
 # Words that appear unbackticked in doc prose and would otherwise trip

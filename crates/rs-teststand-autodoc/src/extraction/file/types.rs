@@ -23,10 +23,10 @@ pub fn extract_file_types(seq_file: &SequenceFile) -> Vec<CustomDataType> {
             continue;
         };
         // Skip step types (they have attribute TestStand.StepType)
-        if let Ok(attrs) = type_def.attributes() {
-            if attrs.exists("TestStand.StepType", 0).unwrap_or(false) {
-                continue;
-            }
+        if let Ok(attrs) = type_def.attributes()
+            && attrs.exists("TestStand.StepType", 0).unwrap_or(false)
+        {
+            continue;
         }
         let Ok(type_name) = type_def.name() else {
             continue;

@@ -19,11 +19,11 @@ pub fn extract_module_info(
         if let Ok(seq) = po.get_val_string(property_path::TARGET_SEQUENCE, 0x1) {
             target_seq = seq;
         }
-        if target_seq.is_empty() {
-            if let Ok(seq_expr) = po.get_val_string(property_path::TARGET_SEQUENCE_EXPR, 0x1) {
-                by_expression = !seq_expr.is_empty();
-                target_seq = seq_expr;
-            }
+        if target_seq.is_empty()
+            && let Ok(seq_expr) = po.get_val_string(property_path::TARGET_SEQUENCE_EXPR, 0x1)
+        {
+            by_expression = !seq_expr.is_empty();
+            target_seq = seq_expr;
         }
         if let Ok(sf) = po.get_val_string(property_path::SEQ_FILE_PATH, 0x1) {
             module_path = sf;
@@ -40,11 +40,11 @@ pub fn extract_module_info(
             property_path::DLL_PATH,
             property_path::SOURCE_FILE_PATH,
         ] {
-            if let Ok(p) = po.get_val_string(path_prop, 0x1) {
-                if !p.is_empty() {
-                    module_path = p;
-                    break;
-                }
+            if let Ok(p) = po.get_val_string(path_prop, 0x1)
+                && !p.is_empty()
+            {
+                module_path = p;
+                break;
             }
         }
     }

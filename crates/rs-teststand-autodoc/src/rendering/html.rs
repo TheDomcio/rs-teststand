@@ -100,15 +100,15 @@ fn collect_diagrams(
 ) {
     use markdown::mdast::Node;
 
-    if let Node::Code(code) = node {
-        if code.lang.as_deref() == Some("mermaid") {
-            if let Some(position) = &code.position {
-                *diagram_count += 1;
-                let rendered = render_diagram(&code.value, *diagram_count);
-                replacements.push((position.start.offset, position.end.offset, rendered));
-            }
-            return;
+    if let Node::Code(code) = node
+        && code.lang.as_deref() == Some("mermaid")
+    {
+        if let Some(position) = &code.position {
+            *diagram_count += 1;
+            let rendered = render_diagram(&code.value, *diagram_count);
+            replacements.push((position.start.offset, position.end.offset, rendered));
         }
+        return;
     }
 
     if let Some(children) = node.children() {

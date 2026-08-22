@@ -229,10 +229,10 @@ impl Formatter {
             append_types(md, engine, config.types_attached_only);
         }
 
-        if config.include_station_options {
-            if let Some(eng) = engine {
-                append_station_options(md, eng);
-            }
+        if config.include_station_options
+            && let Some(eng) = engine
+        {
+            append_station_options(md, eng);
         }
     }
 
@@ -443,13 +443,13 @@ impl Formatter {
 
     fn format_sequence_scope_variables(md: &mut Vec<String>, seq: &SequenceData) {
         for scope in ["Parameters", "Locals"] {
-            if let Some(vars) = seq.variables.get(scope) {
-                if !vars.is_empty() {
-                    md.push(format!("### {scope}"));
-                    md.push(String::new());
-                    Self::format_variables_table(md, vars);
-                    md.push(String::new());
-                }
+            if let Some(vars) = seq.variables.get(scope)
+                && !vars.is_empty()
+            {
+                md.push(format!("### {scope}"));
+                md.push(String::new());
+                Self::format_variables_table(md, vars);
+                md.push(String::new());
             }
         }
     }

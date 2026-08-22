@@ -20,12 +20,11 @@ fn extract_requirements(po: &PropertyObject) -> Vec<String> {
     if let Ok(links) = po.get_property_object("TS.Requirements.Links", 0x1) {
         let count = links.get_num_elements().unwrap_or(0);
         for i in 0..count {
-            if let Ok(elem) = links.get_property_object_by_offset(i, 0) {
-                if let Ok(req) = elem.get_val_string("Requirement", 0) {
-                    if !req.is_empty() {
-                        reqs.push(req);
-                    }
-                }
+            if let Ok(elem) = links.get_property_object_by_offset(i, 0)
+                && let Ok(req) = elem.get_val_string("Requirement", 0)
+                && !req.is_empty()
+            {
+                reqs.push(req);
             }
         }
     }
@@ -37,10 +36,10 @@ fn extract_step_settings_map(
     step_type_name: &str,
 ) -> BTreeMap<String, String> {
     let mut step_settings = BTreeMap::new();
-    if let Ok(icon) = po.get_val_string("TS.IconName", 0x1) {
-        if !icon.is_empty() {
-            step_settings.insert("Icon".to_owned(), icon);
-        }
+    if let Ok(icon) = po.get_val_string("TS.IconName", 0x1)
+        && !icon.is_empty()
+    {
+        step_settings.insert("Icon".to_owned(), icon);
     }
     // Load and unload options describe how the engine brings code into memory,
     // not what the test does. They were reaching the step configuration block
@@ -48,29 +47,27 @@ fn extract_step_settings_map(
     if step_type_name == "NI_PropertyLoader" {
         if let Ok(src_path) =
             po.get_val_string("TS.SData.SourceLocation.FileLocation.FilePath", 0x1)
+            && !src_path.is_empty()
         {
-            if !src_path.is_empty() {
-                step_settings.insert("Source Path".to_owned(), src_path);
-            }
+            step_settings.insert("Source Path".to_owned(), src_path);
         }
         if let Ok(db_conn) = po.get_val_string(
             "TS.SData.SourceLocation.DatabaseLocation.ConnectionString",
             0x1,
-        ) {
-            if !db_conn.is_empty() {
-                step_settings.insert("Database Connection".to_owned(), db_conn);
-            }
+        ) && !db_conn.is_empty()
+        {
+            step_settings.insert("Database Connection".to_owned(), db_conn);
         }
     }
-    if let Ok(cmd) = po.get_val_string("TS.SData.Call.CmdLine", 0x1) {
-        if !cmd.is_empty() {
-            step_settings.insert("Command Line".to_owned(), cmd);
-        }
+    if let Ok(cmd) = po.get_val_string("TS.SData.Call.CmdLine", 0x1)
+        && !cmd.is_empty()
+    {
+        step_settings.insert("Command Line".to_owned(), cmd);
     }
-    if let Ok(args) = po.get_val_string("TS.SData.Call.ArgString", 0x1) {
-        if !args.is_empty() {
-            step_settings.insert("Arguments".to_owned(), args);
-        }
+    if let Ok(args) = po.get_val_string("TS.SData.Call.ArgString", 0x1)
+        && !args.is_empty()
+    {
+        step_settings.insert("Arguments".to_owned(), args);
     }
     step_settings
 }

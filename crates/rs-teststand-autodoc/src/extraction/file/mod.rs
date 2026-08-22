@@ -31,10 +31,10 @@ fn extract_file_metadata(seq_file: &SequenceFile) -> FileMetadata {
             file_version = v;
         }
         if let Ok(po_data) = po_file.data() {
-            if file_version.is_empty() {
-                if let Ok(v) = po_data.get_val_string("Version", 0x1) {
-                    file_version = v;
-                }
+            if file_version.is_empty()
+                && let Ok(v) = po_data.get_val_string("Version", 0x1)
+            {
+                file_version = v;
             }
             if let Ok(mf) = po_data.get_val_string("ModelFile", 0x1) {
                 model_file = mf;
@@ -48,12 +48,11 @@ fn extract_file_metadata(seq_file: &SequenceFile) -> FileMetadata {
             if let Ok(req_po) = po_data.get_property_object("Requirements.Links", 0x1) {
                 let count = req_po.get_num_elements().unwrap_or(0);
                 for i in 0..count {
-                    if let Ok(elem) = req_po.get_property_object_by_offset(i, 0) {
-                        if let Ok(req) = elem.get_val_string("Requirement", 0) {
-                            if !req.is_empty() {
-                                requirements.push(req);
-                            }
-                        }
+                    if let Ok(elem) = req_po.get_property_object_by_offset(i, 0)
+                        && let Ok(req) = elem.get_val_string("Requirement", 0)
+                        && !req.is_empty()
+                    {
+                        requirements.push(req);
                     }
                 }
             }
@@ -101,10 +100,10 @@ pub fn extract_file(
     let mut sequences = Vec::with_capacity(cap);
 
     for idx in 0..num_seqs {
-        if let Ok(seq) = seq_file.get_sequence(idx) {
-            if let Ok(seq_data) = extract_sequence(&seq, config) {
-                sequences.push(seq_data);
-            }
+        if let Ok(seq) = seq_file.get_sequence(idx)
+            && let Ok(seq_data) = extract_sequence(&seq, config)
+        {
+            sequences.push(seq_data);
         }
     }
 

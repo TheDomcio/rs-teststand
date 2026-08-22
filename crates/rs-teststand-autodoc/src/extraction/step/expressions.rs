@@ -76,56 +76,61 @@ fn extract_step_type_expressions(
 }
 
 fn extract_routing_actions(po: &PropertyObject, exprs: &mut BTreeMap<String, String>) {
-    if let Some(pass_act) = try_get_prop(po, &["TS.PassAct"]) {
-        if pass_act != "0" && pass_act != "Next" {
-            exprs.insert("pass_action".to_owned(), pass_act);
-            if let Some(tgt) = try_get_prop(po, &["TS.PassActTarget"]) {
-                exprs.insert("pass_action_target".to_owned(), tgt);
-            }
+    if let Some(pass_act) = try_get_prop(po, &["TS.PassAct"])
+        && pass_act != "0"
+        && pass_act != "Next"
+    {
+        exprs.insert("pass_action".to_owned(), pass_act);
+        if let Some(tgt) = try_get_prop(po, &["TS.PassActTarget"]) {
+            exprs.insert("pass_action_target".to_owned(), tgt);
         }
     }
-    if let Some(fail_act) = try_get_prop(po, &["TS.FailAct"]) {
-        if fail_act != "0" && fail_act != "Next" {
-            exprs.insert("fail_action".to_owned(), fail_act);
-            if let Some(tgt) = try_get_prop(po, &["TS.FailActTarget"]) {
-                exprs.insert("fail_action_target".to_owned(), tgt);
-            }
+    if let Some(fail_act) = try_get_prop(po, &["TS.FailAct"])
+        && fail_act != "0"
+        && fail_act != "Next"
+    {
+        exprs.insert("fail_action".to_owned(), fail_act);
+        if let Some(tgt) = try_get_prop(po, &["TS.FailActTarget"]) {
+            exprs.insert("fail_action_target".to_owned(), tgt);
         }
     }
     if let Some(cust_expr) = try_get_prop(po, &["TS.CustExpr"]) {
         exprs.insert("custom_condition".to_owned(), cust_expr);
-        if let Some(cust_true) = try_get_prop(po, &["TS.CustTrueAct"]) {
-            if cust_true != "0" && cust_true != "Next" {
-                exprs.insert("custom_true_action".to_owned(), cust_true);
-                if let Some(tgt) = try_get_prop(po, &["TS.CustTrueActTarget"]) {
-                    exprs.insert("custom_true_target".to_owned(), tgt);
-                }
+        if let Some(cust_true) = try_get_prop(po, &["TS.CustTrueAct"])
+            && cust_true != "0"
+            && cust_true != "Next"
+        {
+            exprs.insert("custom_true_action".to_owned(), cust_true);
+            if let Some(tgt) = try_get_prop(po, &["TS.CustTrueActTarget"]) {
+                exprs.insert("custom_true_target".to_owned(), tgt);
             }
         }
-        if let Some(cust_false) = try_get_prop(po, &["TS.CustFalseAct"]) {
-            if cust_false != "0" && cust_false != "Next" {
-                exprs.insert("custom_false_action".to_owned(), cust_false);
-                if let Some(tgt) = try_get_prop(po, &["TS.CustFalseActTarget"]) {
-                    exprs.insert("custom_false_target".to_owned(), tgt);
-                }
+        if let Some(cust_false) = try_get_prop(po, &["TS.CustFalseAct"])
+            && cust_false != "0"
+            && cust_false != "Next"
+        {
+            exprs.insert("custom_false_action".to_owned(), cust_false);
+            if let Some(tgt) = try_get_prop(po, &["TS.CustFalseActTarget"]) {
+                exprs.insert("custom_false_target".to_owned(), tgt);
             }
         }
     }
 }
 
 fn extract_loop_expressions(po: &PropertyObject, exprs: &mut BTreeMap<String, String>) {
-    if let Some(loop_type) = try_get_prop(po, &["TS.LoopType"]) {
-        if loop_type != "0" && loop_type != "NoLooping" {
-            exprs.insert("loop_type".to_owned(), loop_type);
-            if let Some(lw) = try_get_prop(po, &["TS.LoopWhile"]) {
-                exprs.insert("while_condition".to_owned(), lw);
-            }
-            if let Some(li) = try_get_prop(po, &["TS.LoopInitialize"]) {
-                exprs.insert("for_init".to_owned(), li);
-            }
-            if let Some(linc) = try_get_prop(po, &["TS.LoopIncrement"]) {
-                exprs.insert("for_increment".to_owned(), linc);
-            }
+    if let Some(loop_type) = try_get_prop(po, &["TS.LoopType"])
+        && loop_type != "0"
+        && loop_type != "NoLooping"
+    {
+        exprs.insert("loop_type".to_owned(), loop_type);
+        if let Some(lw) = try_get_prop(po, &["TS.LoopWhile"]) {
+            exprs.insert("while_condition".to_owned(), lw);
+        }
+        if let Some(li) = try_get_prop(po, &["TS.LoopInitialize"]) {
+            exprs.insert("for_init".to_owned(), li);
+        }
+        if let Some(linc) = try_get_prop(po, &["TS.LoopIncrement"]) {
+            exprs.insert("for_increment".to_owned(), linc);
         }
     }
 }
@@ -211,12 +216,11 @@ pub fn extract_step_expressions(
         exprs.insert("report_text".to_owned(), rep);
     }
 
-    if let Some(use_mutex) = try_get_prop(po, &["TS.UseMutex"]) {
-        if use_mutex.eq_ignore_ascii_case("true") {
-            if let Some(mut_name) = try_get_prop(po, &["TS.MutexNameOrRef"]) {
-                exprs.insert("mutex".to_owned(), mut_name);
-            }
-        }
+    if let Some(use_mutex) = try_get_prop(po, &["TS.UseMutex"])
+        && use_mutex.eq_ignore_ascii_case("true")
+        && let Some(mut_name) = try_get_prop(po, &["TS.MutexNameOrRef"])
+    {
+        exprs.insert("mutex".to_owned(), mut_name);
     }
 
     if let Ok(rec) = step.record_result() {

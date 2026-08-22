@@ -14,10 +14,11 @@ pub fn extract_limits(po: &PropertyObject) -> Limits {
     if let Ok(high) = po.get_val_string(property_path::LIMITS_HIGH, 0x1) {
         limits.high = high;
     }
-    if let Ok(s) = po.get_val_string(property_path::LIMITS_STRING, 0x1) {
-        if limits.low.is_empty() && limits.high.is_empty() {
-            limits.target = s;
-        }
+    if let Ok(s) = po.get_val_string(property_path::LIMITS_STRING, 0x1)
+        && limits.low.is_empty()
+        && limits.high.is_empty()
+    {
+        limits.target = s;
     }
     if let Ok(comp) = po.get_val_string(property_path::COMP, 0x1) {
         limits.comp = comp;

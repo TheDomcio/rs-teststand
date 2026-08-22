@@ -21,12 +21,11 @@ fn extract_sequence_requirements(po: &PropertyObject) -> Vec<String> {
     if let Ok(req_po) = po.get_property_object("Requirements.Links", 0x1) {
         let count = req_po.get_num_elements().unwrap_or(0);
         for i in 0..count {
-            if let Ok(elem) = req_po.get_property_object_by_offset(i, 0) {
-                if let Ok(req) = elem.get_val_string("Requirement", 0) {
-                    if !req.is_empty() {
-                        requirements.push(req);
-                    }
-                }
+            if let Ok(elem) = req_po.get_property_object_by_offset(i, 0)
+                && let Ok(req) = elem.get_val_string("Requirement", 0)
+                && !req.is_empty()
+            {
+                requirements.push(req);
             }
         }
     }
@@ -74,10 +73,10 @@ pub fn extract_sequence(seq: &Sequence, config: &ExtractorConfig) -> Result<Sequ
         let cap = usize::try_from(num_steps.max(0)).unwrap_or_default();
         let mut steps = Vec::with_capacity(cap);
         for idx in 0..num_steps {
-            if let Ok(step) = seq.get_step(idx, group_enum) {
-                if let Ok(step_data) = extract_step(&step, group_name, config) {
-                    steps.push(step_data);
-                }
+            if let Ok(step) = seq.get_step(idx, group_enum)
+                && let Ok(step_data) = extract_step(&step, group_name, config)
+            {
+                steps.push(step_data);
             }
         }
         if !steps.is_empty() {

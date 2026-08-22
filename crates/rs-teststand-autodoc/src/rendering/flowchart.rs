@@ -299,12 +299,11 @@ impl<'a> FlowchartBuilder<'a> {
         let nid = format!("n{}", self.counter);
 
         if let Some(step) = step_opt {
-            if let Some(queue) = self.name_positions.get_mut(&step.name) {
-                if let Some(pos) = queue.pop_front() {
-                    if let Some(idx) = self.exec_idx_by_pos.get(&pos) {
-                        label = format!("{}. {label}", idx + 1);
-                    }
-                }
+            if let Some(queue) = self.name_positions.get_mut(&step.name)
+                && let Some(pos) = queue.pop_front()
+                && let Some(idx) = self.exec_idx_by_pos.get(&pos)
+            {
+                label = format!("{}. {label}", idx + 1);
             }
 
             let mut indicators = String::new();
@@ -789,15 +788,14 @@ impl<'a> FlowchartBuilder<'a> {
                     ("custom_true_action", "custom_true_target_id", "True"),
                     ("custom_false_action", "custom_false_target_id", "False"),
                 ] {
-                    if let Some(act) = step.expressions.get(act_key) {
-                        if act == "GotoStep" || act == "JumpToStep" {
-                            if let Some(tgt_id) = step.expressions.get(tgt_key) {
-                                let clean_tgt = tgt_id.trim().trim_matches('"');
-                                if let Some(tgt_nid) = self.nid_by_step_id.get(clean_tgt) {
-                                    self.edge_lines
-                                        .push(format!("    {nid} -.->|\"{lbl}\"| {tgt_nid}"));
-                                }
-                            }
+                    if let Some(act) = step.expressions.get(act_key)
+                        && (act == "GotoStep" || act == "JumpToStep")
+                        && let Some(tgt_id) = step.expressions.get(tgt_key)
+                    {
+                        let clean_tgt = tgt_id.trim().trim_matches('"');
+                        if let Some(tgt_nid) = self.nid_by_step_id.get(clean_tgt) {
+                            self.edge_lines
+                                .push(format!("    {nid} -.->|\"{lbl}\"| {tgt_nid}"));
                         }
                     }
                 }

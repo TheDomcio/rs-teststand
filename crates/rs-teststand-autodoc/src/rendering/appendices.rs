@@ -2,7 +2,6 @@
 
 use rs_teststand::Engine;
 use std::collections::BTreeMap;
-use std::path::Path;
 
 use crate::data::{CustomDataType, ModuleInfo, SequenceData};
 use crate::rendering::markdown::{format_row, format_sep, sanitize};
@@ -69,7 +68,6 @@ pub fn append_variables(md: &mut Vec<String>, sequences: &[SequenceData]) {
     }
 }
 
-/// Appends code module dependencies summary table.
 /// The technology behind an adapter's full name.
 ///
 /// The engine names adapters for how they call code, so a LabVIEW step reports

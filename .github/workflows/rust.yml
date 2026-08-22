@@ -56,6 +56,34 @@ jobs:
       - name: Docs
         run: cargo doc --workspace --no-deps --all-features
 
+  package:
+    name: Packages build standalone
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: |
+          rustc --version
+          cargo --version
+
+      # A release build is not what `cargo test` produces. Optimisation turns
+      # some warnings into errors that a debug build never reaches, and the
+      # binary a user installs is this one.
+      - name: Release build
+        run: cargo build --workspace --release --all-features
+
+      # This is the only step that compiles each crate from its own packaged
+      # tarball, with the `path` on every sibling dependency stripped. A crate
+      # that builds only because the workspace is on disk fails here, and a
+      # file missing from the package fails here, and nowhere else.
+      #
+      # It runs on every push rather than only on a tag. The publish workflow
+      # runs the same check, but by the time a tag exists the version is spent:
+      # a tag cannot be moved and the number cannot be reused.
+      - name: Packaging
+        run: cargo publish --workspace --dry-run
+
   msrv:
     name: Minimum supported Rust (1.85)
     runs-on: windows-latest

@@ -36,10 +36,9 @@ fn find_installed_sequences(engine: &Engine, limit: usize) -> Vec<PathBuf> {
             } else if path
                 .extension()
                 .is_some_and(|ext| ext.eq_ignore_ascii_case("seq"))
+                && let Ok(meta) = entry.metadata()
             {
-                if let Ok(meta) = entry.metadata() {
-                    list.push((meta.len(), path));
-                }
+                list.push((meta.len(), path));
             }
         }
     }

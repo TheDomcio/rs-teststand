@@ -86,19 +86,17 @@ impl HierarchyExtractor {
                             && Path::new(&step.module_path)
                                 .extension()
                                 .is_some_and(|ext| ext.eq_ignore_ascii_case("seq"))
-                        {
-                            if let Some(child_path) =
+                            && let Some(child_path) =
                                 resolve_referenced_path(path, &step.module_path)
-                            {
-                                Self::extract_recursive(
-                                    engine,
-                                    &child_path,
-                                    depth + 1,
-                                    visited,
-                                    results,
-                                    config,
-                                )?;
-                            }
+                        {
+                            Self::extract_recursive(
+                                engine,
+                                &child_path,
+                                depth + 1,
+                                visited,
+                                results,
+                                config,
+                            )?;
                         }
                     }
                 }
