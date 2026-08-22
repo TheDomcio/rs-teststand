@@ -52,15 +52,23 @@ impl Execution {
     /// Returns `true` when it ended, `false` when the timeout came first. Pass
     /// `-1` for no timeout.
     ///
-    /// **Not for a host that polls for messages.** This does not pump the
-    /// message queue while it waits, so a synchronous message posted by the
-    /// sequence would never be acknowledged and both sides would stop. A
-    /// polling host should watch for
-    /// [`UIMessageCode::EndExecution`](crate::UIMessageCode::EndExecution) on
-    /// the queue instead, which is how a front end knows an execution finished.
+    /// **Not for a host or a user interface.** Two queues are in play and only
+    /// one of them is served here. `process_windows_messages` pumps the
+    /// thread's Windows messages, but the engine's own UI message queue is
+    /// never drained, so a synchronous message posted by the sequence is never
+    /// acknowledged and both sides stop. The vendor is explicit that this
+    /// method is not meant to be called from a user interface, and that a
+    /// caller which must do so has to call it from a thread that is not the
+    /// user interface thread.
     ///
-    /// This is for synchronising *between* executions, waiting from a step for
-    /// another execution to finish.
+    /// What it is for is synchronising *between* executions: waiting, from a
+    /// step, for another execution to finish.
+    ///
+    /// A host watches for
+    /// [`UIMessageCode::EndExecution`](crate::UIMessageCode::EndExecution)
+    /// while draining the queue instead. That is how a front end learns an
+    /// execution finished, and it is the only way that also releases a
+    /// synchronous poster.
     ///
     /// # Errors
     /// [`Error`] if the COM call fails or returns an unexpected type.
@@ -86,9 +94,10 @@ impl Execution {
 
     /// Waits for the execution to finish (`Execution.WaitForEnd`).
     ///
-    /// Superseded by [`wait_for_end_ex`](Self::wait_for_end_ex); kept because
-    /// it is the member available on engines from TestStand 2016. The same
-    /// warning applies: it does not pump the message queue.
+    /// The vendor marks this obsolete and points at
+    /// [`wait_for_end_ex`](Self::wait_for_end_ex). It is kept for older
+    /// engines, and the same warning applies in full: the engine's UI message
+    /// queue is not drained, so this is not for a host.
     ///
     /// # Errors
     /// [`Error`] if the COM call fails or returns an unexpected type.
