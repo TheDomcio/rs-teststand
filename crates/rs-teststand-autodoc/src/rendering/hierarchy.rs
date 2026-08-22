@@ -13,7 +13,7 @@
 
 use std::collections::BTreeSet;
 
-use crate::data::FileData;
+use crate::data::{CallKind, FileData};
 use crate::rendering::markdown::display_name;
 
 /// One call, from a sequence to whatever it names.
@@ -27,6 +27,8 @@ struct Call {
     file: String,
     /// The target is named by an expression, so it is not resolvable here.
     by_expression: bool,
+    /// How the call runs its target.
+    kind: CallKind,
 }
 
 /// Collects every sequence call in the files, in caller order.
@@ -44,6 +46,7 @@ fn calls_in(files: &[FileData]) -> BTreeSet<Call> {
                         target: step.target_sequence.clone(),
                         file: step.module_path.clone(),
                         by_expression: step.target_by_expression,
+                        kind: step.call_kind,
                     });
                 }
             }
@@ -84,15 +87,23 @@ pub fn render(files: &[FileData]) -> Vec<String> {
             format!(" in `{}`", display_name(&call.file))
         };
 
+        // A call that starts a thread, an execution, or runs elsewhere is a
+        // different relationship from a plain call, and the reader has to see
+        // it or the test reads as sequential when it is not.
+        let how = call
+            .kind
+            .describe()
+            .map_or_else(String::new, |described| format!(", {described}"));
+
         if call.by_expression {
             // The name is computed at run time. Say so rather than printing the
             // expression as though it were the sequence it resolves to.
             md.push(format!(
-                "    - a sequence chosen at run time{where_from}, from `{}`",
+                "    - a sequence chosen at run time{where_from}{how}, from `{}`",
                 call.target
             ));
         } else {
-            md.push(format!("    - `{}`{where_from}", call.target));
+            md.push(format!("    - `{}`{where_from}{how}", call.target));
         }
     }
     md.push(String::new());
@@ -188,6 +199,32 @@ mod tests {
             md.contains("`Locals.WhichTest`"),
             "the expression is still shown, as the expression it is:\n{md}"
         );
+    }
+
+    /// A call that starts its own execution says so.
+    #[test]
+    fn a_call_that_starts_an_execution_is_marked() {
+        let mut groups = BTreeMap::new();
+        groups.insert(
+            "Main".to_owned(),
+            vec![StepData {
+                step_type: "SequenceCall".to_owned(),
+                target_sequence: "Dialog".to_owned(),
+                call_kind: crate::data::CallKind::NewExecution,
+                ..StepData::default()
+            }],
+        );
+        let files = [file_with(vec![SequenceData {
+            name: "MainSequence".to_owned(),
+            step_groups: groups,
+            ..SequenceData::default()
+        }])];
+
+        let md = render(&files).join(
+            "
+",
+        );
+        assert!(md.contains("as a new execution"), "{md}");
     }
 
     /// The same target called twice is one dependency, not two.

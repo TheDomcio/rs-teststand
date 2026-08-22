@@ -108,20 +108,6 @@ best way to get it fixed.
 For now I prefer lightweight tags based releases (I protected them in repository settings)
 instead of fully described ones until reach 1.0.0 release.
 
-### 🤖 AI-assisted development
-
-This project leverages Large Language Models (LLMs) to assist with:
-
-- **Codebase audits** and refactoring.
-- **Test coverage analysis** and generation.
-- **Documentation drafting**.
-- **Type library validation** and cross-checking.
-
-This is an independent community project. These AI tools are used to optimize
-productivity and are **not** an official component of the project, nor do they integrate
-with or replace the official [NIGEL™ AI Advisor](https://www.ni.com/en/shop/software-portfolio/nigel.html) provided by National Instruments. All generated code is manually reviewed by the
-maintainer to ensure it meets the project's quality standards. The failure mode here is not a compile error: a wrong dispatch identifier is usually a valid member of the same interface, so a bad guess calls the wrong function and reports success.
-
 ---
 
 ## ⚡ Quick start

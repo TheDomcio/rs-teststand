@@ -266,6 +266,66 @@ impl ExtractorConfig {
     }
 }
 
+/// How a sequence call runs what it calls.
+///
+/// A call normally runs in the caller's thread, but it can start a thread of
+/// its own, start a whole execution, or run on another machine. Each is a
+/// different relationship, and a hierarchy showing them alike would read as a
+/// sequential test when it is not one.
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    Default,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    serde::Serialize,
+    serde::Deserialize,
+)]
+pub enum CallKind {
+    /// Runs in the calling thread, which is the ordinary case.
+    #[default]
+    Sequential,
+    /// Runs in a new thread.
+    NewThread,
+    /// Runs as a new execution.
+    NewExecution,
+    /// Runs on another machine.
+    Remote,
+}
+
+impl CallKind {
+    /// Reads the engine's option flags.
+    ///
+    /// From `TS.SData.ThreadOpt`, whose values were read live from a shipped
+    /// example: a plain call reports 0, and a call launching its own execution
+    /// reports 2. The remote bit sits above the low byte.
+    #[must_use]
+    pub const fn from_option(option: i64) -> Self {
+        if option & 0x100 != 0 {
+            return Self::Remote;
+        }
+        match option & 0xff {
+            1 => Self::NewThread,
+            2 => Self::NewExecution,
+            _ => Self::Sequential,
+        }
+    }
+
+    /// How to describe the call, or nothing when it is an ordinary one.
+    #[must_use]
+    pub const fn describe(self) -> Option<&'static str> {
+        match self {
+            Self::Sequential => None,
+            Self::NewThread => Some("in a new thread"),
+            Self::NewExecution => Some("as a new execution"),
+            Self::Remote => Some("on another machine"),
+        }
+    }
+}
+
 /// Extracted data for a single step in a sequence.
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
 pub struct StepData {
@@ -293,6 +353,8 @@ pub struct StepData {
     pub measurements: Vec<MeasurementData>,
     /// Target sequence for SequenceCall steps.
     pub target_sequence: String,
+    /// How the call runs its target.
+    pub call_kind: CallKind,
     /// The call names its target through an expression rather than a literal.
     ///
     /// An expression is resolved while the sequence runs, so the target cannot

@@ -781,6 +781,7 @@ mod tests {
             measurements: Vec::new(),
             target_sequence: String::new(),
             target_by_expression: false,
+            call_kind: crate::data::CallKind::Sequential,
             expressions: {
                 let mut exprs = BTreeMap::new();
                 exprs.insert("expression".to_owned(), "Locals.Counter = 0".to_owned());

@@ -141,6 +141,20 @@ pub fn extract_step(
         measurements,
         target_sequence,
         target_by_expression,
+        // How the call runs: its own thread, its own execution, or a remote
+        // machine. Absent or unreadable means the ordinary case.
+        call_kind: crate::data::CallKind::from_option(
+            po.get_val_number("TS.SData.ThreadOpt", 0x1)
+                .map_or(0, |value| {
+                    // A flag set, so it is a small whole number by definition.
+                    #[expect(
+                        clippy::cast_possible_truncation,
+                        reason = "option flags are small integers"
+                    )]
+                    let flags = value as i64;
+                    flags
+                }),
+        ),
         expressions,
         step_settings,
         requirements,

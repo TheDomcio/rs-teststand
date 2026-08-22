@@ -119,6 +119,24 @@ pub fn translate_expression(expr: &str) -> String {
         .replace("Step.Result.", "")
 }
 
+/// Whether two names differ only in case, spacing, or a trailing plural.
+///
+/// A step called "Break & Continue Step" that calls "Break & Continue Steps"
+/// reads as a stutter when both are printed. Anything more different than that
+/// is left alone, because a step name often says why the call is made and the
+/// target says what runs.
+fn same_name(left: &str, right: &str) -> bool {
+    fn key(name: &str) -> String {
+        let squashed: String = name
+            .chars()
+            .filter(|character| !character.is_whitespace())
+            .flat_map(char::to_lowercase)
+            .collect();
+        squashed.trim_end_matches('s').to_owned()
+    }
+    key(left) == key(right)
+}
+
 /// Labels a node `prefix: body`, unless the body only repeats the prefix.
 ///
 /// A bare `If` step carries no condition, and its name is the word "If", so the
@@ -677,8 +695,10 @@ impl<'a> FlowchartBuilder<'a> {
         if step.step_type == "SequenceCall" {
             let target = &step.target_sequence;
             // A step usually carries the name of the sequence it calls, and
-            // "Voltage Tests -> Voltage Tests" says nothing twice.
-            let label_text = if target.is_empty() || target == &step.name {
+            // "Voltage Tests -> Voltage Tests" says nothing twice. The test is
+            // loose enough to catch a step named for its target in the
+            // singular, which is common and reads as a stutter.
+            let label_text = if target.is_empty() || same_name(target, &step.name) {
                 step.name.clone()
             } else {
                 format!("{} -> {target}", step.name)
@@ -850,8 +870,8 @@ pub fn build_flowchart(
 
 #[cfg(test)]
 mod tests {
-    use super::prefixed;
     use super::*;
+    use super::{prefixed, same_name};
     use crate::data::Limits;
 
     #[test]
@@ -997,6 +1017,21 @@ mod tests {
             "Mermaid render failed: {:?}",
             render_result.err()
         );
+    }
+
+    /// A step named for its target in the singular is not a second name.
+    #[test]
+    fn a_trailing_plural_does_not_make_a_different_name() {
+        assert!(same_name("Break & Continue Steps", "Break & Continue Step"));
+        assert!(same_name("For Loops", "for loops"));
+    }
+
+    /// Two genuinely different names both survive, because the step name often
+    /// says why the call is made.
+    #[test]
+    fn different_names_are_both_kept() {
+        assert!(!same_name("Run CPU Checks", "CPU Test"));
+        assert!(!same_name("Init", "Initialize Hardware"));
     }
 
     /// A prefix that only repeats its body is redundant on the node.
