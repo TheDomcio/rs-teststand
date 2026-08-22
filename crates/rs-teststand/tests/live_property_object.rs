@@ -53,3 +53,48 @@ fn property_object_file_state_is_self_contained() -> Result<(), Error> {
     assert!(file.version().is_ok());
     Ok(())
 }
+
+/// `GetType` reports a property's shape, through three by-reference arguments.
+///
+/// The engine writes the two flags and the type name back into arguments the
+/// caller supplies, so this covers the by-reference path as much as the member:
+/// a slot read back wrongly would show here as a flag that never turns on.
+#[test]
+#[ignore = "requires a live engine"]
+fn property_type_is_reported_through_its_output_arguments() -> Result<(), Error> {
+    let engine = Engine::new()?;
+    let root = engine.new_property_object(PropValType::Container, false, "", 0)?;
+    let insert = PropertyOptions::INSERT_IF_MISSING.bits();
+    let options = PropertyOptions::NONE.bits();
+
+    root.set_val_string("Mode", insert, "hello")?;
+    root.set_val_number("Resolution", insert, 42.5)?;
+    root.set_val_boolean("Enabled", insert, true)?;
+
+    for (name, expected) in [
+        ("Mode", PropValType::String),
+        ("Resolution", PropValType::Number),
+        ("Enabled", PropValType::Boolean),
+    ] {
+        let described = root.get_type(name, options)?;
+        assert_eq!(
+            described.value_type,
+            Some(expected),
+            "{name} should report {expected:?}, got {described:?}",
+        );
+        assert!(!described.is_array, "{name} is not an array: {described:?}");
+    }
+
+    // A container is an object, which is the flag distinguishing it from a
+    // plain value. Both flags coming back false would mean the slots were never
+    // written, so this is the check that the by-reference path works at all.
+    let container = root.get_type("", options)?;
+    assert_eq!(container.value_type, Some(PropValType::Container));
+    assert!(
+        container.is_object,
+        "a container should report itself as an object: {container:?}"
+    );
+
+    println!("  container -> {container:?}");
+    Ok(())
+}

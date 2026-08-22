@@ -4,7 +4,7 @@ use crate::Error;
 use crate::dispids::property_object;
 use crate::dispids::property_object_introspect as introspect;
 use crate::enums::PropValType;
-use rs_teststand_sys::{Dispatch, Value};
+use rs_teststand_sys::{Dispatch, OutKind, Value};
 
 /// Safe wrapper for TestStand™ `PropertyObject` (`IPropertyObject`).
 #[derive(Debug)]
@@ -529,14 +529,54 @@ impl PropertyObject {
         ))
     }
 
+    /// What a property's type is (`PropertyObject.GetType`).
+    ///
+    /// Reports the value type together with whether the property holds an
+    /// object and whether it is an array, and names the type when it has one.
+    /// `GetTypeDisplayString` answers a narrower question and the engine marks
+    /// it obsolete, so this is the member to reach for.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn get_type(&self, lookup_string: &str, options: i32) -> Result<PropertyType, Error> {
+        let (value_type, written) = self.dispatch.call_with_outputs(
+            property_object::GET_TYPE,
+            &[Value::Str(lookup_string.to_owned()), Value::I32(options)],
+            &[OutKind::Bool, OutKind::Bool, OutKind::Text],
+        )?;
+
+        let mut written = written.into_iter();
+        let mut next_bool = || -> Result<bool, Error> {
+            Ok(written
+                .next()
+                .ok_or(Error::UnexpectedType {
+                    expected: "an output slot",
+                    actual: "nothing",
+                })?
+                .as_bool()?)
+        };
+        let is_object = next_bool()?;
+        let is_array = next_bool()?;
+        let type_name = written
+            .next()
+            .ok_or(Error::UnexpectedType {
+                expected: "the type name",
+                actual: "nothing",
+            })?
+            .into_string()?;
+
+        Ok(PropertyType {
+            value_type: PropValType::from_code(value_type.as_i32()?),
+            is_object,
+            is_array,
+            type_name,
+        })
+    }
+
     /// A human-readable name for a property's type (`GetTypeDisplayString`).
     ///
-    /// Obsolete in the engine; prefer
-    /// [`property_type`](Self::property_type) then `display_string`.
-    ///
-    /// This is the in-only route to identifying a type. `GetType` reports the
-    /// same thing in more detail but returns three of its five arguments by
-    /// reference, which the dispatch seam does not yet support.
+    /// Obsolete in the engine. [`get_type`](Self::get_type) reports the same
+    /// thing in more detail and is the member to prefer.
     ///
     /// # Errors
     /// [`Error`] if the COM call fails or returns an unexpected type.
@@ -707,4 +747,18 @@ impl PropertyObject {
             .into_object()?;
         Ok(Self::new(dispatch))
     }
+}
+
+/// What a property's type is, as `PropertyObject.GetType` reports it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub struct PropertyType {
+    /// The value type, or `None` for a code this build does not know.
+    pub value_type: Option<PropValType>,
+    /// The property holds an object rather than a plain value.
+    pub is_object: bool,
+    /// The property is an array.
+    pub is_array: bool,
+    /// The named type, empty when the property has none.
+    pub type_name: String,
 }

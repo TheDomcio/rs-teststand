@@ -251,6 +251,28 @@ impl std::fmt::Display for SearchDirectoryType {
     }
 }
 
+impl PropValType {
+    /// The variant the engine reports, or `None` for a code this does not know.
+    ///
+    /// An unknown discriminant means the engine grew a type this build has not
+    /// been taught. Reporting that as absent beats mapping it onto whichever
+    /// variant happens to sit nearby.
+    #[must_use]
+    pub const fn from_code(code: i32) -> Option<Self> {
+        match code {
+            0 => Some(Self::Container),
+            1 => Some(Self::String),
+            2 => Some(Self::Boolean),
+            3 => Some(Self::Number),
+            4 => Some(Self::NamedType),
+            5 => Some(Self::Reference),
+            6 => Some(Self::Array),
+            7 => Some(Self::Enum),
+            _ => None,
+        }
+    }
+}
+
 impl std::fmt::Display for PropValType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{self:?}")

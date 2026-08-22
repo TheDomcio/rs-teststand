@@ -91,6 +91,23 @@ impl OwnedVariant {
         owned
     }
 
+    /// A `VT_BYREF | VT_BOOL` variant pointing at caller-owned storage.
+    ///
+    /// # Safety
+    /// `cell` must be valid and must outlive the call this variant is passed to.
+    #[must_use]
+    pub(crate) unsafe fn byref_bool(cell: *mut VARIANT_BOOL) -> Self {
+        let mut owned = Self::empty();
+        // SAFETY: writing the discriminant and the matching pointer field of a
+        // freshly zeroed VARIANT, per the caller's guarantee about `cell`.
+        unsafe {
+            let inner = &mut owned.0.Anonymous.Anonymous;
+            inner.vt = windows::Win32::System::Variant::VARENUM(VT_BYREF.0 | VT_BOOL.0);
+            inner.Anonymous.pboolVal = cell;
+        }
+        owned
+    }
+
     /// Builds a variant carrying `value`.
     ///
     /// # Errors

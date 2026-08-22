@@ -57,7 +57,7 @@ pub use license::{AcquireLicenseOptions, ApplicationLicense, HeldLicense, Licens
 pub use messaging::{UIMessage, UIMessageCode, pump_thread_messages};
 pub use property::{
     ArrayDimensions, GetTemplatesFileOptions, PropertyObject, PropertyObjectFile,
-    PropertyObjectType, PropertyOptions, PropertyRepresentation,
+    PropertyObjectType, PropertyOptions, PropertyRepresentation, PropertyType,
 };
 pub use sequence::{
     BreakpointScope, ConflictHandler, GetSeqFileOptions, ResultRecordingOption, RunMode, Sequence,

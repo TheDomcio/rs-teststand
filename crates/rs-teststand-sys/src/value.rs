@@ -176,4 +176,6 @@ pub enum OutKind {
     Text,
     /// A 32-bit integer, `VT_BYREF | VT_I4`.
     Int,
+    /// A boolean, `VT_BYREF | VT_BOOL`.
+    Bool,
 }

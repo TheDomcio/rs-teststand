@@ -31,7 +31,11 @@ pub fn extract_variables_from_po(po: &PropertyObject) -> Vec<Variable> {
             let sub = po.get_nth_sub_property("", i, 0).ok();
             let type_name = sub
                 .as_ref()
-                .and_then(|s| s.get_type_display_string("", 0).ok())
+                // The display string is what composes "Array of Result".
+                // `GetType` reports the property's own type name, which is
+                // empty for an array of a named type, so it answers a
+                // different question and does not replace this.
+                .and_then(|sub| sub.get_type_display_string("", 0).ok())
                 .map_or_else(|| "Unknown".to_owned(), |name| readable_type(&name));
 
             let default_value = sub.as_ref().and_then(extract_default_value);

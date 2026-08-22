@@ -31,7 +31,18 @@ struct Call {
     kind: CallKind,
 }
 
+/// Every sequence name the document covers, by the file holding it.
+fn sequences_in(files: &[FileData]) -> BTreeSet<String> {
+    files
+        .iter()
+        .flat_map(|file| file.sequences.iter().map(|sequence| sequence.name.clone()))
+        .collect()
+}
+
 /// Collects every sequence call in the files, in caller order.
+///
+/// `known` names every sequence the document actually covers, so a call to
+/// something absent can be reported rather than shown as though it resolved.
 fn calls_in(files: &[FileData]) -> BTreeSet<Call> {
     let mut calls = BTreeSet::new();
     for file in files {
@@ -74,6 +85,10 @@ pub fn render(files: &[FileData]) -> Vec<String> {
         String::new(),
     ];
 
+    // A call into another file is only resolvable when that file was read,
+    // which depends on how deep the caller asked to go.
+    let known = sequences_in(files);
+
     let mut current = String::new();
     for call in &calls {
         if call.caller != current {
@@ -100,6 +115,13 @@ pub fn render(files: &[FileData]) -> Vec<String> {
             // expression as though it were the sequence it resolves to.
             md.push(format!(
                 "    - a sequence chosen at run time{where_from}{how}, from `{}`",
+                call.target
+            ));
+        } else if call.file.is_empty() && !known.contains(&call.target) {
+            // Named a sequence in this file that the file does not contain.
+            // Saying so beats printing it as though it were found.
+            md.push(format!(
+                "    - `{}`{how} (not found in the documented files)",
                 call.target
             ));
         } else {
@@ -225,6 +247,35 @@ mod tests {
 ",
         );
         assert!(md.contains("as a new execution"), "{md}");
+    }
+
+    /// A call naming a sequence no documented file contains is reported as
+    /// missing rather than shown as an ordinary call.
+    #[test]
+    fn a_target_that_does_not_exist_is_reported() {
+        let files = [file_with(vec![calling("MainSequence", "Gone", "", false)])];
+        let md = render(&files).join(
+            "
+",
+        );
+        assert!(md.contains("not found in the documented files"), "{md}");
+    }
+
+    /// A target in another file is not reported missing: that file was simply
+    /// not read, which is a different thing from the sequence not existing.
+    #[test]
+    fn a_target_in_another_file_is_not_called_missing() {
+        let files = [file_with(vec![calling(
+            "MainSequence",
+            "Shared",
+            r"C:\lab\Common.seq",
+            false,
+        )])];
+        let md = render(&files).join(
+            "
+",
+        );
+        assert!(!md.contains("not found"), "{md}");
     }
 
     /// The same target called twice is one dependency, not two.

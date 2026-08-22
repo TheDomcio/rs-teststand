@@ -284,6 +284,8 @@ enum OutSlot {
     Text(Box<BSTR>),
     /// A `VT_BYREF | VT_I4` slot.
     Int(Box<i32>),
+    /// A `VT_BYREF | VT_BOOL` slot.
+    Bool(Box<windows::Win32::Foundation::VARIANT_BOOL>),
 }
 
 impl OutSlot {
@@ -292,6 +294,7 @@ impl OutSlot {
         match kind {
             OutKind::Text => Self::Text(Box::new(BSTR::new())),
             OutKind::Int => Self::Int(Box::new(0)),
+            OutKind::Bool => Self::Bool(Box::new(windows::Win32::Foundation::VARIANT_BOOL(0))),
         }
     }
 
@@ -308,6 +311,7 @@ impl OutSlot {
             match self {
                 Self::Text(cell) => OwnedVariant::byref_text(&raw mut **cell),
                 Self::Int(cell) => OwnedVariant::byref_i32(&raw mut **cell),
+                Self::Bool(cell) => OwnedVariant::byref_bool(&raw mut **cell),
             }
         }
     }
@@ -317,6 +321,9 @@ impl OutSlot {
         match self {
             Self::Text(cell) => Value::Str(cell.to_string()),
             Self::Int(cell) => Value::I32(**cell),
+            // A VARIANT_BOOL is 0 for false and -1 for true; anything non-zero
+            // is true, which is how COM callers are expected to read it.
+            Self::Bool(cell) => Value::Bool(cell.0 != 0),
         }
     }
 }
