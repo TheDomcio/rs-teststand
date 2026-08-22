@@ -28,8 +28,8 @@ bitflags::bitflags! {
         /// Stand in temporary objects for variables the expression names but
         /// that do not exist (`EvalOption_CreateNonExistentVariables`).
         const CREATE_NON_EXISTENT_VARIABLES = 8;
-        /// Evaluate the way the editor does when it checks for errors, so what
-        /// is reported now matches what would happen at run time
+        /// Actually evaluate, rather than only parse, so a fault that would
+        /// only surface during a run is found now
         /// (`EvalOption_ForErrorChecking`).
         const FOR_ERROR_CHECKING = 16;
         /// Report errors the `#NoValidation` directive would otherwise suppress

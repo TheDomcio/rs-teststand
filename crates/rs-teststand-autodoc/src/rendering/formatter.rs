@@ -307,7 +307,7 @@ impl Formatter {
         // carries no engine vocabulary. Whether the engine calls something an
         // entry point or a subsequence is not a fact about the test.
         if !config.rules.file_identity {
-            md.push("## What This Test Does".to_owned());
+            md.push("## Execution Order".to_owned());
             md.push(String::new());
             for (position, seq) in sequences.iter().enumerate() {
                 md.push(format!(

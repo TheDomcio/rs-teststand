@@ -43,7 +43,7 @@ the reference. Across a process boundary, two things go wrong.
 any encoding. The host has to resolve it into data before anything is sent.
 
 **The context contains itself.** Its sub-properties are `Step`, `Locals`,
-`Parameters`, `FileGlobals`, `StationGlobals`, `RunState` — and `ThisContext`.
+`Parameters`, `FileGlobals`, `StationGlobals`, `RunState`, and `ThisContext`.
 Walking it whole recurses forever. That was measured, not assumed: it exhausted
 the stack and killed the process. `rs-teststand-serde` now stops at
 `DEFAULT_MAX_DEPTH` and returns `Error::RecursionLimit` naming the path where it
@@ -93,7 +93,7 @@ stand on its own.
 
 `LineSink` and `LineSource` live in `rs-teststand-bridge`, not here. Framing and
 serialization are the kind of thing that goes subtly wrong in each rewrite, so
-there is one implementation with its own tests — including one that pins down
+there is one implementation with its own tests, including one that pins down
 the assumption the whole format rests on, that a serialized event never contains
 a raw newline.
 
@@ -110,14 +110,14 @@ particular for line-oriented instrument tooling.
 mode that returns everything up to and including the terminator, which is
 exactly one frame here. It also takes a maximum byte count, and a frame longer
 than that comes back truncated with a timeout error rather than as a whole
-message — so keep payloads bounded. Sending a named subtree instead of a whole
+message, so keep payloads bounded. Sending a named subtree instead of a whole
 tree is the practical way to do that, and it is what the transmitter does.
 
 **The JSON avoids what strict readers cannot express.** A client that maps JSON
 onto a type declared in advance accepts booleans, numbers, strings, and arrays
 or objects of those, and nothing else. So:
 
-- No field is ever `null` — absent fields are omitted, and the reader uses its
+- No field is ever `null`. Absent fields are omitted, and the reader uses its
   own default.
 - `numeric` is always a number: a non-finite value is written as zero, because
   JSON cannot spell NaN or infinity and the usual extensions are not portable.
