@@ -22,8 +22,49 @@ pub fn humanize(expression: &str) -> String {
             humanize(when_true),
             humanize(when_false)
         ),
-        None => trimmed.to_owned(),
+        None => unescape_literals(trimmed),
     }
+}
+
+/// Undoes the escaping inside quoted runs, for reading only.
+///
+/// A path in the expression language is written with doubled slashes, because a
+/// backslash escapes itself. That is correct source and stays untouched in the
+/// code block above this line, but doubled slashes read as a mistake. Here the
+/// string says what the path actually is.
+fn unescape_literals(text: &str) -> String {
+    let mut out = String::with_capacity(text.len());
+    let mut quote: Option<char> = None;
+    let mut chars = text.chars().peekable();
+    while let Some(c) = chars.next() {
+        let Some(open) = quote else {
+            if c == '"' || c == '\'' {
+                quote = Some(c);
+            }
+            out.push(c);
+            continue;
+        };
+
+        if c == '\\' {
+            // Only the two escapes the language defines for a literal. Anything
+            // else keeps its backslash, because guessing at an escape this does
+            // not know would show the reader something the engine never meant.
+            if matches!(chars.peek(), Some(&('\\' | '"'))) {
+                if let Some(escaped) = chars.next() {
+                    out.push(escaped);
+                }
+            } else {
+                out.push(c);
+            }
+            continue;
+        }
+
+        if c == open {
+            quote = None;
+        }
+        out.push(c);
+    }
+    out
 }
 
 /// The escape character inside a quoted run.
@@ -122,5 +163,27 @@ mod tests {
         ] {
             assert_eq!(humanize(source), source);
         }
+    }
+
+    /// A path in a literal is written with doubled slashes, which reads as a
+    /// mistake. The reading shows the path; the code block keeps the source.
+    #[test]
+    fn a_quoted_path_reads_without_its_escapes() {
+        assert_eq!(
+            humanize(r#"Locals.Path + "\\Doc\\Help\\""#),
+            r#"Locals.Path + "\Doc\Help\""#,
+        );
+    }
+
+    /// A backslash outside a literal is not an escape and is left alone.
+    #[test]
+    fn a_backslash_outside_a_literal_is_untouched() {
+        assert_eq!(humanize(r"Locals.A \ Locals.B"), r"Locals.A \ Locals.B");
+    }
+
+    /// An escaped quote closes nothing, so the run continues past it.
+    #[test]
+    fn an_escaped_quote_does_not_end_the_literal() {
+        assert_eq!(humanize(r#""say \"hi\"""#), r#""say "hi"""#);
     }
 }

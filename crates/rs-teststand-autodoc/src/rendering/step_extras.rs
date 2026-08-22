@@ -60,7 +60,10 @@ fn code_block_admonition(label: &str, code: &str) -> Vec<String> {
     let spelled = crate::rendering::expression::humanize(code);
     if spelled != code.trim() {
         lines.push(">".to_owned());
-        lines.push(format!(">   *Reads as:* {spelled}"));
+        // One line, so it stays inside the blockquote. A newline here would
+        // end the quote and leave the rest of the reading as loose text.
+        let flowed = spelled.split_whitespace().collect::<Vec<_>>().join(" ");
+        lines.push(format!(">   *Reads as:* {flowed}"));
     }
 
     lines.push(">".to_owned());

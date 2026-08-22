@@ -73,6 +73,37 @@ impl Formatter {
             Self::format_file(&mut md, file_data, config, engine);
         }
 
+        // One summary for the document, not one per file. The question it
+        // answers is "what does this test depend on", and that is asked of the
+        // whole thing, so a file calling the same VI as another adds to its
+        // count rather than starting a second table.
+        //
+        // The rule decides whether it appears at all: a client reading a logic
+        // summary has no use for the VI or DLL behind a step.
+        if config.rules.code_modules {
+            let mut modules_by_file: BTreeMap<String, Vec<ModuleInfo>> = BTreeMap::new();
+            for file_data in files {
+                for seq in &file_data.sequences {
+                    // Only what the document shows. A callback the profile
+                    // omitted should not contribute to its tally.
+                    if !Self::sequence_is_visible(seq, config) {
+                        continue;
+                    }
+                    for (_, steps) in seq.step_groups_in_execution_order() {
+                        for step in steps {
+                            if let Some(ref module) = step.module_info {
+                                modules_by_file
+                                    .entry(file_data.path.clone())
+                                    .or_default()
+                                    .push(module.clone());
+                            }
+                        }
+                    }
+                }
+            }
+            append_modules(&mut md, &modules_by_file);
+        }
+
         normalize_markdown_blanks(&md.join("\n"))
     }
 
@@ -107,25 +138,6 @@ impl Formatter {
 
         if config.include_file_custom_data_types {
             append_file_custom_data_types(md, &file_data.custom_data_types);
-        }
-
-        let mut modules_by_file: BTreeMap<String, Vec<ModuleInfo>> = BTreeMap::new();
-        for seq in &file_data.sequences {
-            for (_, steps) in seq.step_groups_in_execution_order() {
-                for step in steps {
-                    if let Some(ref mod_info) = step.module_info {
-                        modules_by_file
-                            .entry(file_data.path.clone())
-                            .or_default()
-                            .push(mod_info.clone());
-                    }
-                }
-            }
-        }
-        // The rule decides. A client reading a logic summary has no use for
-        // the VI or DLL behind a step.
-        if config.rules.code_modules {
-            append_modules(md, &modules_by_file);
         }
 
         if config.include_types {
