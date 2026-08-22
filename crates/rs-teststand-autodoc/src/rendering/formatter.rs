@@ -15,7 +15,28 @@ use crate::rendering::station_options::append_station_options;
 use crate::rendering::step_extras::append_step_extras;
 
 /// Formats extracted sequence file hierarchies into publication-ready Markdown reports.
+/// Which optional columns a step table carries, and whether rows are anchored.
+///
+/// A struct rather than four positional booleans: at a call site
+/// `true, false, true` says nothing about which column is which.
+#[derive(Debug, Clone, Copy)]
+#[expect(
+    clippy::struct_excessive_bools,
+    reason = "these are independent column switches, not state"
+)]
+struct StepColumns {
+    /// Emit an `<a id>` for a diagram node to link to.
+    anchored: bool,
+    /// The step calls a module or a subsequence.
+    has_target: bool,
+    /// The step carries limits or measurements.
+    has_limits: bool,
+    /// At least one step in the group has a description.
+    has_desc: bool,
+}
+
 #[derive(Debug, Default)]
+/// Renders extracted sequence data as Markdown.
 pub struct Formatter;
 
 /// Callbacks about file handling or model configuration rather than testing.
@@ -39,6 +60,61 @@ const ENGINE_LEVEL_CALLBACKS: [&str; 14] = [
     "ModifyReportEntry",
     "ModifyReportFooter",
 ];
+
+/// Where a model callback sits in a run, earliest first.
+///
+/// A document that opens on `MainSequence` and mentions `ProcessSetup` after it
+/// describes an order that never happens. The sequential and batch models run
+/// setup once, then loop per UUT, then clean up once:
+///
+/// `ProcessSetup` -> `PreUUTLoop` -> ( `PreUUT` -> `PreMainSequence` ->
+/// `MainSequence` -> `PostMainSequence` -> `PostUUT` ) -> `PostUUTLoop` ->
+/// `ProcessCleanup`, with the batch callbacks nested where the batch model
+/// puts them.
+///
+/// Anything not named here is a subsequence, which runs when something calls
+/// it. Those keep their order in the file and follow `MainSequence`, because
+/// that is what reaches them.
+fn model_order(name: &str) -> u8 {
+    match name {
+        "ProcessSetup" => 0,
+        "PreUUTLoop" => 1,
+        "PreBatchLoop" => 2,
+        "PreUUT" => 3,
+        "PreBatch" => 4,
+        "PreMainSequence" => 5,
+        "MainSequence" => 6,
+        // Subsequences: called from MainSequence, so they sit just after it.
+        _ => 7,
+    }
+}
+
+/// The tail of the run, for names that come after the called subsequences.
+fn model_order_tail(name: &str) -> Option<u8> {
+    match name {
+        "PostMainSequence" => Some(8),
+        "PostBatch" => Some(9),
+        "PostUUT" => Some(10),
+        "PostBatchLoop" => Some(11),
+        "PostUUTLoop" => Some(12),
+        "ProcessCleanup" => Some(13),
+        _ => None,
+    }
+}
+
+/// Orders sequences the way a run reaches them, keeping file order within a rank.
+fn in_run_order(sequences: &[SequenceData]) -> Vec<SequenceData> {
+    let mut ordered: Vec<(u8, usize, SequenceData)> = sequences
+        .iter()
+        .enumerate()
+        .map(|(at, seq)| {
+            let rank = model_order_tail(&seq.name).unwrap_or_else(|| model_order(&seq.name));
+            (rank, at, seq.clone())
+        })
+        .collect();
+    ordered.sort_by_key(|(rank, at, _)| (*rank, *at));
+    ordered.into_iter().map(|(_, _, seq)| seq).collect()
+}
 
 impl Formatter {
     /// Creates a new Formatter instance.
@@ -116,12 +192,16 @@ impl Formatter {
         Self::format_header(md, file_data, config);
         // The contents list has to match the document. Listing a sequence the
         // profile then omits leaves an entry pointing at nothing.
-        let listed: Vec<SequenceData> = file_data
-            .sequences
-            .iter()
-            .filter(|seq| Self::sequence_is_visible(seq, config))
-            .cloned()
-            .collect();
+        // Run order, not file order. A contents list numbered 1..n is read as
+        // a chronology, so it has to be one.
+        let listed: Vec<SequenceData> = in_run_order(
+            &file_data
+                .sequences
+                .iter()
+                .filter(|seq| Self::sequence_is_visible(seq, config))
+                .cloned()
+                .collect::<Vec<_>>(),
+        );
         Self::format_toc(md, &listed, config);
         // Variable scopes are how an engineer debugs. A client is not reading
         // this to learn what the sequence stores.
@@ -130,10 +210,9 @@ impl Formatter {
             Self::format_station_globals(md, &file_data.station_globals);
         }
 
-        for seq in &file_data.sequences {
-            if Self::sequence_is_visible(seq, config) {
-                Self::format_sequence(md, seq, file_data, config);
-            }
+        // The same order the contents list promises.
+        for seq in &listed {
+            Self::format_sequence(md, seq, file_data, config);
         }
 
         if config.include_file_custom_data_types {
@@ -265,7 +344,7 @@ impl Formatter {
 
         let mut headers = vec!["Name", "Type"];
         if has_init {
-            headers.push("Initial Value");
+            headers.push("Default");
         }
         if has_comment {
             headers.push("Comment");
@@ -507,21 +586,22 @@ impl Formatter {
         String::new()
     }
 
-    fn format_step_row(
-        step: &StepData,
-        idx: usize,
-        has_target: bool,
-        has_limits: bool,
-        has_desc: bool,
-    ) -> Vec<String> {
+    fn format_step_row(step: &StepData, idx: usize, columns: StepColumns) -> Vec<String> {
+        let StepColumns {
+            anchored,
+            has_target,
+            has_limits,
+            has_desc,
+        } = columns;
         let num = (idx + 1).to_string();
         let mut name_display = sanitize(&step.name);
         if step.skipped {
             name_display = format!("~~{name_display}~~");
         }
-        // The flowchart links every node to its step, so each row carries the
-        // anchor those links target.
-        if !step.id.is_empty() {
+        // The anchor exists so a diagram node can link to this row. Without a
+        // diagram nothing points at it, and it puts a raw step id into a
+        // document a person and a model both read.
+        if anchored && !step.id.is_empty() {
             name_display = format!(
                 "<a id=\"{}\"></a>{name_display}",
                 crate::rendering::step_anchor_id(&step.id)
@@ -534,7 +614,20 @@ impl Formatter {
             let mod_target = if !step.target_sequence.is_empty() {
                 format!("-> {}", step.target_sequence)
             } else if !step.module_path.is_empty() {
-                display_name(&step.module_path)
+                // Name the callable, not just the file. A row reading
+                // "Computer.py" twelve times says nothing about which step
+                // calls what, and the summary already names both.
+                let file = display_name(&step.module_path);
+                match step
+                    .module_info
+                    .as_ref()
+                    .and_then(|m| m.entry_point.as_ref())
+                {
+                    Some(entry_point) if !entry_point.is_empty() => {
+                        format!("{file} -> {entry_point}")
+                    }
+                    _ => file,
+                }
             } else {
                 "-".to_owned()
             };
@@ -607,7 +700,18 @@ impl Formatter {
         md.push(format_sep(headers.len()));
 
         for (idx, step) in active_steps.iter().enumerate() {
-            let row = Self::format_step_row(step, idx, has_target, has_limits, has_desc);
+            let row = Self::format_step_row(
+                step,
+                idx,
+                StepColumns {
+                    // The anchor exists for a diagram node to link to. No
+                    // diagram, no reason to emit it.
+                    anchored: config.rules.flowcharts && config.rules.link_steps,
+                    has_target,
+                    has_limits,
+                    has_desc,
+                },
+            );
             md.push(format_row(&row));
         }
         md.push(String::new());

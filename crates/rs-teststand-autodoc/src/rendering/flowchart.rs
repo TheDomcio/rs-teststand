@@ -119,6 +119,18 @@ pub fn translate_expression(expr: &str) -> String {
         .replace("Step.Result.", "")
 }
 
+/// Labels a node `prefix: body`, unless the body only repeats the prefix.
+///
+/// A bare `If` step carries no condition, and its name is the word "If", so the
+/// obvious formatting produced "If: If". Where the body adds nothing the prefix
+/// stands alone.
+fn prefixed(prefix: &str, body: &str) -> String {
+    if body.trim().eq_ignore_ascii_case(prefix) {
+        return prefix.to_owned();
+    }
+    format!("{prefix}: {body}")
+}
+
 /// Creates a safe short label for a Mermaid node or edge.
 #[must_use]
 pub fn diagram_label(text: &str, fallback: &str, max_length: usize) -> String {
@@ -391,17 +403,17 @@ impl<'a> FlowchartBuilder<'a> {
     fn handle_if_else(&mut self, step: &StepData, condition: &str) -> bool {
         match step.step_type.as_str() {
             FLOW_IF => {
-                let label = format!(
-                    "If: {}",
-                    diagram_label(
+                let label = prefixed(
+                    "If",
+                    &diagram_label(
                         if condition.is_empty() {
                             &step.name
                         } else {
                             condition
                         },
                         "If",
-                        80
-                    )
+                        80,
+                    ),
                 );
                 let nid = self.add_node("decision", label, Some(step));
                 self.attach(&nid);
@@ -422,17 +434,17 @@ impl<'a> FlowchartBuilder<'a> {
                     }
                 });
                 if let Some(prev) = prev_open {
-                    let label = format!(
-                        "Else If: {}",
-                        diagram_label(
+                    let label = prefixed(
+                        "Else If",
+                        &diagram_label(
                             if condition.is_empty() {
                                 &step.name
                             } else {
                                 condition
                             },
                             "Else If",
-                            80
-                        )
+                            80,
+                        ),
                     );
                     let nid = self.add_node("decision", label, Some(step));
                     self.edge_lines
@@ -534,7 +546,7 @@ impl<'a> FlowchartBuilder<'a> {
                 condition.to_owned()
             };
 
-            let label = format!("Loop: {}", diagram_label(&loop_text, "loop", 80));
+            let label = prefixed("Loop", &diagram_label(&loop_text, "loop", 80));
             let nid = self.add_node("loop", label, Some(step));
             self.attach(&nid);
             self.stack.push(StackFrame::Loop {
@@ -838,6 +850,7 @@ pub fn build_flowchart(
 
 #[cfg(test)]
 mod tests {
+    use super::prefixed;
     use super::*;
     use crate::data::Limits;
 
@@ -935,7 +948,10 @@ mod tests {
         ];
 
         let chart = build_flowchart(&steps, true, true, true);
-        assert!(chart.contains("If: If"));
+        // A bare If carries no condition and is named "If", so the node reads
+        // "If" rather than repeating itself as "If: If".
+        assert!(chart.contains(r#"{"If"}"#), "got: {chart}");
+        assert!(!chart.contains("If: If"), "the prefix should not repeat");
         assert!(chart.contains("Then Branch"));
         assert!(chart.contains("Else Branch"));
 
@@ -981,5 +997,18 @@ mod tests {
             "Mermaid render failed: {:?}",
             render_result.err()
         );
+    }
+
+    /// A prefix that only repeats its body is redundant on the node.
+    #[test]
+    fn a_prefix_that_repeats_its_body_is_dropped() {
+        assert_eq!(prefixed("If", "If"), "If");
+        assert_eq!(prefixed("Else If", "else if"), "Else If");
+    }
+
+    /// A real condition still gets its prefix, which is what names the shape.
+    #[test]
+    fn a_prefix_stays_when_the_body_adds_something() {
+        assert_eq!(prefixed("If", "Locals.Count > 0"), "If: Locals.Count > 0");
     }
 }

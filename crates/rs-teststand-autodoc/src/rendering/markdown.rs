@@ -18,15 +18,15 @@ pub fn slug(text: &str) -> String {
     slug::slugify(text)
 }
 
-/// Renders a boolean as a checkbox rather than the words true and false.
+/// Renders a boolean for a table cell.
 ///
-/// A table of twenty settings reads as a shape this way: the eye finds the
-/// ticked rows without reading them. Uses the ballot glyphs rather than a
-/// Markdown task list, because a task list is only a list and these values
-/// live in table cells.
+/// This used the ballot glyphs, which read well on screen and printed as a
+/// missing-character box: the browser subsets the fonts it embeds in a PDF and
+/// those code points are not in the faces this stylesheet asks for. A word
+/// survives any font, and the document has to be right on paper first.
 #[must_use]
 pub const fn checkbox(value: bool) -> &'static str {
-    if value { "☑" } else { "☐" }
+    if value { "True" } else { "False" }
 }
 
 /// Formats a single Markdown table row.

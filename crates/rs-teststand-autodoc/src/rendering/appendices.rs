@@ -40,7 +40,7 @@ pub fn append_variables(md: &mut Vec<String>, sequences: &[SequenceData]) {
 
             let mut headers = vec!["Name", "Type"];
             if has_init {
-                headers.push("Initial Value");
+                headers.push("Default");
             }
             if has_comment {
                 headers.push("Comment");
