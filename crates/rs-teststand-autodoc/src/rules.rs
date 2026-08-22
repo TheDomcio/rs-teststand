@@ -41,6 +41,8 @@ pub struct DocumentRules {
     pub engine_callbacks: bool,
     /// List the code modules the steps call.
     pub code_modules: bool,
+    /// Show which sequence calls which, across the documented files.
+    pub call_hierarchy: bool,
     /// Drop the file extension from the document title.
     pub plain_title: bool,
     /// Put dialog text and button lists into diagram nodes.
@@ -64,6 +66,7 @@ impl DocumentRules {
                 split_step_groups: true,
                 engine_callbacks: true,
                 code_modules: true,
+                call_hierarchy: true,
                 plain_title: true,
                 popup_detail: true,
             },
@@ -78,6 +81,7 @@ impl DocumentRules {
                 split_step_groups: false,
                 engine_callbacks: false,
                 code_modules: false,
+                call_hierarchy: true,
                 plain_title: true,
                 // A node should read as the step's name. Dialog wording and
                 // button lists bury that under the operator script.
@@ -94,6 +98,7 @@ impl DocumentRules {
                 split_step_groups: false,
                 engine_callbacks: false,
                 code_modules: false,
+                call_hierarchy: false,
                 plain_title: false,
                 popup_detail: false,
             },

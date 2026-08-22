@@ -4,6 +4,7 @@ pub mod appendices;
 pub mod expression;
 pub mod flowchart;
 pub mod formatter;
+pub mod hierarchy;
 pub mod html;
 pub mod markdown;
 pub mod outline;

@@ -180,6 +180,12 @@ impl Formatter {
             append_modules(&mut md, &modules_by_file);
         }
 
+        // What reaches what. Asked of the document as a whole, so it sits with
+        // the other summaries rather than inside any one file's section.
+        if config.rules.call_hierarchy {
+            md.extend(crate::rendering::hierarchy::render(files));
+        }
+
         normalize_markdown_blanks(&md.join("\n"))
     }
 
@@ -774,6 +780,7 @@ mod tests {
             limits: Limits::default(),
             measurements: Vec::new(),
             target_sequence: String::new(),
+            target_by_expression: false,
             expressions: {
                 let mut exprs = BTreeMap::new();
                 exprs.insert("expression".to_owned(), "Locals.Counter = 0".to_owned());

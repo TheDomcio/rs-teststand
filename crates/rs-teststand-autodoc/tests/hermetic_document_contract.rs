@@ -580,3 +580,36 @@ fn no_anchor_is_emitted_when_nothing_can_link_to_it() {
 {document}"
     );
 }
+
+/// A comment the author left on a step reaches the document.
+///
+/// Nothing else says why a step is there. The installed examples carry none, so
+/// this is the only place the path is exercised.
+#[test]
+fn a_step_comment_is_shown_with_its_step() {
+    let mut groups = BTreeMap::new();
+    let mut annotated = step("ID__c1", "Settle", "Action");
+    "Wait for the relay to stop bouncing".clone_into(&mut annotated.comment);
+    groups.insert("Main".to_owned(), vec![annotated]);
+
+    let file = FileData {
+        name: "Test.seq".to_owned(),
+        sequences: vec![SequenceData {
+            name: "MainSequence".to_owned(),
+            step_groups: groups,
+            ..SequenceData::default()
+        }],
+        ..FileData::default()
+    };
+
+    let document = Formatter::generate(
+        &[file],
+        &ExtractorConfig::for_profile(Profile::Engineer),
+        None,
+    );
+    assert!(
+        document.contains("Wait for the relay to stop bouncing"),
+        "the step's comment should appear under it:
+{document}"
+    );
+}

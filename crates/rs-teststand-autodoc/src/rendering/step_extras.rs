@@ -329,6 +329,13 @@ pub fn step_detail(step: &StepData, names: &StepNames<'_>) -> Vec<String> {
         lines.push(format!("- **Calls**: {}", code_span(&called)));
     }
 
+    // The author's own note about the step. Nothing else in the document says
+    // why a step is there, and a comment is the one place somebody wrote it
+    // down.
+    if !step.comment.trim().is_empty() {
+        lines.push(format!("- *{}*", sanitize(step.comment.trim())));
+    }
+
     let mut quoted = Vec::new();
     append_step_extras(&mut quoted, step, "", names);
 

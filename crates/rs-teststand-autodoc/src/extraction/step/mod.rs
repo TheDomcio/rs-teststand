@@ -118,7 +118,7 @@ pub fn extract_step(
 
     let limits = extract_limits(&po);
     let measurements = extract_multiple_numeric_measurements(&po);
-    let (module_path, target_sequence, module_info) =
+    let (module_path, target_sequence, module_info, target_by_expression) =
         extract_module_info(&po, &adapter_name, &step_type_name);
     let expressions = extract_step_expressions(&po, step, &step_type_name);
     let step_settings = extract_step_settings_map(&po, &step_type_name);
@@ -140,6 +140,7 @@ pub fn extract_step(
         limits,
         measurements,
         target_sequence,
+        target_by_expression,
         expressions,
         step_settings,
         requirements,

@@ -92,39 +92,75 @@ fn technology_of(adapter: &str) -> &str {
     }
 }
 
-/// Lists the code each step runs, then how much of each technology is involved.
+/// The LabVIEW containers that appear as components of a module path.
 ///
-/// The per-module rows answer "what does this step call"; the summary answers
-/// "what does this test depend on", which is the question asked when a runtime
-/// has to be installed or a team has to own the code.
+/// A VI can live inside a library, a packed library, a class or a VI library,
+/// and LabVIEW writes each of those into the path as though it were a folder.
+/// `MyPacked.lvlibp\MyClass.lvclass\Method.vi` is three levels, and reading
+/// it as one flat name loses which library owns the code.
+const LABVIEW_CONTAINERS: [&str; 4] = ["lvlibp", "lvlib", "lvclass", "llb"];
+
+/// The callables inside one library, with how often each is called.
+type Callables = BTreeMap<String, usize>;
+
+/// Libraries, keyed by the container path leading to them.
+type Libraries = BTreeMap<Vec<String>, Callables>;
+
+/// Splits a module path into its containers and the callable inside them.
+fn containers_of(path: &str) -> (Vec<String>, String) {
+    let normalised = path.replace('/', "\\");
+    let mut parts = normalised.split('\\').filter(|part| !part.is_empty());
+    let name = parts.next_back().unwrap_or(path).to_owned();
+
+    let containers = normalised
+        .split('\\')
+        .filter(|part| {
+            part.rsplit_once('.').is_some_and(|(_, extension)| {
+                LABVIEW_CONTAINERS
+                    .iter()
+                    .any(|known| known.eq_ignore_ascii_case(extension))
+            })
+        })
+        .map(ToOwned::to_owned)
+        .collect();
+
+    (containers, name)
+}
+
+/// What a step calls, grouped by technology and by the library holding it.
+///
+/// The question this answers is what the test depends on, which is asked when a
+/// runtime has to be installed or a team has to own the code. Grouping by
+/// technology answers it directly; nesting by library answers the follow-up,
+/// which is who owns that part.
 pub fn append_modules(md: &mut Vec<String>, modules_by_file: &BTreeMap<String, Vec<ModuleInfo>>) {
     if modules_by_file.is_empty() {
         return;
     }
 
-    // Counted per module across every file, so a VI shared by two sequences is
-    // one row carrying both uses rather than the same name twice.
-    let mut per_module: BTreeMap<String, (String, usize)> = BTreeMap::new();
+    // Technology -> containers -> callable -> calls. Counted across every file,
+    // so a VI two sequences share is one entry carrying both uses.
+    let mut per_technology: BTreeMap<&str, Libraries> = BTreeMap::new();
+
     for modules in modules_by_file.values() {
         for module in modules {
-            let name = Path::new(&module.path)
-                .file_name()
-                .and_then(|n| n.to_str())
-                .unwrap_or(module.path.as_str())
-                .to_owned();
-            // A module called at two entry points is two rows: the reader
+            let (containers, name) = containers_of(&module.path);
+            // A module called at two entry points is two entries: the reader
             // wants to know which function runs, not only which file.
-            let key = module.entry_point.as_ref().map_or_else(
+            let callable = module.entry_point.as_ref().map_or_else(
                 || name.clone(),
-                |entry_point| format!("{name} → {entry_point}"),
+                |entry_point| format!("{name} -> {entry_point}"),
             );
-            let entry = per_module
-                .entry(key)
-                .or_insert_with(|| (module.adapter_type.clone(), 0));
-            entry.1 += module.occurrences;
+            *per_technology
+                .entry(technology_of(&module.adapter_type))
+                .or_default()
+                .entry(containers)
+                .or_default()
+                .entry(callable)
+                .or_default() += module.occurrences;
         }
     }
-    if per_module.is_empty() {
+    if per_technology.is_empty() {
         return;
     }
 
@@ -132,28 +168,56 @@ pub fn append_modules(md: &mut Vec<String>, modules_by_file: &BTreeMap<String, V
     md.push(String::new());
     md.push("## Code Modules".to_owned());
     md.push(String::new());
-    md.push(format_row(["Module", "Technology", "Used"]));
-    md.push(format_sep(3));
 
-    let mut per_technology: BTreeMap<&str, (usize, usize)> = BTreeMap::new();
-    for (name, (adapter, count)) in &per_module {
-        let technology = technology_of(adapter);
-        let tally = per_technology.entry(technology).or_insert((0, 0));
-        tally.0 += 1;
-        tally.1 += *count;
-        md.push(format_row([name, technology, &count.to_string()]));
+    let mut totals: BTreeMap<&str, (usize, usize)> = BTreeMap::new();
+    for (technology, libraries) in &per_technology {
+        md.push(format!("### {technology}"));
+        md.push(String::new());
+
+        for (containers, callables) in libraries {
+            // Each container is a level, so a packed library holding a class
+            // holding a VI reads as three.
+            for (depth, container) in containers.iter().enumerate() {
+                md.push(format!("{}- **{container}**", "    ".repeat(depth)));
+            }
+            let indent = "    ".repeat(containers.len());
+            for (callable, calls) in callables {
+                let times = if *calls == 1 { "call" } else { "calls" };
+                md.push(format!("{indent}- `{callable}` ({calls} {times})"));
+
+                let tally = totals.entry(technology).or_insert((0, 0));
+                tally.0 += 1;
+                tally.1 += *calls;
+            }
+        }
+        md.push(String::new());
     }
-    md.push(String::new());
 
     md.push("### Technology usage".to_owned());
     md.push(String::new());
-    md.push(format_row(["Technology", "Modules", "Calls"]));
-    md.push(format_sep(3));
-    for (technology, (modules, calls)) in per_technology {
+    md.push(format_row(["Technology", "Modules", "Calls", "Share"]));
+    md.push(format_sep(4));
+
+    // A share answers what the counts only hint at: how much of this test is
+    // written in what. Over the calls rather than the modules, because one
+    // module called forty times is a bigger dependency than forty called once.
+    let total_calls: usize = totals.values().map(|(_, calls)| *calls).sum();
+    for (technology, (modules, calls)) in totals {
+        let share = if total_calls == 0 {
+            "-".to_owned()
+        } else {
+            #[expect(
+                clippy::cast_precision_loss,
+                reason = "call counts are far below the precision limit of f64"
+            )]
+            let percent = (calls as f64) * 100.0 / (total_calls as f64);
+            format!("{percent:.0}%")
+        };
         md.push(format_row([
             technology,
             &modules.to_string(),
             &calls.to_string(),
+            &share,
         ]));
     }
     md.push(String::new());
@@ -210,4 +274,53 @@ pub fn append_file_custom_data_types(md: &mut Vec<String>, types: &[CustomDataTy
 /// Appends global types palette summary.
 pub const fn append_types(_md: &mut Vec<String>, _engine: Option<&Engine>, _attached_only: bool) {
     // Engine type palette query helper
+}
+
+#[cfg(test)]
+mod container_tests {
+    use super::containers_of;
+
+    /// A plain VI on disk has no library around it.
+    #[test]
+    fn a_bare_vi_has_no_containers() {
+        let (containers, name) = containers_of(r"C:\lab\vis\Measure.vi");
+        assert!(containers.is_empty());
+        assert_eq!(name, "Measure.vi");
+    }
+
+    /// LabVIEW writes a VI library into the path as though it were a folder.
+    #[test]
+    fn a_vi_library_is_one_level() {
+        let (containers, name) = containers_of(r"C:\lab\Plugin.llb\Append.vi");
+        assert_eq!(containers, vec!["Plugin.llb".to_owned()]);
+        assert_eq!(name, "Append.vi");
+    }
+
+    /// A packed library holding a class holding a VI is three levels, and the
+    /// order is the order the path gives, outermost first.
+    #[test]
+    fn a_packed_library_holding_a_class_is_two_levels_around_the_vi() {
+        let (containers, name) = containers_of(r"C:\lab\Packed.lvlibp\Motor.lvclass\Start.vi");
+        assert_eq!(
+            containers,
+            vec!["Packed.lvlibp".to_owned(), "Motor.lvclass".to_owned()]
+        );
+        assert_eq!(name, "Start.vi");
+    }
+
+    /// A forward-slash path is the same path.
+    #[test]
+    fn separators_do_not_change_the_answer() {
+        let (containers, name) = containers_of("C:/lab/Shared.lvlib/Read.vi");
+        assert_eq!(containers, vec!["Shared.lvlib".to_owned()]);
+        assert_eq!(name, "Read.vi");
+    }
+
+    /// A DLL is not a LabVIEW container and nests nothing.
+    #[test]
+    fn a_dll_is_not_a_container() {
+        let (containers, name) = containers_of(r"C:\lab\drivers\meter.dll");
+        assert!(containers.is_empty());
+        assert_eq!(name, "meter.dll");
+    }
 }

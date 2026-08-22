@@ -10,9 +10,10 @@ pub fn extract_module_info(
     po: &PropertyObject,
     adapter_name: &str,
     step_type_name: &str,
-) -> (String, String, Option<ModuleInfo>) {
+) -> (String, String, Option<ModuleInfo>, bool) {
     let mut module_path = String::new();
     let mut target_seq = String::new();
+    let mut by_expression = false;
 
     if step_type_name == "SequenceCall" || adapter_name.contains("Sequence") {
         if let Ok(seq) = po.get_val_string(property_path::TARGET_SEQUENCE, 0x1) {
@@ -20,6 +21,7 @@ pub fn extract_module_info(
         }
         if target_seq.is_empty() {
             if let Ok(seq_expr) = po.get_val_string(property_path::TARGET_SEQUENCE_EXPR, 0x1) {
+                by_expression = !seq_expr.is_empty();
                 target_seq = seq_expr;
             }
         }
@@ -75,5 +77,5 @@ pub fn extract_module_info(
         })
     };
 
-    (module_path, target_seq, mod_info)
+    (module_path, target_seq, mod_info, by_expression)
 }

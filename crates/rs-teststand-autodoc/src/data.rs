@@ -293,6 +293,13 @@ pub struct StepData {
     pub measurements: Vec<MeasurementData>,
     /// Target sequence for SequenceCall steps.
     pub target_sequence: String,
+    /// The call names its target through an expression rather than a literal.
+    ///
+    /// An expression is resolved while the sequence runs, so the target cannot
+    /// be followed by reading the file. A hierarchy that silently showed the
+    /// expression text as if it were a sequence name would be claiming a
+    /// certainty it does not have.
+    pub target_by_expression: bool,
     /// Step expressions dictionary.
     pub expressions: BTreeMap<String, String>,
     /// Step settings dictionary.
