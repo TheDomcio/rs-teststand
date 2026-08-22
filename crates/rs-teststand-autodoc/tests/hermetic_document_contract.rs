@@ -613,3 +613,53 @@ fn a_step_comment_is_shown_with_its_step() {
 {document}"
     );
 }
+
+/// The Markdown stays portable: no HTML, no embedded picture.
+///
+/// A static site generator draws the diagrams with its own renderer, and a
+/// model reads the text. Both break if the Markdown carries HTML, and an
+/// embedded SVG would make the file unreadable as text and enormous. Checked
+/// for every profile, because the rule is about the format and not the reader.
+#[test]
+fn markdown_carries_no_html_and_no_embedded_picture() {
+    for profile in [Profile::Business, Profile::Engineer] {
+        let document = document_with_all_groups(profile);
+
+        assert!(
+            !document.contains("<svg"),
+            "{profile:?} embedded a picture in the Markdown"
+        );
+        for tag in ["<div", "<span", "<p>", "<a ", "<pre", "<table"] {
+            assert!(
+                !document.contains(tag),
+                "{profile:?} put the raw tag {tag} into the Markdown:
+{document}"
+            );
+        }
+    }
+}
+
+/// A fenced block inside a list item needs `pymdownx.superfences` to parse.
+///
+/// The stock `fenced_code` extension is a preprocessor that runs before lists
+/// are parsed, so it leaves such a fence as literal text. This does not test
+/// the generator, which is not reachable from here. It pins the shape the
+/// readme documents, so the requirement cannot be forgotten while the layout
+/// that causes it quietly stays.
+#[test]
+fn the_engineer_outline_puts_fences_inside_list_items() {
+    let mut deep = step("ID__d1", "Report", "Statement");
+    deep.expressions
+        .insert("expression".to_owned(), "Locals.Count = 1".to_owned());
+
+    let document = document_from(vec![deep], Profile::Engineer);
+    let indented_fence = document
+        .lines()
+        .any(|line| line.starts_with("    ") && line.trim_start().starts_with("```"));
+
+    assert!(
+        indented_fence,
+        "no indented fence found, so the readme's superfences note may be stale:
+{document}"
+    );
+}

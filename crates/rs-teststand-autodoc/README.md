@@ -132,7 +132,28 @@ deep. A percentage of the calls shows how much of the test is in what.
 Markdown is the source of truth. HTML is compiled from it, and the PDF is
 printed from that HTML.
 
-The Markdown is GitHub Flavored: tables, plus diagrams in ```mermaid fences.
+The Markdown carries no HTML and no embedded SVG. Diagrams stay as `mermaid`
+fences, so a static site generator draws them with its own renderer.
+
+### Static site generators
+
+Verified against a Material for MkDocs build with `--strict`. Two extensions
+are needed:
+
+```yaml
+markdown_extensions:
+  - tables
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+```
+
+`superfences` is not optional. A step's expressions sit in fenced blocks inside
+a list item, and the stock `fenced_code` extension runs before lists are parsed,
+so it leaves those fences as literal text. Material enables `superfences` by
+default.
 
 ## Compatibility
 
