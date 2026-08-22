@@ -247,14 +247,6 @@ hr {
   display: inline-block;
 }
 
-/* The diagram source, kept for readers and language models rather than for
-   print. Collapsed on screen, removed entirely from paper. */
-.mermaid-source {
-  margin-top: 12px;
-  text-align: left;
-  font-size: 0.85em;
-}
-
 /* Print Media */
 @page {
   size: A4;
@@ -272,9 +264,21 @@ hr {
     max-height: none !important;
   }
 
-  /* The chart is the content here; its source is not for the printed page. */
-  .mermaid-source {
-    display: none !important;
+  /* Paper has no horizontal scroll, so `overflow: visible` alone just runs a
+     long line off the edge. Operator prompts are single unbroken lines
+     hundreds of characters long, so they have to wrap to stay on the page. */
+  pre,
+  pre code,
+  code {
+    white-space: pre-wrap !important;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+
+  /* Same for a table cell holding a path or an expression. */
+  td,
+  th {
+    overflow-wrap: anywhere;
   }
 
   .mermaid-diagram svg {

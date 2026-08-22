@@ -57,7 +57,7 @@ impl DocumentRules {
                 split_step_groups: true,
                 engine_callbacks: true,
                 code_modules: true,
-                plain_title: false,
+                plain_title: true,
                 popup_detail: true,
             },
             // A client wants the logic and nothing else.

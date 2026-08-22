@@ -128,14 +128,20 @@ fn render_diagram(source: &str, ordinal: usize) -> String {
         _ => String::new(),
     };
 
+    // A reader gets the drawing, not the script behind it. The source shows
+    // only when there is no drawing, where it beats an empty box.
+    if picture.is_empty() {
+        return format!(
+            "<div class=\"mermaid-diagram\">
+<pre class=\"mermaid\"><code>{source}</code></pre>
+</div>",
+            source = escape_html(source),
+        );
+    }
     format!(
-        "<div class=\"mermaid-diagram\">\n{picture}\n\
-         <details class=\"mermaid-source\">\n\
-         <summary>Diagram source</summary>\n\
-         <pre class=\"mermaid\"><code>{source}</code></pre>\n\
-         </details>\n</div>",
-        picture = picture,
-        source = escape_html(source),
+        "<div class=\"mermaid-diagram\">
+{picture}
+</div>"
     )
 }
 
@@ -251,19 +257,40 @@ mod tests {
     }
 
     #[test]
-    fn keeps_the_diagram_source_beside_the_picture() {
-        // An SVG is path data. A reader using a screen reader, and any model
-        // summarising this document, needs the control flow in text as well.
+    fn shows_the_drawing_without_the_script_behind_it() {
+        // A rendered diagram is for a reader. The mermaid source beside it is
+        // noise in a document sent to a client, and it was appearing there as a
+        // "Diagram source" disclosure. The text form is not lost: Markdown is
+        // the source of truth and keeps the fence, which is what a model reads.
         let html = markdown_to_html(CHART, None);
+        assert!(html.contains("<svg"), "the drawing should be there");
         assert!(
-            html.contains("mermaid-source"),
-            "source block should survive"
+            !html.contains("mermaid-source"),
+            "the source disclosure should be gone",
         );
         assert!(
-            html.contains("flowchart TD"),
-            "chart text should be readable"
+            !html.contains("flowchart TD"),
+            "the script should not be shown beside its own drawing",
         );
-        assert!(html.contains("Step 1") && html.contains("Step 2"));
+    }
+
+    #[test]
+    fn shows_the_source_when_there_is_no_drawing() {
+        // Rendering can fail. An empty box tells the reader nothing, so the
+        // source stands in for the picture rather than disappearing with it.
+        let unrenderable = "```mermaid
+not a diagram at all
+```
+";
+        let html = markdown_to_html(unrenderable, None);
+        assert!(
+            html.contains("mermaid-diagram"),
+            "the block should still be present",
+        );
+        assert!(
+            html.contains("not a diagram at all"),
+            "the source should stand in when nothing was drawn",
+        );
     }
 
     #[test]

@@ -38,7 +38,20 @@ pub fn run_cli(args: &CliArgs) -> Result<(), Box<dyn std::error::Error>> {
     let engine = Engine::new().map_err(Error::from)?;
     let files = HierarchyExtractor::extract(&engine, &args.files, &config)?;
 
-    let first_file_name = files.first().map(|f| f.path.as_str());
+    // The page title is the file's name, never its path. A business document
+    // is sent outside the building, and the full path names the machine it was
+    // generated on. The browser tab and the printed header both read this.
+    let title = files.first().map(|file| {
+        let name = Path::new(&file.path)
+            .file_name()
+            .map_or(file.path.as_str(), |n| n.to_str().unwrap_or(&file.path));
+        if config.rules.plain_title {
+            name.strip_suffix(".seq").unwrap_or(name).to_owned()
+        } else {
+            name.to_owned()
+        }
+    });
+    let first_file_name = title.as_deref();
 
     match args.format {
         OutputFormat::Markdown => {

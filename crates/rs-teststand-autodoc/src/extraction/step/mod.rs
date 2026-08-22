@@ -42,26 +42,9 @@ fn extract_step_settings_map(
             step_settings.insert("Icon".to_owned(), icon);
         }
     }
-    if let Ok(load_opt) = po.get_val_string("TS.LoadOpt", 0x1) {
-        if !load_opt.is_empty()
-            && !matches!(
-                load_opt.as_str(),
-                "PreloadWhenOpened" | "PreloadWhenExecuted" | "PreloadWithSequence"
-            )
-        {
-            step_settings.insert("Load Option".to_owned(), load_opt);
-        }
-    }
-    if let Ok(unload_opt) = po.get_val_string("TS.UnloadOpt", 0x1) {
-        if !unload_opt.is_empty()
-            && !matches!(
-                unload_opt.as_str(),
-                "UnloadWhenClosed" | "UnloadWithFile" | "UnloadWithSequence"
-            )
-        {
-            step_settings.insert("Unload Option".to_owned(), unload_opt);
-        }
-    }
+    // Load and unload options describe how the engine brings code into memory,
+    // not what the test does. They were reaching the step configuration block
+    // as noise beside the expressions that actually matter.
     if step_type_name == "NI_PropertyLoader" {
         if let Ok(src_path) =
             po.get_val_string("TS.SData.SourceLocation.FileLocation.FilePath", 0x1)

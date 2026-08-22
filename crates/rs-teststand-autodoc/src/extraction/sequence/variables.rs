@@ -32,7 +32,7 @@ pub fn extract_variables_from_po(po: &PropertyObject) -> Vec<Variable> {
             let type_name = sub
                 .as_ref()
                 .and_then(|s| s.get_type_display_string("", 0).ok())
-                .unwrap_or_else(|| "Unknown".to_owned());
+                .map_or_else(|| "Unknown".to_owned(), |name| readable_type(&name));
 
             let default_value = sub.as_ref().and_then(extract_default_value);
             let comment = sub.as_ref().map_or_else(String::new, |s| {
@@ -50,4 +50,36 @@ pub fn extract_variables_from_po(po: &PropertyObject) -> Vec<Variable> {
         }
     }
     vars
+}
+
+/// Tidies the engine's type display string for a reader.
+///
+/// An empty array comes back as `Array of Result[0..empty]`, where the bounds
+/// are the engine's way of saying there are none. `Array of Result (empty)`
+/// says the same thing without looking like a broken range.
+fn readable_type(display: &str) -> String {
+    display.find("[0..empty]").map_or_else(
+        || display.to_owned(),
+        |at| format!("{} (empty)", display[..at].trim_end()),
+    )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::readable_type;
+
+    /// The engine's empty-array bounds read as a broken range, not as "empty".
+    #[test]
+    fn an_empty_array_says_so_in_words() {
+        assert_eq!(
+            readable_type("Array of Result[0..empty]"),
+            "Array of Result (empty)"
+        );
+    }
+
+    /// A populated array keeps its real bounds, which carry information.
+    #[test]
+    fn a_sized_array_keeps_its_bounds() {
+        assert_eq!(readable_type("Number[0..9]"), "Number[0..9]");
+    }
 }

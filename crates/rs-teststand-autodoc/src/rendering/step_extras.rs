@@ -3,22 +3,48 @@
 use crate::data::StepData;
 use crate::rendering::markdown::{code_block, sanitize};
 
-const fn action_label(code: &str) -> &'static str {
+/// The engine's own name for a branch action, or the raw code if unrecognised.
+///
+/// Showing the code beats showing the word "Action": a reader can look an
+/// unknown code up, and it surfaces gaps in this table instead of hiding them.
+fn action_label(code: &str) -> &str {
     match code.as_bytes() {
         b"Next" | b"1" => "Continue",
-        b"JumpToStep" | b"2" => "Jump to Step",
+        // The engine reports a step jump under either name.
+        b"JumpToStep" | b"GotoStep" | b"Goto" | b"2" => "Jump to Step",
         b"ReturnFromSequence" | b"3" => "Return from Sequence",
         b"TerminateExecution" | b"4" => "Terminate Execution",
         b"TerminateExecutionWithError" | b"5" => "Terminate Execution with Error",
         b"Break" | b"6" => "Break",
         b"ContinueLoop" | b"7" => "Continue Loop",
         b"JumpToSequence" | b"8" => "Jump to Sequence",
-        _ => "Action",
+        _ => code,
     }
 }
 
 fn code_span(s: &str) -> String {
     format!("`{}`", sanitize(s))
+}
+
+/// Renders a jump target as the step's name.
+///
+/// TestStand stores a jump target as the destination step's id, which is an
+/// opaque token like `ID#:8IdBnrEX5hGzYpiQlqYQ+D`. That means nothing to any
+/// reader, so an id that cannot be matched to a step in this sequence is left
+/// out entirely and the action label stands on its own.
+fn target_suffix(target: &str, names: &StepNames<'_>) -> String {
+    // The engine stores the target as a quoted expression literal, while the
+    // step's own id is bare, so the quotes come off before the lookup.
+    let target = target.trim().trim_matches('"');
+    if target.is_empty() {
+        return String::new();
+    }
+    match names.get(target) {
+        Some(name) => format!(" -> {}", code_span(name)),
+        None if target.starts_with("ID#") => String::new(),
+        // Not an id: a sequence name, which reads fine as it stands.
+        None => format!(" -> {}", code_span(target)),
+    }
 }
 
 fn code_block_admonition(label: &str, code: &str) -> Vec<String> {
@@ -41,64 +67,52 @@ fn code_block_admonition(label: &str, code: &str) -> Vec<String> {
     lines
 }
 
-fn format_custom_condition(step: &StepData, out: &mut Vec<String>) {
+fn format_custom_condition(step: &StepData, out: &mut Vec<String>, names: &StepNames<'_>) {
     if let Some(cond) = step.expressions.get("custom_condition") {
         if !cond.is_empty() {
             out.extend(code_block_admonition("Custom condition", cond));
             if let Some(act) = step.expressions.get("custom_true_action") {
-                let tgt = step
-                    .expressions
-                    .get("custom_true_target")
-                    .map_or("", String::as_str);
-                let suffix = if tgt.is_empty() {
-                    String::new()
-                } else {
-                    format!(" -> {}", code_span(tgt))
-                };
+                let suffix = target_suffix(
+                    step.expressions
+                        .get("custom_true_target")
+                        .map_or("", String::as_str),
+                    names,
+                );
                 out.push(format!("> - **If true**: {}{suffix}", action_label(act)));
             }
             if let Some(act) = step.expressions.get("custom_false_action") {
-                let tgt = step
-                    .expressions
-                    .get("custom_false_target")
-                    .map_or("", String::as_str);
-                let suffix = if tgt.is_empty() {
-                    String::new()
-                } else {
-                    format!(" -> {}", code_span(tgt))
-                };
+                let suffix = target_suffix(
+                    step.expressions
+                        .get("custom_false_target")
+                        .map_or("", String::as_str),
+                    names,
+                );
                 out.push(format!("> - **If false**: {}{suffix}", action_label(act)));
             }
         }
     }
 }
 
-fn format_pass_fail_actions(step: &StepData, out: &mut Vec<String>) {
+fn format_pass_fail_actions(step: &StepData, out: &mut Vec<String>, names: &StepNames<'_>) {
     if let Some(pass_act) = step.expressions.get("pass_action") {
-        let tgt = step
-            .expressions
-            .get("pass_action_target")
-            .map_or("", String::as_str);
-        let arrow = if tgt.is_empty() {
-            String::new()
-        } else {
-            format!(" -> {}", code_span(tgt))
-        };
+        let arrow = target_suffix(
+            step.expressions
+                .get("pass_action_target")
+                .map_or("", String::as_str),
+            names,
+        );
         out.push(format!(
             "> - **On pass**: {}{arrow}",
             action_label(pass_act)
         ));
     }
     if let Some(fail_act) = step.expressions.get("fail_action") {
-        let tgt = step
-            .expressions
-            .get("fail_action_target")
-            .map_or("", String::as_str);
-        let arrow = if tgt.is_empty() {
-            String::new()
-        } else {
-            format!(" -> {}", code_span(tgt))
-        };
+        let arrow = target_suffix(
+            step.expressions
+                .get("fail_action_target")
+                .map_or("", String::as_str),
+            names,
+        );
         out.push(format!(
             "> - **On fail**: {}{arrow}",
             action_label(fail_act)
@@ -208,7 +222,19 @@ fn format_step_measurements(step: &StepData, out: &mut Vec<String>) {
 }
 
 /// Appends step configuration details inside a standard blockquote alert box.
-pub fn append_step_extras(md: &mut Vec<String>, step: &StepData, _indent: &str) {
+/// Step ids mapped to the step's name, for resolving jump targets.
+pub type StepNames<'a> = std::collections::BTreeMap<&'a str, &'a str>;
+
+/// Appends a step's configuration block: expressions, actions, measurements.
+///
+/// `names` maps step ids to step names so a jump target reads as the step it
+/// jumps to rather than as an opaque id.
+pub fn append_step_extras(
+    md: &mut Vec<String>,
+    step: &StepData,
+    _indent: &str,
+    names: &StepNames<'_>,
+) {
     let mut out: Vec<String> = Vec::new();
 
     format_message_popup_details(step, &mut out);
@@ -229,9 +255,9 @@ pub fn append_step_extras(md: &mut Vec<String>, step: &StepData, _indent: &str) 
         }
     }
 
-    format_custom_condition(step, &mut out);
+    format_custom_condition(step, &mut out, names);
     format_loop_expressions(step, &mut out);
-    format_pass_fail_actions(step, &mut out);
+    format_pass_fail_actions(step, &mut out, names);
     format_step_measurements(step, &mut out);
 
     for (k, v) in &step.step_settings {

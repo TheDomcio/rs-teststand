@@ -145,7 +145,7 @@ pub fn append_modules(md: &mut Vec<String>, modules_by_file: &BTreeMap<String, V
     }
     md.push(String::new());
 
-    md.push("### Technologies Used".to_owned());
+    md.push("### Technology usage".to_owned());
     md.push(String::new());
     md.push(format_row(["Technology", "Modules", "Calls"]));
     md.push(format_sep(3));

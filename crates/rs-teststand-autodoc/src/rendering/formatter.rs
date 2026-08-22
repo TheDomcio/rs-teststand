@@ -18,14 +18,26 @@ use crate::rendering::step_extras::append_step_extras;
 #[derive(Debug, Default)]
 pub struct Formatter;
 
-/// Callbacks the engine raises about file handling rather than about testing.
-const ENGINE_LEVEL_CALLBACKS: [&str; 6] = [
+/// Callbacks about file handling or model configuration rather than testing.
+///
+/// A client wants to know what the test does. `ProcessSetup` describes that.
+/// `SequenceFileLoad` describes how a file got opened, and `ModelOptions`
+/// describes how the model was configured; neither is part of the test.
+const ENGINE_LEVEL_CALLBACKS: [&str; 14] = [
     "SequenceFileLoad",
     "SequenceFileUnload",
     "SequenceFilePostResultListEntry",
     "SequenceFilePostStepRuntimeError",
     "SequenceFilePreStep",
     "SequenceFilePostStep",
+    "ModelOptions",
+    "ReportOptions",
+    "DatabaseOptions",
+    "ModelPluginOptions",
+    "ModelPluginConfiguration",
+    "ModifyReportHeader",
+    "ModifyReportEntry",
+    "ModifyReportFooter",
 ];
 
 impl Formatter {
@@ -110,7 +122,11 @@ impl Formatter {
                 }
             }
         }
-        append_modules(md, &modules_by_file);
+        // The rule decides. A client reading a logic summary has no use for
+        // the VI or DLL behind a step.
+        if config.rules.code_modules {
+            append_modules(md, &modules_by_file);
+        }
 
         if config.include_types {
             append_types(md, engine, config.types_attached_only);
@@ -175,12 +191,6 @@ impl Formatter {
         }
         if !file_data.model_file.is_empty() && config.rules.file_identity {
             md.push(format_row(["Process Model", &file_data.model_file]));
-        }
-        if !file_data.load_opt.is_empty() && config.rules.file_identity {
-            md.push(format_row(["Load Option", &file_data.load_opt]));
-        }
-        if !file_data.unload_opt.is_empty() && config.rules.file_identity {
-            md.push(format_row(["Unload Option", &file_data.unload_opt]));
         }
         if !file_data.requirements.is_empty() {
             md.push(format_row([
@@ -593,8 +603,14 @@ impl Formatter {
         // Step configuration belongs with the step listing: the same reader
         // wants both, and neither is useful without the other.
         if config.rules.step_tables {
+            // A jump target is stored as the destination's id. Resolving it
+            // needs the whole group, so the map is built once here.
+            let names: crate::rendering::step_extras::StepNames<'_> = active_steps
+                .iter()
+                .map(|step| (step.id.as_str(), step.name.as_str()))
+                .collect();
             for step in &active_steps {
-                append_step_extras(md, step, "");
+                append_step_extras(md, step, "", &names);
             }
         }
     }
