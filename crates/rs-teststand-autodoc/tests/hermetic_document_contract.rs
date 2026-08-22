@@ -475,3 +475,108 @@ fn a_document_can_be_narrowed_to_named_sequences() {
     // And the contents list must not advertise what the document leaves out.
     assert!(!document.contains("[Stress Tests]"), "contents list leaked");
 }
+
+/// A file carrying everything a client must not be shown.
+///
+/// Each element here corresponds to something that actually reached a generated
+/// PDF and was caught by a person reading it, not by a test.
+fn document_with_plumbing(profile: Profile) -> String {
+    let mut main_steps = BTreeMap::new();
+    let mut calls_a_module = step("ID__m1", "Measure Voltage", "NumericLimitTest");
+    r"C:\lab\drivers\meter.dll".clone_into(&mut calls_a_module.module_path);
+    calls_a_module.module_info = Some(rs_teststand_autodoc::data::ModuleInfo {
+        path: r"C:\lab\drivers\meter.dll".to_owned(),
+        adapter_type: "C/CVI Standard Prototype Adapter".to_owned(),
+        occurrences: 1,
+        entry_point: Some("ReadVoltage".to_owned()),
+        ..Default::default()
+    });
+    main_steps.insert("Main".to_owned(), vec![calls_a_module]);
+
+    let mut model_steps = BTreeMap::new();
+    model_steps.insert(
+        "Main".to_owned(),
+        vec![step("ID__m2", "Set Report Path", "Statement")],
+    );
+
+    let file = FileData {
+        name: "Motherboard Test.seq".to_owned(),
+        path: r"C:\secret\internal\Motherboard Test.seq".to_owned(),
+        sequences: vec![
+            SequenceData {
+                name: "MainSequence".to_owned(),
+                step_groups: main_steps,
+                ..SequenceData::default()
+            },
+            // Model configuration, not test logic.
+            SequenceData {
+                name: "ModelOptions".to_owned(),
+                step_groups: model_steps,
+                ..SequenceData::default()
+            },
+        ],
+        ..FileData::default()
+    };
+
+    Formatter::generate(&[file], &ExtractorConfig::for_profile(profile), None)
+}
+
+/// Everything a business document leaked at some point, in one assertion.
+#[test]
+fn the_business_document_shows_logic_and_no_plumbing() {
+    let document = document_with_plumbing(Profile::Business);
+
+    for leak in [
+        // The code module tables. The rule existed and nothing read it.
+        "Code Modules",
+        "Technology usage",
+        "meter.dll",
+        "ReadVoltage",
+        // Model configuration reads as a test step to a client.
+        "ModelOptions",
+        // Engine plumbing.
+        "Load Option",
+        "Unload Option",
+        // Internal identity.
+        "ID#",
+        r"C:\secret\internal",
+        // The mermaid source disclosure.
+        "Diagram source",
+    ] {
+        assert!(
+            !document.contains(leak),
+            "the business document leaks {leak:?}:
+{document}"
+        );
+    }
+}
+
+/// The engineer document names the callable, not only the file it lives in.
+///
+/// Twelve rows all reading `meter.dll` say nothing about which step calls what.
+#[test]
+fn the_engineer_document_names_the_callable() {
+    let document = document_with_plumbing(Profile::Engineer);
+
+    assert!(
+        document.contains("meter.dll -> ReadVoltage"),
+        "the step row should name the function:
+{document}"
+    );
+    assert!(
+        document.contains("Code Modules"),
+        "the engineer profile keeps the module summary"
+    );
+}
+
+/// An anchor with nothing pointing at it is noise in a document a model reads.
+#[test]
+fn no_anchor_is_emitted_when_nothing_can_link_to_it() {
+    // The engineer profile draws no diagram, so no node can link to a step row.
+    let document = document_with_plumbing(Profile::Engineer);
+    assert!(
+        !document.contains("<a id="),
+        "an unlinked anchor puts a raw step id into the document:
+{document}"
+    );
+}
