@@ -120,7 +120,13 @@ fn live_extract_synthetic_sequence_hierarchy() -> Fallible {
     assert_eq!(sequence.name, "MainSequence");
 
     let markdown = Formatter::generate(&files, &config, Some(&engine));
-    assert!(markdown.contains("# SyntheticTest.seq"));
+    // The title is the file's name without its extension: a document is about
+    // the test, not about a file on somebody's disk.
+    assert!(markdown.contains("# SyntheticTest"), "{markdown}");
+    assert!(
+        !markdown.contains("# SyntheticTest.seq"),
+        "the extension should not reach the title:\n{markdown}"
+    );
     assert!(markdown.contains("Initialize Hardware"));
     assert!(markdown.contains("Measure Voltage"));
     // The engineer profile is read beside the sequence and fed to a model, so
