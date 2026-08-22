@@ -528,7 +528,7 @@ impl Formatter {
             md.push(String::new());
         }
 
-        // The engineer profile is written to be pasted into a language model,
+        // The engineer profile is written to be read as text,
         // where a diagram degrades into a list of node ids and edges. That
         // reader is better served by the expressions and module calls in text,
         // which the step detail below carries. The business profile is the

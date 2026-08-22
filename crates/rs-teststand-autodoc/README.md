@@ -11,9 +11,8 @@ This does not parse `.seq` files. It reads them through the TestStand COM API,
 so step types, expressions, module parameters and type palettes come from the
 engine.
 
-That means you need Windows, a registered TestStand engine, and whatever
-[licence][licensing] your agreement with National Instruments requires. This
-project makes no claim about your licensing terms.
+You need Windows, a registered TestStand engine, and whatever
+[licence][licensing] your agreement with National Instruments requires.
 
 ## Offline
 
@@ -77,7 +76,7 @@ A profile is a set of rules. Pick one, then override individual rules.
 
 | Profile | For | Contains |
 | :--- | :--- | :--- |
-| `engineer` | Test engineers, and language models | Steps as a nested outline, so a loop or a branch contains what runs inside it. Each step carries its own condition, limits, expressions and message text. Variables, parameters and custom data types. No diagrams. |
+| `engineer` | Test engineers, and tools that read the text | Steps as a nested outline, so a loop or a branch contains what runs inside it. Each step carries its own condition, limits, expressions and message text. Variables, parameters and custom data types. No diagrams. |
 | `business` | Managers, customers, auditors | The run in order, control flow diagrams, step names. No variables, expressions, paths or callbacks. |
 | `station` | Station configuration | Station options, execution settings, search directories. No step detail. |
 
@@ -116,16 +115,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 Sequences appear in the order a run reaches them: setup, the per-UUT loop, the
 subsequences those call, then teardown.
 
-Two summaries close the document. The call hierarchy names each sequence once
-with what it reaches. A call whose target is written as an expression is
-resolved while the sequence runs, so it is reported as such rather than printed
-as though the expression were a sequence name.
+Two summaries close it.
 
-The code module summary groups by technology, and within a technology by the
-library holding the code. A VI can sit inside a library, a packed library, a
-class or a VI library, each of which LabVIEW writes into the path as though it
-were a folder, so a packed library holding a class holding a VI reads as three
-levels. A share of the calls says how much of the test is written in what.
+The call hierarchy names each sequence with what it reaches. A call that starts
+a thread, starts an execution, or runs on another machine says so. A target
+named by an expression is resolved at run time, so it is reported as such rather
+than printed as a sequence name.
+
+The code module summary groups by technology, then by the library holding the
+code. LabVIEW writes a library, packed library, class or VI library into the
+path as a folder, so a packed library holding a class holding a VI nests three
+deep. A percentage of the calls shows how much of the test is in what.
 
 ## Output
 
@@ -145,12 +145,8 @@ The Markdown is GitHub Flavored: tables, plus diagrams in ```mermaid fences.
 ## Status
 
 A hobby project, maintained when there is time. Behaviour may change between
-releases. Workspace files (`.tsw`) are not supported yet; it documents
-individual `.seq` files.
-
-Large language models were used for audits, test generation and documentation
-drafts. Everything is reviewed by hand. This is an independent project and has
-no connection to NI's own tooling.
+releases. Workspace files (`.tsw`) are not supported; it documents individual
+`.seq` files.
 
 ## Legal
 

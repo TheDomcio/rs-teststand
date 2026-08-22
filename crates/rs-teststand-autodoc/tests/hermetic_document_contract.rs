@@ -365,7 +365,7 @@ fn engineer_document_with_module() -> String {
 
 #[test]
 fn the_engineer_document_is_text_a_model_can_follow() {
-    // This profile is read by an engineer pasting it into a language model.
+    // This profile is read as text, by a person or by a tool.
     // A diagram becomes a wall of node ids there, so the engineer view carries
     // no chart even when charts are switched on; it carries the data flow as
     // text instead.

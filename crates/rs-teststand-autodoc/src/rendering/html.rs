@@ -19,7 +19,7 @@ const DEFAULT_TITLE: &str = "TestStand Documentation Report";
 ///
 /// Mermaid blocks are rendered to inline `<svg>`. The diagram *source* is kept
 /// alongside the picture in a `<details>` element: an SVG carries path data, not
-/// control flow, so a reader that cannot see, or a language model summarising
+/// control flow, so a reader using a screen reader, or a tool summarising
 /// the document, would otherwise lose the sequence's logic entirely.
 ///
 /// Falls back to the diagram source as text when a diagram cannot be rendered,
