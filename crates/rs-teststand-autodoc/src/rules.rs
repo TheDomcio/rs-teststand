@@ -25,6 +25,12 @@ pub struct DocumentRules {
     pub variables: bool,
     /// Show the per-step tables and their configuration blocks.
     pub step_tables: bool,
+    /// Render steps as a nested outline rather than a flat table.
+    ///
+    /// Flow control becomes the nesting: what a loop or a branch contains sits
+    /// underneath it, and each step's expressions sit with the step instead of
+    /// in a block further down that the reader has to match back by name.
+    pub nested_steps: bool,
     /// Draw control-flow diagrams.
     pub flowcharts: bool,
     /// Link diagram nodes to step detail. Only meaningful with `step_tables`.
@@ -52,6 +58,7 @@ impl DocumentRules {
                 file_identity: true,
                 variables: true,
                 step_tables: true,
+                nested_steps: true,
                 link_steps: false,
                 flowcharts: false,
                 split_step_groups: true,
@@ -65,6 +72,7 @@ impl DocumentRules {
                 file_identity: false,
                 variables: false,
                 step_tables: false,
+                nested_steps: false,
                 flowcharts: true,
                 link_steps: false,
                 split_step_groups: false,
@@ -80,6 +88,7 @@ impl DocumentRules {
                 file_identity: true,
                 variables: false,
                 step_tables: false,
+                nested_steps: false,
                 flowcharts: false,
                 link_steps: false,
                 split_step_groups: false,

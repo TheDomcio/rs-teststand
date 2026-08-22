@@ -6,6 +6,7 @@ pub mod flowchart;
 pub mod formatter;
 pub mod html;
 pub mod markdown;
+pub mod outline;
 pub mod pdf;
 pub mod station_options;
 pub mod step_extras;

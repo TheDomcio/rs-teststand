@@ -547,8 +547,31 @@ impl Formatter {
         // Listing steps and drawing them are separate choices. A profile that
         // links diagram nodes to step detail must also list that detail.
         if config.rules.step_tables {
-            Self::format_step_table(md, steps, config);
+            if config.rules.nested_steps {
+                Self::format_step_outline(md, steps);
+            } else {
+                Self::format_step_table(md, steps, config);
+            }
         }
+    }
+
+    /// Steps as a nested outline, each carrying its own configuration.
+    fn format_step_outline(md: &mut Vec<String>, steps: &[StepData]) {
+        // Jump targets resolve against the whole group, so the map is built
+        // once rather than per step.
+        let names: crate::rendering::step_extras::StepNames<'_> = steps
+            .iter()
+            .map(|step| (step.id.as_str(), step.name.as_str()))
+            .collect();
+
+        let lines = crate::rendering::outline::render(steps, |step| {
+            crate::rendering::step_extras::step_detail(step, &names)
+        });
+        if lines.is_empty() {
+            return;
+        }
+        md.extend(lines);
+        md.push(String::new());
     }
 
     fn format_limits(limits: &Limits) -> String {

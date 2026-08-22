@@ -297,3 +297,61 @@ pub fn append_step_extras(
     md.extend(out);
     md.push(String::new());
 }
+
+/// A step's configuration as plain lines, for nesting underneath the step.
+///
+/// The blockquote form exists because the table above it gave the detail no
+/// owner, so each block had to restate the step's name and fence itself off. In
+/// an outline the step's own line is the owner, so the quoting and the repeated
+/// name are both noise.
+///
+/// Built from the same pieces as [`append_step_extras`] and then unquoted,
+/// rather than duplicated: every line that function emits begins with the quote
+/// marker by construction, so removing it is exact.
+#[must_use]
+pub fn step_detail(step: &StepData, names: &StepNames<'_>) -> Vec<String> {
+    let mut lines = Vec::new();
+
+    // What the step runs comes first. The table this replaced carried it in a
+    // column, and without it a step says what it is called but not what it does.
+    if !step.target_sequence.is_empty() {
+        lines.push(format!("- **Calls**: {}", code_span(&step.target_sequence)));
+    } else if !step.module_path.is_empty() {
+        let file = crate::rendering::markdown::display_name(&step.module_path);
+        let called = match step
+            .module_info
+            .as_ref()
+            .and_then(|module| module.entry_point.as_ref())
+        {
+            Some(entry_point) if !entry_point.is_empty() => format!("{file} -> {entry_point}"),
+            _ => file,
+        };
+        lines.push(format!("- **Calls**: {}", code_span(&called)));
+    }
+
+    let mut quoted = Vec::new();
+    append_step_extras(&mut quoted, step, "", names);
+
+    quoted
+        .into_iter()
+        // Drop the blank separators and the "Configuration: <name>" header:
+        // the outline already names the step on the line above.
+        .skip_while(|line| !line.starts_with("> - "))
+        // A fenced block is one entry holding several lines, each separately
+        // quoted, so the marker comes off line by line.
+        .map(|entry| {
+            entry
+                .lines()
+                .map(|line| {
+                    line.strip_prefix("> ")
+                        .or_else(|| line.strip_prefix(">"))
+                        .unwrap_or(line)
+                })
+                .collect::<Vec<_>>()
+                .join("\n")
+        })
+        .filter(|entry| !entry.trim().is_empty())
+        .for_each(|entry| lines.push(entry));
+
+    lines
+}
