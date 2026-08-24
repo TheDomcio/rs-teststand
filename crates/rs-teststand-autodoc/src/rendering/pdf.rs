@@ -74,6 +74,17 @@ pub fn html_to_pdf(html_content: &str, output_pdf_path: &Path) -> Result<(), Err
         // every page. The older `--print-to-pdf-no-header` is accepted and
         // silently ignored by current builds.
         .arg("--no-pdf-header-footer")
+        // The page is local and self-contained, so the browser has no reason to
+        // open a socket. These switches hold it to that: a station on an
+        // isolated network should not see this reach for update checks,
+        // telemetry or safe-browsing lookups on its way to a PDF.
+        .arg("--disable-background-networking")
+        .arg("--disable-component-update")
+        .arg("--disable-sync")
+        .arg("--no-first-run")
+        .arg("--no-default-browser-check")
+        .arg("--safebrowsing-disable-auto-update")
+        .arg("--metrics-recording-only")
         .arg(format!("--print-to-pdf={}", absolute_pdf_path.display()))
         .arg(file_url(&temp_html_path))
         .status();

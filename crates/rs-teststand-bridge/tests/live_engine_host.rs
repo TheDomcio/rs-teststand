@@ -164,6 +164,12 @@ async fn a_subscriber_receives_what_a_sequence_posts() -> Result<(), Error> {
         )?;
         main_sequence.insert_step(&step, 0, StepGroup::Main)?;
         engine.new_execution(&sequence_file, "MainSequence", None, false, 0)?;
+        // Drop this closure's load reference now. The execution holds its own,
+        // so the file stays loaded until the run ends and the call returns
+        // false. Skipping it leaves the engine's cache holding the file, and
+        // the engine reports that on the next start as a modal warning that
+        // blocks the following test.
+        let _ = engine.release_sequence_file_ex(sequence_file, 0);
         Ok(())
     })
     .await??;
@@ -229,6 +235,12 @@ async fn every_subscriber_sees_the_same_stream() -> Result<(), Error> {
         )?;
         main_sequence.insert_step(&step, 0, StepGroup::Main)?;
         engine.new_execution(&sequence_file, "MainSequence", None, false, 0)?;
+        // Drop this closure's load reference now. The execution holds its own,
+        // so the file stays loaded until the run ends and the call returns
+        // false. Skipping it leaves the engine's cache holding the file, and
+        // the engine reports that on the next start as a modal warning that
+        // blocks the following test.
+        let _ = engine.release_sequence_file_ex(sequence_file, 0);
         Ok(())
     })
     .await??;
@@ -271,6 +283,12 @@ async fn messages_are_acknowledged_even_with_nobody_listening() -> Result<(), Er
         )?;
         main_sequence.insert_step(&step, 0, StepGroup::Main)?;
         engine.new_execution(&sequence_file, "MainSequence", None, false, 0)?;
+        // Drop this closure's load reference now. The execution holds its own,
+        // so the file stays loaded until the run ends and the call returns
+        // false. Skipping it leaves the engine's cache holding the file, and
+        // the engine reports that on the next start as a modal warning that
+        // blocks the following test.
+        let _ = engine.release_sequence_file_ex(sequence_file, 0);
         Ok(())
     })
     .await??;

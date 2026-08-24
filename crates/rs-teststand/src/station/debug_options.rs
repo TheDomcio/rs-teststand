@@ -42,8 +42,12 @@ bitflags::bitflags! {
 
         /// The bits that raise a modal dialog while the engine shuts down.
         ///
-        /// Not an engine constant: the union this crate clears so that a host
-        /// with no one at the keyboard cannot wedge at exit.
+        /// Not an engine constant. This is the union [`Engine::new`] clears on
+        /// the station it connects to, so that a host with no one at the
+        /// keyboard cannot wedge at exit. Every other debug bit is left as the
+        /// operator set it.
+        ///
+        /// [`Engine::new`]: crate::Engine::new
         const MODAL_ON_SHUTDOWN =
             Self::REPORT_OBJECT_LEAKS.bits() | Self::REPORT_KNOWN_OS_AND_COMPONENT_PROBLEMS.bits();
     }

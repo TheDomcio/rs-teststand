@@ -20,7 +20,7 @@ use std::path::Path;
 
 use std::time::Instant;
 
-use rs_teststand::{Engine, Error, StationOptions};
+use rs_teststand::{DebugOptions, Engine, Error, StationOptions};
 
 /// Restores a station option when it goes out of scope.
 ///
@@ -604,5 +604,39 @@ fn station_options_behave_as_documented() -> Result<(), Error> {
         step(&engine)?;
         println!("  ok: {label} ({:?})", started.elapsed());
     }
+    Ok(())
+}
+
+/// The engine clears the two dialog bits and leaves every other debug choice.
+///
+/// A blind write of `DebugOptions::NONE` would also pass a check that only
+/// looks for the modal bits being clear, so this sets an unrelated bit first
+/// and then asserts it survived.
+#[test]
+#[ignore = "requires a live engine"]
+fn preparing_a_station_clears_only_the_shutdown_dialog_bits() -> Result<(), Error> {
+    let probe = Engine::new()?;
+    let options = probe.station_options()?;
+    let original = options.debug_options()?;
+
+    // A bit an operator might reasonably have on, plus both dialog bits.
+    options.set_debug_options(DebugOptions::STACK_CHECKING | DebugOptions::MODAL_ON_SHUTDOWN)?;
+    drop(options);
+    drop(probe);
+
+    let engine = Engine::new()?;
+    let options = engine.station_options()?;
+    let prepared = options.debug_options()?;
+
+    assert!(
+        !prepared.intersects(DebugOptions::MODAL_ON_SHUTDOWN),
+        "both shutdown dialog bits should be clear, found {prepared:?}"
+    );
+    assert!(
+        prepared.contains(DebugOptions::STACK_CHECKING),
+        "stack checking is the operator's choice and should survive, found {prepared:?}"
+    );
+
+    options.set_debug_options(original)?;
     Ok(())
 }

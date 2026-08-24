@@ -1,8 +1,9 @@
 //! Standalone offline HTML generator for TestStand™ sequence documentation.
 //!
 //! Converts Markdown reports into self-contained HTML documents with inline SVG
-//! control-flow diagrams and an embedded stylesheet. Nothing is fetched at
-//! render time or at view time: no CDN, no remote script, no webfont.
+//! control-flow diagrams and an embedded stylesheet. The generator reads nothing
+//! from the network, and neither does the finished page, because the stylesheet
+//! and every diagram are written into the file itself.
 
 use std::fmt::Write as _;
 

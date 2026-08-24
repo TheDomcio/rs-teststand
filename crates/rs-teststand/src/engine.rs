@@ -171,9 +171,14 @@ impl Engine {
         let _ = options.set_require_user_login(false);
         let _ = options.set_auto_login_system_user(true);
 
-        // Debug features are a debugging aid with a cost, and two of them raise
-        // a dialog at shutdown. Nothing here is useful to an unattended host.
-        let _ = options.set_debug_options(crate::DebugOptions::NONE);
+        // Read-modify-write, for the same reason as the execution mask below:
+        // only two debug bits raise a dialog at shutdown, and the rest are
+        // choices the operator made. Clearing all of them would silently turn
+        // off stack and buffer checking on somebody's station.
+        if let Ok(current) = options.debug_options() {
+            let quiet = current.difference(crate::DebugOptions::MODAL_ON_SHUTDOWN);
+            let _ = options.set_debug_options(quiet);
+        }
 
         // Read-modify-write: keep the station's tracing choices, drop only the
         // break bits, which suspend an execution until an operator acts.

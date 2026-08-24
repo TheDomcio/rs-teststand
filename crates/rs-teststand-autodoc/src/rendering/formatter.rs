@@ -11,7 +11,7 @@ use crate::rendering::flowchart::build_flowchart;
 use crate::rendering::markdown::{
     checkbox, display_name, format_row, format_sep, normalize_markdown_blanks, sanitize, slug,
 };
-use crate::rendering::station_options::append_station_options;
+use crate::rendering::station_options::{append_station_document, append_station_options};
 use crate::rendering::step_extras::append_step_extras;
 
 /// Formats extracted sequence file hierarchies into publication-ready Markdown reports.
@@ -133,7 +133,7 @@ impl Formatter {
         if config.profile == Profile::Station {
             let mut md = Vec::new();
             if let Some(eng) = engine {
-                append_station_options(&mut md, eng);
+                append_station_document(&mut md, eng);
             } else {
                 md.push("# Station Options\n\n*(No active engine)*".to_owned());
             }

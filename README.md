@@ -1,4 +1,4 @@
-# 🦀 rs-teststand
+# rs-teststand
 
 [![Crates.io](https://img.shields.io/crates/v/rs-teststand.svg)](https://crates.io/crates/rs-teststand)
 [![Docs.rs](https://docs.rs/rs-teststand/badge.svg)](https://docs.rs/rs-teststand)
@@ -9,7 +9,7 @@
 
 Community Rust language bindings for the [National Instruments TestStand™ COM API][ts-api]. A twin API, and the sibling of my other project, [`py-teststand`](https://github.com/TheDomcio/py-teststand).
 
-## 📖 Overview
+## Overview
 
 `rs-teststand` exposes the [TestStand™ COM API][ts-api] as a safe, idiomatic Rust interface built on late-bound [`IDispatch`][idispatch] invocation.
 
@@ -19,7 +19,7 @@ What you get instead is what Rust is actually good at. Ownership makes the relea
 
 The public API surface maps one-to-one onto the TestStand™ object model: type names, the containment relationships between them, method names, and parameter order follow the COM API, so anyone who knows TestStand™ can predict the Rust call.
 
-### 🐍 Similarity to py-teststand
+### Similarity to py-teststand
 
 I wrote [`py-teststand`](https://github.com/TheDomcio/py-teststand) before for easly integration with Python ecosystem toolings / remote executions management.
 
@@ -30,7 +30,7 @@ A [wrong dispatch identifier](https://learn.microsoft.com/en-us/windows/win32/ap
 
 Rust catches a useful share of these at compile time:
 
-- **[Ownership](https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html) prevents resource leaks.** Every COM reference releases on drop, so an early return or a panic on an error path cannot leak it. This crate had exactly that bug once: BSTRs and COM references leaked on the `call` conversion-error path because a hand-written `VariantClear` was an obligation that early returns silently skipped. The fix was `OwnedVariant`, a guard type whose `Drop` clears unconditionally. That class of bug is now structurally impossible, not just tested-for.
+- **[Ownership](https://doc.rust-lang.org/book/ch04-01-what-is-ownership.html) prevents resource leaks.** Every COM reference releases on drop, so an early return or a panic on an error path cannot leak it. This crate had exactly that bug once: BSTRs and COM references leaked on the `call` conversion-error path because a hand-written `VariantClear` was an obligation that early returns silently skipped. The fix was `OwnedVariant`, a guard type whose `Drop` clears unconditionally. The type system now rules that class of bug out, so no test has to catch it.
 - **Thread safety is enforced by the compiler.** The wrapper types are [`!Send` and `!Sync`](https://doc.rust-lang.org/book/ch16-04-extensible-concurrency-sync-and-send.html), so calling the engine from the wrong thread is a compile error, not a race condition discovered in production. COM Single-Threaded Apartment rules are hard to remember and easy to violate; the type system remembers for you.
 - **The [unsafe](https://doc.rust-lang.org/book/ch19-01-unsafe-rust.html) boundary is verifiable.** The public crate enforces `#![forbid(unsafe_code)]`. All raw pointer and VARIANT work lives in a separate `-sys` crate, so the compiler proves the public surface contains no unsafe, rather than taking the claim on trust.
 
@@ -43,13 +43,13 @@ This approach simplifies deployment in four ways:
 
 These technology options allow exposing the engine over whatever the Rust ecosystem already speaks, like [gRPC](https://grpc.io/), a message queue, or plain HTTP.
 
-The watchdog belongs to the same goal rather than being a separate feature. A [message popup][ts-messagepopup] step blocks the calling thread inside COM, and that is fatal two different ways: to a service with nobody there to answer, and to an operator-facing host if the question never reaches the screen. The guard covers both. By default it puts the popup in front of every other window so a user interface or a person can answer it, and the process lives; terminating on a dialog instead is a choice you make for a host that genuinely runs alone. This matters most when driving sequences someone else already wrote, which is where these steps turn up unannounced. See [Dialogs and the watchdog](#️-dialogs-and-the-watchdog).
+The watchdog belongs to the same goal rather than being a separate feature. A [message popup][ts-messagepopup] step blocks the calling thread inside COM, and that is fatal two different ways: to a service with nobody there to answer, and to an operator-facing host if the question never reaches the screen. The guard covers both. By default it puts the popup in front of every other window so a user interface or a person can answer it, and the process lives; terminating on a dialog instead is a choice you make for a host that genuinely runs alone. This matters most when driving sequences someone else already wrote, which is where these steps turn up unannounced. See [Dialogs and the watchdog](#dialogs-and-the-watchdog).
 
-### 🏷️ Name
+### Name
 
 The package is named `rs-teststand` (with a dash), referencing its sibling project [`py-teststand`](https://github.com/TheDomcio/py-teststand), to avoid naming collision with the Rust `test` framework and for easier relation to the TestStand™ test executive. The import name uses an underscore: `rs_teststand`.
 
-### 🏗️ Technical stack
+### Technical stack
 
 #### [`rs-teststand`](./crates/rs-teststand)
 
@@ -91,9 +91,9 @@ The package is named `rs-teststand` (with a dash), referencing its sibling proje
 | **[`merman`](https://crates.io/crates/merman)**   | Embedded pure-Rust Mermaid to SVG rendering    |
 | **[`markdown`](https://crates.io/crates/markdown)** | Markdown parser and HTML generator           |
 
-## ⚠️ Transparency
+## Transparency
 
-### 🚧 Project status
+### Project status
 
 This is a hobby project, maintained on a best-effort basis and **not** yet
 under active full-time development ahead of the first release. There is no fixed release
@@ -110,7 +110,7 @@ instead of fully described ones until reach 1.0.0 release.
 
 ---
 
-## ⚡ Quick start
+## Quick start
 
 Add `rs-teststand` to your project:
 
@@ -150,9 +150,9 @@ fn main() -> Result<(), rs_teststand::Error> {
 
 ---
 
-## 💡 Examples
+## Examples
 
-The `rs-teststand` workspace includes a comprehensive suite of executable examples. They are meant to be run against a live engine to demonstrate how to perform common tasks idiomatically.
+The `rs-teststand` workspace ships a set of executable examples. They are meant to be run against a live engine to demonstrate how to perform common tasks idiomatically.
 
 You can run any example from the workspace root using `cargo run --example <name>`:
 
@@ -184,7 +184,7 @@ You can run them all in sequence using the launcher:
 cargo run -p rs-teststand --example launch_all_examples
 ```
 
-### 🚀 Building an application
+### Building an application
 
 The examples above show the API. They do not show what a deployed host *costs*, because that answer lives in your own `Cargo.toml` rather than in the crate. A Cargo profile is only honoured in the package that is the build root, so a library cannot set one for you.
 
@@ -202,11 +202,11 @@ The last row is the one to care about for deployment. A default Rust MSVC binary
 
 ---
 
-## ✨ Features
+## Features
 
 - **Rust 2024 Edition**: built on [Edition 2024](https://doc.rust-lang.org/edition-guide/rust-2024/index.html) (Rust 1.85+), Cargo [`resolver = "3"`](crates/../Cargo.toml), and a workspace-wide [deny-wall](Cargo.toml) that forbids panics, stubs, unchecked indexing, and undocumented unsafe at the lint level.
 - **Zero unsafe in the public surface**: the [`rs-teststand`](crates/rs-teststand/src/lib.rs) crate enforces [`#![forbid(unsafe_code)]`](crates/rs-teststand/src/lib.rs). All COM interop lives in the separate [`rs-teststand-sys`](crates/rs-teststand-sys) crate; the compiler proves the public crate contains none.
-- **Twin API design**: containment relationships, method names, and parameter order follow the COM API (`NewExecution` -> `new_execution`). The surface is composed Rust types, not an inheritance hierarchy. See the [Architecture](#-repository-structure) section.
+- **Twin API design**: containment relationships, method names, and parameter order follow the COM API (`NewExecution` -> `new_execution`). The surface is composed Rust types, not an inheritance hierarchy. See the [Architecture](#repository-structure) section.
 - **Self-contained package**: no C/C++ compiler at build time, no vendored type libraries, no consumer-side code generation. `cargo add rs-teststand` is enough.
 - **Cached DISPID late-binding**: method calls dispatch via pre-cached [dispatch IDs](crates/rs-teststand/src/dispids.rs) verified identical across [TestStand™ 2016 through TestStand™ 2026 Q1][ts-versions] (zero mismatches over 3 907 member pairs in [six type-library dumps](PLAN.md)).
 - **Masks as typed flags, not bare integers**: the engine takes a `Long` and asks callers to combine named constants with bitwise-OR. This crate keeps the engine's exact numbering but wraps each mask in a [`bitflags`](https://docs.rs/bitflags) type ([`PropertyOptions`](crates/rs-teststand/src/property/options.rs), [`GetSeqFileOptions`](crates/rs-teststand/src/sequence/options.rs), [`DebugOptions`](crates/rs-teststand/src/station/debug_options.rs), [`ExecutionMask`](crates/rs-teststand/src/station/execution_mask.rs), [`PropertyValueTypeFlags`](crates/rs-teststand/src/enums.rs)), so options combine with `|`, read back with `contains`, and cannot be mixed with an unrelated mask. Unknown bits set by a newer engine survive a read-modify-write.
@@ -216,11 +216,11 @@ The last row is the one to care about for deployment. A default Rust MSVC binary
 - **UI message polling without a GUI**: a [`UIMessage`][ts-uimessage] type with [45 named codes](crates/rs-teststand/src/messaging/ui_message_code.rs) and a [`pump_thread_messages`](crates/rs-teststand/src/messaging/pump.rs) helper for headless hosts.
 - **Step and template building**: [`Step`][ts-step], [`Sequence`][ts-sequence], and [`SequenceFile`][ts-sequencefile] wrappers support building sequences, inserting steps from templates, and reading results.
 - **User management**: [`User`][ts-user] and `Privilege` wrappers for creating users and setting their privileges.
-- **Popups reach the operator, not the killer**: the engine's own dialogs are switched off at startup, but a [message popup][ts-messagepopup] step is a question a sequence means to ask. A [`Watchdog`](crates/rs-teststand/src/watchdog.rs) finds it and puts it in front of every other window, including always-on-top ones from another process, so a user interface can still answer it. Terminating on a dialog is opt-in, for hosts that genuinely have nobody there. See [Dialogs and the watchdog](#️-dialogs-and-the-watchdog).
+- **Popups reach the operator, not the killer**: the engine's own dialogs are switched off at startup, but a [message popup][ts-messagepopup] step is a question a sequence means to ask. A [`Watchdog`](crates/rs-teststand/src/watchdog.rs) finds it and puts it in front of every other window, including always-on-top ones from another process, so a user interface can still answer it. Terminating on a dialog is opt-in, for hosts that genuinely have nobody there. See [Dialogs and the watchdog](#dialogs-and-the-watchdog).
 - **Variables as JSON** ([`rs-teststand-serde`](crates/rs-teststand-serde)): a [`PropertyObject`][ts-propertyobject] tree round-trips through plain JSON, with 64-bit representations kept exact, non-finite numbers as `null`, radix formats preserved, multidimensional arrays nested.
 - **Clean-room compliance**: original Rust documentation; no copied National Instruments manual prose. Documentation links reside strictly in [`Cargo.toml`](Cargo.toml) package metadata.
 
-### ⚙️ Engine management
+### Engine management
 
 [`Engine`](crates/rs-teststand/src/engine.rs) is the root of the object model and the only object created through ActiveX; every other wrapper is produced by it. The module covers three things: getting an engine into a usable state, getting rid of one cleanly, and surviving the dialogs a sequence can raise in between.
 
@@ -233,7 +233,7 @@ The last row is the one to care about for deployment. A default Rust MSVC binary
 
 **The rest of the surface** follows the object model: version and directory queries, [station options][ts-stationoptions], search directories, station globals, and the factories for sequence files, executions, steps, sequences, users, property objects and workspace files.
 
-#### 🛡️ Dialogs and the watchdog
+#### Dialogs and the watchdog
 
 The engine runs in-process on a single-threaded COM apartment. When a dialog goes up, the calling thread is stuck _inside_ COM: the call does not return, so there is nothing to time out and no Rust code can cancel it. Construction removes the dialogs the engine raises on its own, but it cannot remove the ones a sequence asks for, and it should not, a [message popup][ts-messagepopup] step exists to stop and ask a person something.
 
@@ -276,15 +276,15 @@ flowchart TD
 
 ---
 
-## 🧩 Compatibility
+## Compatibility
 
 | Component             | Supported                                                                                                                                     |
 | :-------------------- | :-------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Operating system**  | Windows (32-bit and 64-bit). Windows 7 requires the [`*-win7-windows-msvc`][win7-msvc] tier 3 targets, see [below](#-building-for-windows-7). |
+| **Operating system**  | Windows (32-bit and 64-bit). Windows 7 requires the [`*-win7-windows-msvc`][win7-msvc] tier 3 targets, see [below](#building-for-windows-7). |
 | **Rust toolchain**    | [1.85+ (Edition 2024)](https://doc.rust-lang.org/edition-guide/rust-2024/index.html)                                                          |
 | **TestStand™ engine** | [TestStand™ 2016 through TestStand™ 2026 Q1][ts-versions]                                                                                     |
 
-### 🪟 Building for Windows 7
+### Building for Windows 7
 
 Rust raised the baseline for the tier 1 `*-pc-windows-*` targets to Windows 10
 in 1.78 ([Updated baseline standards for Windows targets][win-baseline]). A
@@ -330,7 +330,7 @@ hear how it goes.
 
 ---
 
-## 📦 Repository structure
+## Repository structure
 
 Six crates in one repository. Start with `rs-teststand`. The `-sys` crate is an
 implementation detail you never depend on directly, and the last four are optional
@@ -400,7 +400,7 @@ The `Dispatch` trait is the seam that makes both properties possible: real calls
 through `IDispatch::Invoke`, while tests substitute a fake and exercise the same
 wrapper logic with no COM at all.
 
-### ❓ Why split them?
+### Why split them?
 
 **`-sys` split:** because it makes the safety claim _verifiable_ rather than aspirational.
 `#![forbid(unsafe_code)]` is a crate-level guarantee: a single crate that both
@@ -437,7 +437,7 @@ code generation on your machine.
 
 ---
 
-## ⚖️ Legal
+## Legal
 
 TestStand™ is a registered trademark of [National Instruments Corporation](https://www.ni.com). Refer to [National Instruments' TestStand™ licensing options](https://www.ni.com/docs/en-US/bundle/teststand/page/teststand-licensing-options.html) and [license selection guide](https://www.ni.com/en/shop/electronic-test-instrumentation/application-software-for-electronic-test-and-instrumentation-category/what-is-teststand/select-license.html) for information on required licenses to operate the TestStand™ engine.
 

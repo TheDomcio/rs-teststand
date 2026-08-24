@@ -98,7 +98,7 @@ fn live_extract_synthetic_sequence_hierarchy() -> Fallible {
     fs::create_dir_all(&temp_dir)?;
     let temp_file = temp_dir.join("SyntheticTest.seq");
 
-    let _sequence_file = build_synthetic_sequence_file(&engine, &temp_file)?;
+    let sequence_file = build_synthetic_sequence_file(&engine, &temp_file)?;
 
     let config = ExtractorConfig {
         profile: Profile::Engineer,
@@ -168,6 +168,12 @@ fn live_extract_synthetic_sequence_hierarchy() -> Fallible {
         rs_teststand_autodoc::rendering::markdown_to_html(&diagrammed, Some("SyntheticTest.seq"));
     assert!(drawn.contains("<div class=\"mermaid-diagram\">"));
     assert!(drawn.contains("<svg"));
+
+    // Hand the file back before the engine goes. Dropping the wrapper releases
+    // the ActiveX reference but leaves the engine's own cache holding the file,
+    // and the engine reports that on the next start as a modal warning that a
+    // headless run then blocks on.
+    engine.release_sequence_file_ex(sequence_file, 0)?;
 
     let _ = fs::remove_file(&temp_file);
     let _ = fs::remove_dir(&temp_dir);

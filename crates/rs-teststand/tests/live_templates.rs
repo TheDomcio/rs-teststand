@@ -150,6 +150,7 @@ fn inserting_a_step_template_leaves_the_template_reusable(engine: &Engine) -> Re
         first.post_expression()?,
         r#"Locals.Result = "from a template""#
     );
+    engine.release_sequence_file_ex(sequence_file, none())?;
     Ok(())
 }
 
@@ -182,6 +183,7 @@ fn every_copy_carries_the_template_step_id_until_it_is_re_identified(
         template_id,
         "re-identifying a copy must not disturb the template"
     );
+    engine.release_sequence_file_ex(sequence_file, none())?;
     Ok(())
 }
 
@@ -214,6 +216,7 @@ fn a_sequence_template_brings_its_steps_with_it(engine: &Engine) -> Result<(), E
     let copied_id = step_id(&inserted.get_step(0, StepGroup::Main)?)?;
     inserted.create_new_unique_step_ids()?;
     assert_ne!(step_id(&inserted.get_step(0, StepGroup::Main)?)?, copied_id);
+    engine.release_sequence_file_ex(sequence_file, none())?;
     Ok(())
 }
 
@@ -239,6 +242,7 @@ fn a_variable_template_lands_in_locals_with_its_default(engine: &Engine) -> Resu
     // sequence's value would become every future copy's default.
     locals.set_val_string("Serial_Number", none(), "SN-0042")?;
     assert_eq!(template.get_val_string("", none())?, "unset");
+    engine.release_sequence_file_ex(sequence_file, none())?;
     Ok(())
 }
 
