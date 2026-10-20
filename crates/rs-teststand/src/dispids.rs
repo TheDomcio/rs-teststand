@@ -1047,6 +1047,10 @@ pub(crate) mod report {
     pub(crate) const LOAD: i32 = 0x6;
     /// `GetTempFile`, conversion and optional extension.
     pub(crate) const GET_TEMP_FILE: i32 = 0x8;
+    /// `NewReportSection`, no parameters.
+    pub(crate) const NEW_REPORT_SECTION: i32 = 0x29;
+    /// `ReportSection`, read/write object.
+    pub(crate) const REPORT_SECTION: i32 = 0x28;
     /// `AsPropertyObject`, no parameters.
     pub(crate) const AS_PROPERTY_OBJECT: i32 = 0x1d;
     /// `LatestAppendIndex`, read-only integer.
@@ -1067,8 +1071,6 @@ pub(crate) mod report {
     pub(crate) const STYLE_SHEET_PATH: i32 = 0x25;
     /// `TempFileDirectory`, read/write string.
     pub(crate) const TEMP_FILE_DIRECTORY: i32 = 0x26;
-    /// `ReportSection`, read/write object.
-    pub(crate) const REPORT_SECTION: i32 = 0x28;
     /// `SuspendReportRefresh`, read/write boolean.
     pub(crate) const SUSPEND_REPORT_REFRESH: i32 = 0x2a;
 }
@@ -1272,6 +1274,40 @@ pub(crate) mod auto_releaser {
     pub(crate) const EARLY_RELEASE_EX: i32 = 0x3;
     /// `SetReleaserThreadId`, one thread id.
     pub(crate) const SET_RELEASER_THREAD_ID: i32 = 0x4;
+}
+
+/// Members of `ReportSection`.
+pub(crate) mod report_section {
+    /// `ReportSubsections`, read/write collection.
+    pub(crate) const REPORT_SUBSECTIONS: i32 = 0x1;
+    /// `Body`, read/write string.
+    pub(crate) const BODY: i32 = 0x2;
+    /// `IsEmpty`, read-only boolean.
+    pub(crate) const IS_EMPTY: i32 = 0x3;
+    /// `Id`, read-only integer.
+    pub(crate) const ID: i32 = 0x4;
+    /// `Header`, read/write string.
+    pub(crate) const HEADER: i32 = 0x5;
+    /// `Footer`, read/write string.
+    pub(crate) const FOOTER: i32 = 0x6;
+    /// `GetAllText`, no parameters.
+    pub(crate) const GET_ALL_TEXT: i32 = 0x32;
+}
+
+/// Members of `ReportSections`.
+pub(crate) mod report_sections {
+    /// `Item`, one index.
+    pub(crate) const ITEM: i32 = 0x0;
+    /// `Count`, read-only integer.
+    pub(crate) const COUNT: i32 = 0x1;
+    /// `Insert`, index, header, body, footer.
+    pub(crate) const INSERT: i32 = 0xa;
+    /// `Remove`, one index.
+    pub(crate) const REMOVE: i32 = 0xb;
+    /// `Clear`, no parameters.
+    pub(crate) const CLEAR: i32 = 0xc;
+    /// `InsertExisting`, section and index.
+    pub(crate) const INSERT_EXISTING: i32 = 0xd;
 }
 
 /// Members of `WatchExpressions`.

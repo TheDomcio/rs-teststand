@@ -193,6 +193,45 @@ impl Report {
             .into_string()?)
     }
 
+    /// Creates a new report section (`Report.NewReportSection`).
+    ///
+    /// The section belongs to this report. Add child sections through
+    /// [`ReportSection::report_subsections`](crate::ReportSection::report_subsections).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn new_report_section(&self) -> Result<crate::ReportSection, Error> {
+        Ok(crate::ReportSection::new(
+            self.dispatch
+                .call(report::NEW_REPORT_SECTION, &[])?
+                .into_object()?,
+        ))
+    }
+
+    /// The report's root section (`Report.ReportSection`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn report_section(&self) -> Result<crate::ReportSection, Error> {
+        Ok(crate::ReportSection::new(
+            self.dispatch.get(report::REPORT_SECTION)?.into_object()?,
+        ))
+    }
+
+    /// Replaces the report's root section (`Report.ReportSection`).
+    ///
+    /// # Errors
+    /// [`Error`] if the section has no COM identity or the COM call fails.
+    pub fn set_report_section(&self, section: &crate::ReportSection) -> Result<(), Error> {
+        let handle = section.duplicate_dispatch().ok_or(Error::UnexpectedType {
+            expected: "a live report section",
+            actual: "a test fake with no COM identity",
+        })?;
+        self.dispatch
+            .put(report::REPORT_SECTION, Value::Object(handle))?;
+        Ok(())
+    }
+
     /// The report as a property tree (`Report.AsPropertyObject`).
     ///
     /// # Errors
