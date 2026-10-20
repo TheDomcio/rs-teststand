@@ -40,6 +40,12 @@ define_dispid_group! {
         TESTSTAND_DIRECTORY = 0x0142;
         COMMIT_GLOBALS_TO_DISK = 0x011e;
         NEW_PROPERTY_OBJECT = 0x00aa;
+        NEW_PROPERTY_OBJECT_FILE = 0x019f;
+        NUM_ADAPTERS = 0x0131;
+        GET_ADAPTER = 0x005a;
+        GET_ADAPTER_BY_KEY_NAME = 0x005b;
+        GET_TYPE_PALETTE_FILE_LIST = 0x01e4;
+        SET_TYPE_PALETTE_FILE_LIST = 0x01e5;
         NEW_SEQUENCE_FILE = 0x000b;
         NEW_SEQUENCE = 0x001e;
         NEW_EXECUTION = 0x006e;
@@ -80,6 +86,10 @@ define_dispid_group! {
         UNLOAD_ALL_MODULES = 0x011f;
         BREAKPOINTS_ENABLED = 0x0169;
         PERSIST_BREAKPOINTS = 0x0246;
+        WATCH_EXPRESSIONS_ENABLED = 0x0242;
+        PERSIST_WATCH_EXPRESSIONS = 0x0247;
+        GET_WATCH_EXPRESSIONS_CHANGE_COUNT = 0x0226;
+        GET_WATCH_EXPRESSIONS = 0x0227;
         DOT_NET_GARBAGE_COLLECTION_INTERVAL = 0x02be;
         DO_DOT_NET_GARBAGE_COLLECTION = 0x02bf;
         DOT_NET_CLR_VERSION = 0x02c3;
@@ -226,8 +236,34 @@ define_dispid_group! {
     }
 }
 
+/// `Adapter` dispinterface members.
+pub(crate) mod adapter {
+    /// `AsPropertyObject`, no params.
+    pub(crate) const AS_PROPERTY_OBJECT: i32 = 0x2;
+    /// `DisplayName`, read-only string.
+    pub(crate) const DISPLAY_NAME: i32 = 0x16;
+    /// `IconName`, read-only string.
+    pub(crate) const ICON_NAME: i32 = 0x2c;
+    /// `IsConfigurable`, read-only boolean.
+    pub(crate) const IS_CONFIGURABLE: i32 = 0x14;
+    /// `KeyName`, read-only string.
+    pub(crate) const KEY_NAME: i32 = 0x15;
+    /// `Hidden`, read/write boolean.
+    pub(crate) const HIDDEN: i32 = 0x2d;
+    /// `ShowArgsInStepDescription`, read/write boolean.
+    pub(crate) const SHOW_ARGS_IN_STEP_DESCRIPTION: i32 = 0x2e;
+    /// `SmallIconIndex`, read-only integer.
+    pub(crate) const SMALL_ICON_INDEX: i32 = 0x2a;
+    /// `LargeIconIndex`, read-only integer.
+    pub(crate) const LARGE_ICON_INDEX: i32 = 0x2b;
+}
+
 /// `PropertyObjectFile` dispinterface members.
 pub(crate) mod property_object_file {
+    /// `ReadFile`, one optional conflict-handler parameter.
+    pub(crate) const READ_FILE: i32 = 0x68;
+    /// `FileType`, read-only enum.
+    pub(crate) const FILE_TYPE: i32 = 0x78;
     /// `TypeUsageList`, read-only.
     pub(crate) const TYPE_USAGE_LIST: i32 = 0x65;
     /// `IncChangeCount`, no params.
@@ -596,6 +632,8 @@ pub(crate) mod step {
     pub(crate) const SET_BREAK_SETTINGS: i32 = 0x96;
     /// `AdapterKeyName`, read/write, a string, not a number.
     pub(crate) const ADAPTER_KEY_NAME: i32 = 0x15;
+    /// `ChangeAdapter`, one key-name parameter.
+    pub(crate) const CHANGE_ADAPTER: i32 = 0x98;
     /// `RunMode`, read/write, a string, not a number.
     pub(crate) const RUN_MODE: i32 = 0x17;
     /// `Precondition`, read/write.
@@ -910,4 +948,46 @@ pub(crate) mod locations {
     pub(crate) const ITEM: i32 = 0x0;
     /// `Count`, read-only integer.
     pub(crate) const COUNT: i32 = 0x1;
+}
+
+/// Members of `WatchExpression`.
+pub(crate) mod watch_expression {
+    /// `Evaluate`, one context parameter and a reserved integer.
+    pub(crate) const EVALUATE: i32 = 0x1;
+    /// `ClientSequenceFile`, read/write string.
+    pub(crate) const CLIENT_SEQUENCE_FILE: i32 = 0x2;
+    /// `SequenceFileScope`, read/write string.
+    pub(crate) const SEQUENCE_FILE_SCOPE: i32 = 0x3;
+    /// `SequenceScope`, read/write string.
+    pub(crate) const SEQUENCE_SCOPE: i32 = 0x4;
+    /// `Expression`, read/write string.
+    pub(crate) const EXPRESSION: i32 = 0x6;
+    /// `NumericFormat`, read/write string.
+    pub(crate) const NUMERIC_FORMAT: i32 = 0x7;
+    /// `BreakpointType`, read/write enum.
+    pub(crate) const BREAKPOINT_TYPE: i32 = 0x8;
+    /// `UniqueWatchId`, read-only string.
+    pub(crate) const UNIQUE_WATCH_ID: i32 = 0xa;
+    /// `BreakpointTriggered`, one context parameter.
+    pub(crate) const BREAKPOINT_TRIGGERED: i32 = 0xb;
+    /// `UseScopingContext`, read/write boolean.
+    pub(crate) const USE_SCOPING_CONTEXT: i32 = 0xd;
+    /// `GetScopingContext`, one context parameter.
+    pub(crate) const GET_SCOPING_CONTEXT: i32 = 0xe;
+}
+
+/// Members of `WatchExpressions`.
+pub(crate) mod watch_expressions {
+    /// `Item`, one index parameter.
+    pub(crate) const ITEM: i32 = 0x0;
+    /// `Count`, read-only integer.
+    pub(crate) const COUNT: i32 = 0x2;
+    /// `Insert`, one position and two optional parameters.
+    pub(crate) const INSERT: i32 = 0x3;
+    /// `Remove`, one watch-expression parameter.
+    pub(crate) const REMOVE: i32 = 0x4;
+    /// `Clear`, no parameters.
+    pub(crate) const CLEAR: i32 = 0x5;
+    /// `Clone`, one optional boolean.
+    pub(crate) const CLONE: i32 = 0x6;
 }

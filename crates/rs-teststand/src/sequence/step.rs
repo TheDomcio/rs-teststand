@@ -150,6 +150,27 @@ impl Step {
         Ok(crate::AdapterKeyName::from_key(&raw))
     }
 
+    /// Changes the step's adapter (`Step.ChangeAdapter`).
+    ///
+    /// The engine performs the change rather than the caller writing
+    /// `AdapterKeyName`, which is read-only. A change can clear module
+    /// configuration that the new adapter cannot represent, so configure the
+    /// module after this call, not before.
+    ///
+    /// `adapter_key_name` is a key such as
+    /// [`AdapterKeyName::LabViewFlex`](crate::AdapterKeyName::LabView);
+    /// third-party adapters can supply their own.
+    ///
+    /// # Errors
+    /// [`Error`] if the key is unknown or the COM call fails.
+    pub fn change_adapter(&self, adapter_key_name: &str) -> Result<(), Error> {
+        self.dispatch.call(
+            step::CHANGE_ADAPTER,
+            &[Value::Str(adapter_key_name.to_owned())],
+        )?;
+        Ok(())
+    }
+
     /// The expression evaluated after the step runs (`Step.PostExpression`).
     ///
     /// An empty expression means nothing runs afterwards.

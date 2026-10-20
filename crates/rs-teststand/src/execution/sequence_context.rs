@@ -44,6 +44,11 @@ impl SequenceContext {
         Self { dispatch }
     }
 
+    /// An owned handle to the same context, for passing it back to the engine.
+    pub(crate) fn duplicate_dispatch(&self) -> Option<Box<dyn Dispatch>> {
+        self.dispatch.duplicate()
+    }
+
     /// The context as a property tree (`SequenceContext.AsPropertyObject`).
     ///
     /// # Errors

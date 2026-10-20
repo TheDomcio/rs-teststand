@@ -48,6 +48,11 @@ pub enum Value {
     /// Copied out and back in for the same reason as [`Self::I32Array`]. The
     /// engine uses this shape for file lists.
     StrArray(Vec<String>),
+    /// `VT_ARRAY | VT_DISPATCH`, a one-dimensional SAFEARRAY of objects.
+    ///
+    /// The engine uses this shape where a member takes or returns a list of
+    /// automation objects, such as the loaded type-palette files.
+    ObjectArray(Vec<Box<dyn Dispatch>>),
 }
 
 impl Value {
@@ -67,6 +72,7 @@ impl Value {
             Self::Object(_) => "Object",
             Self::I32Array(_) => "I32Array",
             Self::StrArray(_) => "StrArray",
+            Self::ObjectArray(_) => "ObjectArray",
         }
     }
 
@@ -163,6 +169,21 @@ impl Value {
             Self::Str(value) => Ok(value),
             other => Err(ComError::UnexpectedType {
                 expected: "Str",
+                actual: other.kind(),
+            }),
+        }
+    }
+
+    /// Consumes the value as a list of nested COM objects
+    /// (`VT_ARRAY | VT_DISPATCH`).
+    ///
+    /// # Errors
+    /// [`ComError::UnexpectedType`] if the value is not an object array.
+    pub fn into_object_array(self) -> Result<Vec<Box<dyn Dispatch>>, ComError> {
+        match self {
+            Self::ObjectArray(elements) => Ok(elements),
+            other => Err(ComError::UnexpectedType {
+                expected: "ObjectArray",
                 actual: other.kind(),
             }),
         }

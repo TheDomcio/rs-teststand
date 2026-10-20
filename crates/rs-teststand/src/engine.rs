@@ -142,6 +142,89 @@ impl Engine {
         Ok(())
     }
 
+    /// The type palette files currently loaded
+    /// (`Engine.GetTypePaletteFileList`).    ///
+    /// The returned files preserve the engine's order. Each one can be inspected
+    /// through its property tree or removed from the next
+    /// [`set_type_palette_file_list`](Self::set_type_palette_file_list).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn get_type_palette_file_list(&self) -> Result<Vec<crate::PropertyObjectFile>, Error> {
+        Ok(self
+            .dispatch
+            .call(dispid::GET_TYPE_PALETTE_FILE_LIST, &[])?
+            .into_object_array()?
+            .into_iter()
+            .map(crate::PropertyObjectFile::new)
+            .collect())
+    }
+
+    /// Replaces the loaded type palette files
+    /// (`Engine.SetTypePaletteFileList`).
+    ///
+    /// This changes the configured list; call
+    /// [`load_type_palette_files_ex`](Self::load_type_palette_files_ex) or
+    /// [`load_type_palette_files`](Self::load_type_palette_files) afterwards to
+    /// load the new set.
+    ///
+    /// # Errors
+    /// [`Error`] if a file has no COM identity or the COM call fails.
+    pub fn set_type_palette_file_list(
+        &self,
+        files: &[crate::PropertyObjectFile],
+    ) -> Result<(), Error> {
+        let mut handles = Vec::with_capacity(files.len());
+        for file in files {
+            handles.push(file.duplicate_dispatch().ok_or(Error::UnexpectedType {
+                expected: "a live property object file",
+                actual: "a test fake with no COM identity",
+            })?);
+        }
+        self.dispatch.call(
+            dispid::SET_TYPE_PALETTE_FILE_LIST,
+            &[Value::ObjectArray(handles)],
+        )?;
+        Ok(())
+    }
+
+    /// How many adapters the station knows (`Engine.NumAdapters`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn num_adapters(&self) -> Result<i32, Error> {
+        Ok(self.dispatch.get(dispid::NUM_ADAPTERS)?.as_i32()?)
+    }
+
+    /// An adapter by index (`Engine.GetAdapter`).
+    ///
+    /// # Errors
+    /// [`Error`] if the index is out of range or the COM call returns an
+    /// unexpected type.
+    pub fn get_adapter(&self, index: i32) -> Result<crate::Adapter, Error> {
+        Ok(crate::Adapter::new(
+            self.dispatch
+                .call(dispid::GET_ADAPTER, &[Value::I32(index)])?
+                .into_object()?,
+        ))
+    }
+
+    /// An adapter by key name (`Engine.GetAdapterByKeyName`).
+    ///
+    /// # Errors
+    /// [`Error`] if no adapter has that key or the COM call returns an
+    /// unexpected type.
+    pub fn get_adapter_by_key_name(&self, key_name: &str) -> Result<crate::Adapter, Error> {
+        Ok(crate::Adapter::new(
+            self.dispatch
+                .call(
+                    dispid::GET_ADAPTER_BY_KEY_NAME,
+                    &[Value::Str(key_name.to_owned())],
+                )?
+                .into_object()?,
+        ))
+    }
+
     /// Points the station's dialog-raising options at their non-interactive
     /// settings for this session.
     ///
@@ -727,6 +810,79 @@ impl Engine {
         Ok(())
     }
 
+    /// Whether watch expressions survive between sessions
+    /// (`Engine.PersistWatchExpressions`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn persist_watch_expressions(&self) -> Result<bool, Error> {
+        Ok(self
+            .dispatch
+            .get(dispid::PERSIST_WATCH_EXPRESSIONS)?
+            .as_bool()?)
+    }
+
+    /// Chooses whether watch expressions are remembered
+    /// (`Engine.PersistWatchExpressions`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_persist_watch_expressions(&self, persist: bool) -> Result<(), Error> {
+        self.dispatch
+            .put(dispid::PERSIST_WATCH_EXPRESSIONS, Value::Bool(persist))?;
+        Ok(())
+    }
+
+    /// Whether watch expressions are evaluated during a run
+    /// (`Engine.WatchExpressionsEnabled`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn watch_expressions_enabled(&self) -> Result<bool, Error> {
+        Ok(self
+            .dispatch
+            .get(dispid::WATCH_EXPRESSIONS_ENABLED)?
+            .as_bool()?)
+    }
+
+    /// Chooses whether watch expressions are evaluated during a run
+    /// (`Engine.WatchExpressionsEnabled`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_watch_expressions_enabled(&self, enabled: bool) -> Result<(), Error> {
+        self.dispatch
+            .put(dispid::WATCH_EXPRESSIONS_ENABLED, Value::Bool(enabled))?;
+        Ok(())
+    }
+
+    /// How many times the watch list or one of its entries has changed
+    /// (`Engine.GetWatchExpressionsChangeCount`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn get_watch_expressions_change_count(&self) -> Result<i32, Error> {
+        Ok(self
+            .dispatch
+            .call(dispid::GET_WATCH_EXPRESSIONS_CHANGE_COUNT, &[])?
+            .as_i32()?)
+    }
+
+    /// The engine's watch expression list (`Engine.GetWatchExpressions`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn get_watch_expressions(&self) -> Result<crate::WatchExpressions, Error> {
+        Ok(crate::WatchExpressions::new(
+            self.dispatch
+                .call(
+                    dispid::GET_WATCH_EXPRESSIONS,
+                    &[Value::NullObject, Value::NullObject, Value::I32(0)],
+                )?
+                .into_object()?,
+        ))
+    }
+
     /// Runs a .NET garbage collection now
     /// (`Engine.DoDotNetGarbageCollection`).
     ///
@@ -1192,6 +1348,30 @@ impl Engine {
                         Value::Str(type_name.to_owned()),
                         Value::I32(options),
                     ],
+                )?
+                .into_object()?,
+        ))
+    }
+
+    /// Creates a standalone property object file
+    /// (`Engine.NewPropertyObjectFile`).
+    ///
+    /// `file_type` fixes what the file represents. Load content with
+    /// [`PropertyObjectFile::read_file`](crate::PropertyObjectFile::read_file),
+    /// or build the tree through
+    /// [`PropertyObjectFile::data`](crate::PropertyObjectFile::data).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn new_property_object_file(
+        &self,
+        file_type: crate::PropertyObjectFileType,
+    ) -> Result<crate::PropertyObjectFile, Error> {
+        Ok(crate::PropertyObjectFile::new(
+            self.dispatch
+                .call(
+                    dispid::NEW_PROPERTY_OBJECT_FILE,
+                    &[Value::I32(file_type.as_i32())],
                 )?
                 .into_object()?,
         ))

@@ -24,6 +24,7 @@ use windows::Win32::System::Variant::{
 };
 use windows_core::{BSTR, Interface as _};
 
+use crate::Dispatch;
 use crate::dispatch::ComDispatch;
 use crate::error::ComError;
 use crate::value::Value;
@@ -175,6 +176,10 @@ impl OwnedVariant {
                     inner.vt = windows::Win32::System::Variant::VARENUM(VT_ARRAY.0 | VT_BSTR.0);
                     inner.Anonymous.parray = build_string_array(strings)?;
                 }
+                Value::ObjectArray(objects) => {
+                    inner.vt = windows::Win32::System::Variant::VARENUM(VT_ARRAY.0 | VT_DISPATCH.0);
+                    inner.Anonymous.parray = build_object_array(objects)?;
+                }
                 Value::Object(object) => {
                     let Some(dispatch) = object.as_idispatch() else {
                         return Err(ComError::UnexpectedType {
@@ -256,6 +261,9 @@ impl OwnedVariant {
                 variant_type if variant_type.0 == VT_ARRAY.0 | VT_BSTR.0 => {
                     Value::StrArray(read_string_array(slot.parray)?)
                 }
+                variant_type if variant_type.0 == VT_ARRAY.0 | VT_DISPATCH.0 => {
+                    Value::ObjectArray(read_object_array(slot.parray)?)
+                }
                 _ => {
                     return Err(ComError::UnexpectedType {
                         expected: "a VARIANT type this layer models",
@@ -272,6 +280,107 @@ impl OwnedVariant {
     pub(crate) const fn as_mut_ptr(&mut self) -> *mut VARIANT {
         &raw mut self.0
     }
+}
+
+/// Copies a one-dimensional `VT_DISPATCH` SAFEARRAY into owned dispatch handles.
+///
+/// # Errors
+/// [`ComError`] if the array is null, its bounds cannot be read, an element is
+/// null, or an element cannot be copied.
+fn read_object_array(array: *mut SAFEARRAY) -> Result<Vec<Box<dyn Dispatch>>, ComError> {
+    if array.is_null() {
+        return Err(ComError::UnexpectedType {
+            expected: "a SAFEARRAY of objects",
+            actual: "a null array pointer",
+        });
+    }
+
+    // SAFETY: `array` is non-null and, because `vt` said
+    // `VT_ARRAY | VT_DISPATCH`, points to a live one-dimensional SAFEARRAY of
+    // interface pointers owned by the variant. Every index lies within the
+    // bounds just read. `SafeArrayGetElement` add-refs a dispatch element, so
+    // `IDispatch::from_raw` takes ownership of exactly one reference.
+    unsafe {
+        let lower = SafeArrayGetLBound(array, 1)
+            .map_err(|error| ComError::hresult(error.code().0, "SafeArray"))?;
+        let upper = SafeArrayGetUBound(array, 1)
+            .map_err(|error| ComError::hresult(error.code().0, "SafeArray"))?;
+
+        if upper < lower {
+            return Ok(Vec::new());
+        }
+
+        let mut elements: Vec<Box<dyn Dispatch>> =
+            Vec::with_capacity((upper - lower + 1).unsigned_abs() as usize);
+        for index in lower..=upper {
+            let mut element: *mut std::ffi::c_void = std::ptr::null_mut();
+            SafeArrayGetElement(array, &raw const index, (&raw mut element).cast())
+                .map_err(|error| ComError::hresult(error.code().0, "SafeArray"))?;
+            if element.is_null() {
+                return Err(ComError::UnexpectedType {
+                    expected: "a SAFEARRAY element holding an object",
+                    actual: "a null object pointer",
+                });
+            }
+            elements.push(Box::new(ComDispatch::new(IDispatch::from_raw(element))));
+        }
+        Ok(elements)
+    }
+}
+
+/// Builds a one-dimensional `VT_DISPATCH` SAFEARRAY from dispatch handles.
+///
+/// The array add-refs each element. On failure the array is destroyed, which
+/// releases the elements stored so far, and the COM error is reported.
+///
+/// # Errors
+/// [`ComError`] if the array cannot be created, an element is not a live COM
+/// object, or an element cannot be stored.
+fn build_object_array(objects: &[Box<dyn Dispatch>]) -> Result<*mut SAFEARRAY, ComError> {
+    let count = u32::try_from(objects.len()).map_err(|_| ComError::UnexpectedType {
+        expected: "an object array the engine can accept",
+        actual: "more than u32::MAX elements",
+    })?;
+
+    // SAFETY: `VT_DISPATCH` is the element type; the bounds and count describe
+    // a one-dimensional array that this function owns until it is returned.
+    let array = unsafe { SafeArrayCreateVector(VT_DISPATCH, 0, count) };
+    if array.is_null() {
+        return Err(ComError::hresult(-2_147_024_809, "SafeArrayCreateVector"));
+    }
+
+    for (index, object) in objects.iter().enumerate() {
+        let Some(dispatch) = object.as_idispatch() else {
+            // SAFETY: `array` is a live array this function owns.
+            unsafe {
+                let _ = SafeArrayDestroy(array);
+            };
+            return Err(ComError::UnexpectedType {
+                expected: "live COM dispatch object",
+                actual: "fake dispatch object",
+            });
+        };
+        let index = i32::try_from(index).map_err(|_| ComError::UnexpectedType {
+            expected: "an object array the engine can accept",
+            actual: "an index beyond i32::MAX",
+        })?;
+        // SAFETY: the index is within the bounds created above and `dispatch`
+        // is a live interface pointer. `SafeArrayPutElement` add-refs it.
+        if let Err(error) = unsafe {
+            SafeArrayPutElement(
+                array,
+                &raw const index,
+                dispatch.as_raw().cast_const().cast(),
+            )
+        } {
+            // SAFETY: `array` is a live array this function owns.
+            unsafe {
+                let _ = SafeArrayDestroy(array);
+            };
+            return Err(ComError::hresult(error.code().0, "SafeArrayPutElement"));
+        }
+    }
+    Ok(array)
 }
 
 /// Copies a one-dimensional `VT_I4` SAFEARRAY into a `Vec`.

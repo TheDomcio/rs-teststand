@@ -27,6 +27,43 @@ impl PropertyObjectFile {
         self.dispatch.duplicate()
     }
 
+    /// Loads the file from the path already set on it
+    /// (`PropertyObjectFile.ReadFile`).
+    ///
+    /// Set the path first with [`set_path`](Self::set_path). `handler` decides
+    /// what happens when a type in the file conflicts with one already loaded;
+    /// a headless caller normally passes
+    /// [`ConflictHandler::Error`](crate::ConflictHandler::Error).
+    ///
+    /// # Errors
+    /// [`Error`] if no path is set, the file is unreadable, or the COM call
+    /// fails.
+    pub fn read_file(&self, handler: crate::ConflictHandler) -> Result<(), Error> {
+        self.dispatch.call(
+            property_object_file::READ_FILE,
+            &[Value::I32(handler.bits())],
+        )?;
+        Ok(())
+    }
+
+    /// The kind of file, if this build recognizes it
+    /// (`PropertyObjectFile.FileType`).
+    ///
+    /// The value is fixed when the file is created, so this is a read of the
+    /// object's identity rather than a guess from its path.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn property_object_file_type(
+        &self,
+    ) -> Result<Option<crate::PropertyObjectFileType>, Error> {
+        let value = self
+            .dispatch
+            .get(property_object_file::FILE_TYPE)?
+            .as_i32()?;
+        Ok(crate::PropertyObjectFileType::from_i32(value))
+    }
+
     /// Writes the file to disk if it has changed
     /// (`PropertyObjectFile.SaveFileIfModified`).
     ///

@@ -34,10 +34,11 @@ pub mod sequence;
 pub mod station;
 pub mod types;
 pub mod users;
+pub mod watch;
 pub mod watchdog;
 pub mod workspace;
 
-pub use adapters::AdapterKeyName;
+pub use adapters::{Adapter, AdapterKeyName};
 pub use analyzer::{
     AnalysisMessage, AnalysisMessages, AnalysisStatus, Analyzer, DirectoriesToAnalyze,
     DirectoryToAnalyze, Location, LocationKind, Locations, MessageStatus, Project, RuleSeverity,
@@ -64,7 +65,8 @@ pub use license::{AcquireLicenseOptions, ApplicationLicense, HeldLicense, Licens
 pub use messaging::{UIMessage, UIMessageCode, pump_thread_messages};
 pub use property::{
     ArrayDimensions, GetTemplatesFileOptions, PropertyFlags, PropertyObject, PropertyObjectFile,
-    PropertyObjectType, PropertyOptions, PropertyRepresentation, PropertyType, WriteFileFormat,
+    PropertyObjectFileType, PropertyObjectType, PropertyOptions, PropertyRepresentation,
+    PropertyType, WriteFileFormat,
 };
 pub use sequence::{
     BreakpointScope, ConflictHandler, FailureAction, GetSeqFileOptions, ResultRecordingOption,
@@ -76,6 +78,10 @@ pub use station::{
 };
 pub use types::{TypeCategory, TypeUsageList};
 pub use users::{User, UserPrivilege, UsersFile};
+pub use watch::{
+    WatchExpression, WatchExpressionBreakType, WatchExpressionFilterOptions, WatchExpressions,
+    WatchExpressionsIter,
+};
 pub use watchdog::{
     DialogInfo, DialogPolicy, Dismissed, Raised, Watchdog, dismiss_blocking_dialog,
     find_blocking_dialog, surface_blocking_dialog,
