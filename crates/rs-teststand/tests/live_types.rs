@@ -17,6 +17,7 @@ fn loaded_types_can_be_listed_and_inspected() -> Result<(), Error> {
 
     let definition = engine.get_type_definition("Statement")?;
     assert!(definition.get_num_sub_properties("")? > 0);
+
     engine.shutdown(std::time::Duration::from_secs(5))?;
     Ok(())
 }
