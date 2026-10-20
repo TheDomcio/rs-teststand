@@ -188,6 +188,39 @@ impl Engine {
         Ok(())
     }
 
+    /// The names of every type currently loaded (`Engine.GetTypeNames`).
+    ///
+    /// Includes step types, custom data types, and the built-in types. Use
+    /// [`get_type_definition`](Self::get_type_definition) to inspect one.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn get_type_names(&self) -> Result<Vec<String>, Error> {
+        Ok(self
+            .dispatch
+            .call(dispid::GET_TYPE_NAMES, &[])?
+            .into_string_array()?)
+    }
+
+    /// The definition of a loaded type (`Engine.GetTypeDefinition`).
+    ///
+    /// The definition is a property tree. Its `TypeCategory` subproperty tells
+    /// a step type from a custom data type or a standard type.
+    ///
+    /// # Errors
+    /// [`Error`] if no type has that name or the COM call returns an unexpected
+    /// type.
+    pub fn get_type_definition(&self, type_name: &str) -> Result<crate::PropertyObject, Error> {
+        Ok(crate::PropertyObject::new(
+            self.dispatch
+                .call(
+                    dispid::GET_TYPE_DEFINITION,
+                    &[Value::Str(type_name.to_owned())],
+                )?
+                .into_object()?,
+        ))
+    }
+
     /// How many adapters the station knows (`Engine.NumAdapters`).
     ///
     /// # Errors

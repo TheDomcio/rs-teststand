@@ -92,6 +92,8 @@ define_dispid_group! {
         GET_WATCH_EXPRESSIONS = 0x0227;
         SEARCH_FILES = 0x0225;
         GET_SYNC_MANAGER = 0x0203;
+        GET_TYPE_DEFINITION = 0x01dc;
+        GET_TYPE_NAMES = 0x01dd;
         DOT_NET_GARBAGE_COLLECTION_INTERVAL = 0x02be;
         DO_DOT_NET_GARBAGE_COLLECTION = 0x02bf;
         DOT_NET_CLR_VERSION = 0x02c3;
