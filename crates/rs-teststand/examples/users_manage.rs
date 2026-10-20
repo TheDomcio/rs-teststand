@@ -33,14 +33,14 @@ fn main() -> Result<(), rs_teststand::Error> {
     let user = engine.new_user(None)?;
     user.set_login_name("operator1")?;
     user.set_full_name("Test Operator")?;
-    user.set_password("ts-secret")?;
+    user.set_password("example-password")?;
 
     println!("User: {} ({})", user.login_name()?, user.full_name()?);
 
     // Check a credential without handling the stored value.
     println!(
-        "  password 'ts-secret' valid: {}",
-        user.validate_password("ts-secret")?
+        "  password 'example-password' valid: {}",
+        user.validate_password("example-password")?
     );
     println!(
         "  password 'wrong' valid:     {}",

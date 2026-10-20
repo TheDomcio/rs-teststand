@@ -184,9 +184,9 @@ fn the_result_status_settles_once_the_run_is_over(engine: &Engine) -> Result<(),
 
     assert!(run_to_end(engine, Duration::from_secs(20))?);
 
-    let states = execution.get_states()?;
-    assert_eq!(states.run_state, Some(ExecRunState::Stopped));
-    assert_eq!(states.termination_state, Some(ExecTermState::Normal));
+    let run_states = execution.get_states()?;
+    assert_eq!(run_states.run_state, Some(ExecRunState::Stopped));
+    assert_eq!(run_states.termination_state, Some(ExecTermState::Normal));
 
     let status = execution.result_status()?;
     println!("  final status: {status:?}");

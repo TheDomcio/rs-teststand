@@ -56,15 +56,16 @@ fn an_analysis_completes_and_reports_its_progress() -> Result<(), Error> {
     let analyzer = Analyzer::new()?;
     // The engine belongs to the analyzer, not to a second Engine::new().
     let engine = analyzer.engine()?;
-    assert!(
-        !engine.version_string()?.is_empty(),
+    assert_ne!(
+        engine.version_string()?,
+        "",
         "the analyzer should expose its engine"
     );
 
     let project = analyzer.new_project()?;
     let fixture = fixture_path(&engine)?;
     project.set_files_to_analyze(std::slice::from_ref(&fixture))?;
-    assert_eq!(project.files_to_analyze()?, [fixture.clone()]);
+    assert_eq!(project.files_to_analyze()?, [fixture]);
 
     project.start_analysis(0)?;
     let status = project.analysis_status()?;
@@ -175,7 +176,7 @@ fn a_rule_violation_reports_where_it_happened() -> Result<(), Error> {
             "unexpected file: {}",
             location.file_path()?
         );
-        assert!(!location.property_path()?.is_empty());
+        assert_ne!(location.property_path()?, "");
         located += 1;
     }
     assert!(

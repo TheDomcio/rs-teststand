@@ -282,7 +282,7 @@ fn a_held_license_is_given_back_when_dropped() -> Result<(), Error> {
 #[ignore = "requires a live TestStand engine"]
 fn license_description_and_addons_answer_on_any_station() -> Result<(), Error> {
     let engine = Engine::new()?;
-    assert!(!engine.get_license_description()?.is_empty());
+    assert_ne!(engine.get_license_description()?, "");
     let addon = engine.has_addon_license("rs-teststand-nonexistent-feature");
     assert!(
         matches!(addon, Ok(false) | Err(_)),

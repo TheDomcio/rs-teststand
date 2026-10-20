@@ -16,14 +16,14 @@ fn a_new_user_carries_the_names_and_password_set_on_it(engine: &Engine) -> Resul
 
     user.set_login_name("operator1")?;
     user.set_full_name("Test Operator")?;
-    user.set_password("ts-secret")?;
+    user.set_password("example-password")?;
 
     assert_eq!(user.login_name()?, "operator1");
     assert_eq!(user.full_name()?, "Test Operator");
 
     // The credential check is the supported way to test a password; it must
     // accept the right one and reject anything else.
-    assert!(user.validate_password("ts-secret")?);
+    assert!(user.validate_password("example-password")?);
     assert!(!user.validate_password("wrong")?);
     assert!(!user.validate_password("")?);
     Ok(())

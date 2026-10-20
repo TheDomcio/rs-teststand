@@ -259,7 +259,7 @@ fn business_document_with_everything() -> String {
 
     let file = FileData {
         name: "Motherboard Test.seq".to_owned(),
-        path: r"C:\secret\internal\Motherboard Test.seq".to_owned(),
+        path: r"external\internal\Motherboard Test.seq".to_owned(),
         sequences: vec![SequenceData {
             name: "MainSequence".to_owned(),
             variables,
@@ -288,7 +288,7 @@ fn the_business_document_hides_what_a_client_should_not_see() {
         "the file extension is an implementation detail:\n{document}"
     );
     assert!(
-        !document.contains(r"C:\secret\internal"),
+        !document.contains(r"external\internal"),
         "the document leaks a filesystem path"
     );
     for banned in [
@@ -501,7 +501,7 @@ fn document_with_plumbing(profile: Profile) -> String {
 
     let file = FileData {
         name: "Motherboard Test.seq".to_owned(),
-        path: r"C:\secret\internal\Motherboard Test.seq".to_owned(),
+        path: r"external\internal\Motherboard Test.seq".to_owned(),
         sequences: vec![
             SequenceData {
                 name: "MainSequence".to_owned(),
@@ -539,7 +539,7 @@ fn the_business_document_shows_logic_and_no_plumbing() {
         "Unload Option",
         // Internal identity.
         "ID#",
-        r"C:\secret\internal",
+        r"external\internal",
         // The mermaid source disclosure.
         "Diagram source",
     ] {
