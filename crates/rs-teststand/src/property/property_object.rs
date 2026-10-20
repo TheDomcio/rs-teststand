@@ -488,6 +488,52 @@ impl PropertyObject {
         self.dispatch
     }
 
+    /// Searches this property tree (`PropertyObject.Search`).
+    ///
+    /// `lookup_string` restricts the search to a subtree; pass an empty string
+    /// to search the whole object. The four string arrays narrow the search to
+    /// particular adapters, named properties, named types, and lookup paths
+    /// that should be skipped.
+    ///
+    /// The engine starts the search asynchronously. Call
+    /// [`SearchResults::is_complete`](crate::SearchResults::is_complete) with
+    /// `true` before reading matches.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    #[allow(clippy::too_many_arguments, reason = "mirrors the COM signature")]
+    pub fn search(
+        &self,
+        lookup_string: &str,
+        search_string: &str,
+        options: crate::SearchOptions,
+        filter_options: crate::SearchFilterOptions,
+        elements: crate::SearchElements,
+        limit_to_adapters: &[String],
+        limit_to_named_properties: &[String],
+        limit_to_named_types: &[String],
+        excluded_lookup_strings: &[String],
+    ) -> Result<crate::SearchResults, Error> {
+        Ok(crate::SearchResults::new(
+            self.dispatch
+                .call(
+                    introspect::SEARCH,
+                    &[
+                        Value::Str(lookup_string.to_owned()),
+                        Value::Str(search_string.to_owned()),
+                        Value::I32(options.bits()),
+                        Value::I32(filter_options.bits()),
+                        Value::I32(elements.bits()),
+                        Value::StrArray(limit_to_adapters.to_vec()),
+                        Value::StrArray(limit_to_named_properties.to_vec()),
+                        Value::StrArray(limit_to_named_types.to_vec()),
+                        Value::StrArray(excluded_lookup_strings.to_vec()),
+                    ],
+                )?
+                .into_object()?,
+        ))
+    }
+
     /// Evaluates an expression in this object's context (`Evaluate`).
     ///
     /// Superseded by [`evaluate_ex`](Self::evaluate_ex), which adds an options

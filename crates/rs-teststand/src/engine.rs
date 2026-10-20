@@ -225,6 +225,56 @@ impl Engine {
         ))
     }
 
+    /// Searches files and open property trees (`Engine.SearchFiles`).
+    ///
+    /// `open_files` are already-loaded files to search; pass an empty slice to
+    /// search only what `directories_and_paths` names. The engine performs the
+    /// search asynchronously, so wait on
+    /// [`SearchResults::is_complete`](crate::SearchResults::is_complete) before
+    /// reading matches.
+    ///
+    /// # Errors
+    /// [`Error`] if a file has no COM identity or the COM call fails.
+    #[allow(clippy::too_many_arguments, reason = "mirrors the COM signature")]
+    pub fn search_files(
+        &self,
+        search_string: &str,
+        options: crate::SearchOptions,
+        filter_options: crate::SearchFilterOptions,
+        elements: crate::SearchElements,
+        limit_to_adapters: &[String],
+        limit_to_named_properties: &[String],
+        limit_to_named_types: &[String],
+        open_files: &[crate::PropertyObjectFile],
+        directories_and_paths: &[String],
+    ) -> Result<crate::SearchResults, Error> {
+        let mut files = Vec::with_capacity(open_files.len());
+        for file in open_files {
+            files.push(file.duplicate_dispatch().ok_or(Error::UnexpectedType {
+                expected: "a live property object file",
+                actual: "a test fake with no COM identity",
+            })?);
+        }
+        Ok(crate::SearchResults::new(
+            self.dispatch
+                .call(
+                    dispid::SEARCH_FILES,
+                    &[
+                        Value::Str(search_string.to_owned()),
+                        Value::I32(options.bits()),
+                        Value::I32(filter_options.bits()),
+                        Value::I32(elements.bits()),
+                        Value::StrArray(limit_to_adapters.to_vec()),
+                        Value::StrArray(limit_to_named_properties.to_vec()),
+                        Value::StrArray(limit_to_named_types.to_vec()),
+                        Value::ObjectArray(files),
+                        Value::StrArray(directories_and_paths.to_vec()),
+                    ],
+                )?
+                .into_object()?,
+        ))
+    }
+
     /// Points the station's dialog-raising options at their non-interactive
     /// settings for this session.
     ///

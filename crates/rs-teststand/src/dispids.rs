@@ -90,6 +90,7 @@ define_dispid_group! {
         PERSIST_WATCH_EXPRESSIONS = 0x0247;
         GET_WATCH_EXPRESSIONS_CHANGE_COUNT = 0x0226;
         GET_WATCH_EXPRESSIONS = 0x0227;
+        SEARCH_FILES = 0x0225;
         DOT_NET_GARBAGE_COLLECTION_INTERVAL = 0x02be;
         DO_DOT_NET_GARBAGE_COLLECTION = 0x02bf;
         DOT_NET_CLR_VERSION = 0x02c3;
@@ -432,6 +433,8 @@ pub(crate) mod property_object_introspect {
     pub(crate) const SET_NUM_ELEMENTS: i32 = 0x24c;
     /// `GetNumElements`, no params.
     pub(crate) const GET_NUM_ELEMENTS: i32 = 0x24b;
+    /// `Search`, 9 parameters.
+    pub(crate) const SEARCH: i32 = 0x27b;
 }
 
 /// `Execution` dispinterface members.
@@ -976,6 +979,54 @@ pub(crate) mod watch_expression {
     pub(crate) const USE_SCOPING_CONTEXT: i32 = 0xd;
     /// `GetScopingContext`, one context parameter.
     pub(crate) const GET_SCOPING_CONTEXT: i32 = 0xe;
+}
+
+/// Members of `SearchResults`.
+pub(crate) mod search_results {
+    /// `Cancel`, two boolean parameters.
+    pub(crate) const CANCEL: i32 = 0x1;
+    /// `IsComplete`, two boolean parameters.
+    pub(crate) const IS_COMPLETE: i32 = 0x2;
+    /// `NumMatches`, read-only integer.
+    pub(crate) const NUM_MATCHES: i32 = 0x3;
+    /// `GetMatch`, one index parameter.
+    pub(crate) const GET_MATCH: i32 = 0x4;
+    /// `StatusMessage`, read-only string.
+    pub(crate) const STATUS_MESSAGE: i32 = 0x5;
+    /// `NumWarnings`, read-only integer.
+    pub(crate) const NUM_WARNINGS: i32 = 0x6;
+    /// `GetWarning`, one index parameter.
+    pub(crate) const GET_WARNING: i32 = 0x7;
+}
+
+/// Members of `SearchMatch`.
+pub(crate) mod search_match {
+    /// `GetLocation`, three integer outputs.
+    pub(crate) const GET_LOCATION: i32 = 0x1;
+    /// `GetPropertyPath`, one boolean parameter.
+    pub(crate) const GET_PROPERTY_PATH: i32 = 0x2;
+    /// `MatchedText`, read-only string.
+    pub(crate) const MATCHED_TEXT: i32 = 0x3;
+    /// `FileDisplayName`, read-only string.
+    pub(crate) const FILE_DISPLAY_NAME: i32 = 0x4;
+    /// `FilePath`, read-only string.
+    pub(crate) const FILE_PATH: i32 = 0x5;
+    /// `FileId`, read-only integer.
+    pub(crate) const FILE_ID: i32 = 0x6;
+    /// `UpdateForReplace`, one string parameter.
+    pub(crate) const UPDATE_FOR_REPLACE: i32 = 0x7;
+    /// `TypeCategoryOfMatch`, read-only integer.
+    pub(crate) const TYPE_CATEGORY_OF_MATCH: i32 = 0x8;
+    /// `UserData`, read/write integer.
+    pub(crate) const USER_DATA: i32 = 0x9;
+    /// `PropertyValueAsString`, read-only string.
+    pub(crate) const PROPERTY_VALUE_AS_STRING: i32 = 0xa;
+    /// `PropertyValueType`, read-only integer.
+    pub(crate) const PROPERTY_VALUE_TYPE: i32 = 0xb;
+    /// `UpdateForReplaceValue`, one string parameter.
+    pub(crate) const UPDATE_FOR_REPLACE_VALUE: i32 = 0xc;
+    /// `MatchIsValid`, read-only boolean.
+    pub(crate) const MATCH_IS_VALID: i32 = 0xd;
 }
 
 /// Members of `Report`.

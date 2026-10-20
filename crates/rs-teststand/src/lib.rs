@@ -30,6 +30,7 @@ pub mod expression;
 pub mod license;
 pub mod messaging;
 pub mod property;
+pub mod search;
 pub mod sequence;
 pub mod station;
 pub mod types;
@@ -68,6 +69,7 @@ pub use property::{
     PropertyObjectFileType, PropertyObjectType, PropertyOptions, PropertyRepresentation,
     PropertyType, WriteFileFormat,
 };
+pub use search::{SearchElements, SearchFilterOptions, SearchMatch, SearchOptions, SearchResults};
 pub use sequence::{
     BreakpointScope, ConflictHandler, FailureAction, GetSeqFileOptions, ResultRecordingOption,
     RunMode, Sequence, SequenceFile, SequenceType, Step,
