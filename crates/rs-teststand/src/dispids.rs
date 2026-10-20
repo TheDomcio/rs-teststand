@@ -497,6 +497,8 @@ pub(crate) mod execution {
     pub(crate) const RESULT_OBJECT: i32 = 0x7d;
     /// `Report`, read-only.
     pub(crate) const REPORT: i32 = 0x7a;
+    /// `Reports`, read-only collection.
+    pub(crate) const REPORTS: i32 = 0xbe;
     /// `GetStates`, 2 `[out]` byref params.
     pub(crate) const GET_STATES: i32 = 0x13;
 }
@@ -1286,6 +1288,26 @@ pub(crate) mod auto_releaser {
     pub(crate) const EARLY_RELEASE_EX: i32 = 0x3;
     /// `SetReleaserThreadId`, one thread id.
     pub(crate) const SET_RELEASER_THREAD_ID: i32 = 0x4;
+}
+
+/// Members of `Reports`.
+pub(crate) mod reports {
+    /// `Item`, one index.
+    pub(crate) const ITEM: i32 = 0x0;
+    /// `Count`, read-only integer.
+    pub(crate) const COUNT: i32 = 0x1;
+    /// `Insert`, optional index.
+    pub(crate) const INSERT: i32 = 0xa;
+    /// `Remove`, one index.
+    pub(crate) const REMOVE: i32 = 0xb;
+    /// `Clear`, no parameters.
+    pub(crate) const CLEAR: i32 = 0xc;
+    /// `InsertExisting`, report and optional index.
+    pub(crate) const INSERT_EXISTING: i32 = 0xd;
+    /// `Replace`, old and new report.
+    pub(crate) const REPLACE: i32 = 0xe;
+    /// `ActiveReport`, read-only via property get.
+    pub(crate) const ACTIVE_REPORT: i32 = 0xf;
 }
 
 /// Members of `ReportSection`.

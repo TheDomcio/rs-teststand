@@ -24,7 +24,7 @@ impl Drop for EngineGuard {
 }
 
 #[test]
-#[ignore = "requires TestStand 2025 or newer for CSV record streams"]
+#[ignore = "requires TestStand 2017 or newer for CSV record streams"]
 fn a_csv_file_round_trips_through_the_record_streams() -> Result<(), Error> {
     let engine = EngineGuard(Engine::new()?);
     let path = std::env::temp_dir().join("rs_teststand_csv_stream.csv");

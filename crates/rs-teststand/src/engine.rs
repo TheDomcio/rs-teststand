@@ -144,7 +144,7 @@ impl Engine {
 
     /// Creates a CSV input stream (`Engine.NewCsvFileInputRecordStream`).
     ///
-    /// CSV record streams exist from TestStand 2025 onward. On an older engine
+    /// CSV record streams exist from TestStand 2017 onward. On an older engine
     /// this returns [`Error::Unsupported`] before dispatching.
     ///
     /// # Errors
@@ -154,7 +154,7 @@ impl Engine {
         &self,
         absolute_path: &str,
     ) -> Result<crate::CsvFileInputRecordStream, Error> {
-        self.require_major(25, "CSV record streams")?;
+        self.require_major(17, "CSV record streams")?;
         Ok(crate::CsvFileInputRecordStream::new(
             self.dispatch
                 .call(
@@ -168,7 +168,7 @@ impl Engine {
     /// Creates a CSV output stream
     /// (`Engine.NewCsvFileOutputRecordStream`).
     ///
-    /// CSV record streams exist from TestStand 2025 onward. On an older engine
+    /// CSV record streams exist from TestStand 2017 onward. On an older engine
     /// this returns [`Error::Unsupported`] before dispatching.
     ///
     /// # Errors
@@ -179,7 +179,7 @@ impl Engine {
         absolute_path: &str,
         open_mode: crate::FileOpenMode,
     ) -> Result<crate::CsvFileOutputRecordStream, Error> {
-        self.require_major(25, "CSV record streams")?;
+        self.require_major(17, "CSV record streams")?;
         Ok(crate::CsvFileOutputRecordStream::new(
             self.dispatch
                 .call(
@@ -2077,13 +2077,13 @@ mod tests {
     }
 
     #[test]
-    fn csv_streams_are_refused_before_2025() {
+    fn csv_streams_are_refused_before_2017() {
         let engine = engine_with([(dispid::MAJOR_VERSION, Scripted::I32(16))]);
         let result = engine.new_csv_file_input_record_stream("data.csv");
         assert!(matches!(
             result,
             Err(Error::Unsupported {
-                minimum_major: 25,
+                minimum_major: 17,
                 actual_major: 16,
                 ..
             })

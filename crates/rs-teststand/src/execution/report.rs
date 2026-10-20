@@ -47,6 +47,11 @@ impl Report {
         Self { dispatch }
     }
 
+    /// An owned handle to the same report.
+    pub(crate) fn duplicate_dispatch(&self) -> Option<Box<dyn Dispatch>> {
+        self.dispatch.duplicate()
+    }
+
     /// The complete report text (`Report.All`).
     ///
     /// # Errors

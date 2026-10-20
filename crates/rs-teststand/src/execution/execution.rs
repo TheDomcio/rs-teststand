@@ -360,7 +360,17 @@ impl Execution {
         ))
     }
 
-    /// What the run recorded (`Execution.ResultObject`).
+    /// The reports attached to this execution (Execution.Reports).
+    ///
+    /// # Errors
+    /// [Error] if the COM call fails or returns an unexpected type.
+    pub fn reports(&self) -> Result<crate::Reports, Error> {
+        Ok(crate::Reports::new(
+            self.dispatch.get(execution::REPORTS)?.into_object()?,
+        ))
+    }
+
+    /// What the run recorded (Execution.ResultObject).
     ///
     /// The root of the results tree. `ResultList` beneath it holds one entry per
     /// step that recorded a result, which is what a headless caller reads
