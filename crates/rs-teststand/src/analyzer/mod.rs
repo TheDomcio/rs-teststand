@@ -32,8 +32,13 @@ mod directory;
 pub mod enums;
 mod location;
 mod project;
+mod rule;
+mod rule_configuration;
+mod rule_set;
+mod rule_sets;
+mod rules;
 
-use rs_teststand_sys::{Dispatch, create_dispatch};
+use rs_teststand_sys::{Dispatch, Value, create_dispatch};
 
 use crate::Error;
 use crate::dispids::analyzer;
@@ -45,6 +50,11 @@ pub use directory::{DirectoriesToAnalyze, DirectoriesToAnalyzeIter, DirectoryToA
 pub use enums::{LocationKind, MessageStatus, RuleSeverity};
 pub use location::{Location, Locations, LocationsIter};
 pub use project::Project;
+pub use rule::Rule;
+pub use rule_configuration::RuleConfiguration;
+pub use rule_set::RuleSet;
+pub use rule_sets::RuleSets;
+pub use rules::Rules;
 
 /// ProgID of the version-independent analyzer coclass.
 const ANALYZER_PROG_ID: &str = "Analyzer.AnalyzerEngine";
@@ -107,10 +117,7 @@ impl Analyzer {
     pub fn open_project(&self, path: &str) -> Result<Project, Error> {
         Ok(Project::new(
             self.dispatch
-                .call(
-                    analyzer::OPEN_PROJECT,
-                    &[rs_teststand_sys::Value::Str(path.to_owned())],
-                )?
+                .call(analyzer::OPEN_PROJECT, &[Value::Str(path.to_owned())])?
                 .into_object()?,
         ))
     }
@@ -133,8 +140,8 @@ impl Analyzer {
                 .call(
                     analyzer::NEW_DIRECTORY_TO_ANALYZE,
                     &[
-                        rs_teststand_sys::Value::Str(directory_path.to_owned()),
-                        rs_teststand_sys::Value::Bool(analyze_sub_directories),
+                        Value::Str(directory_path.to_owned()),
+                        Value::Bool(analyze_sub_directories),
                     ],
                 )?
                 .into_object()?,
@@ -148,6 +155,39 @@ impl Analyzer {
     pub fn load_rules_files(&self) -> Result<(), Error> {
         self.dispatch.call(analyzer::LOAD_RULES_FILES, &[])?;
         Ok(())
+    }
+
+    /// The analyzer's loaded rules (`Analyzer.Rules`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn rules(&self) -> Result<Rules, Error> {
+        Ok(Rules::new(
+            self.dispatch.get(analyzer::RULES)?.into_object()?,
+        ))
+    }
+
+    /// The analyzer's rule sets (`Analyzer.RuleSets`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn rule_sets(&self) -> Result<RuleSets, Error> {
+        Ok(RuleSets::new(
+            self.dispatch.get(analyzer::RULE_SETS)?.into_object()?,
+        ))
+    }
+
+    /// Creates a rule set with a name (`Analyzer.NewRuleSet`).
+    ///
+    /// # Errors
+    /// [`Error`] if the name is empty or the COM call returns an unexpected
+    /// type.
+    pub fn new_rule_set(&self, name: &str) -> Result<RuleSet, Error> {
+        Ok(RuleSet::new(
+            self.dispatch
+                .call(analyzer::NEW_RULE_SET, &[Value::Str(name.to_owned())])?
+                .into_object()?,
+        ))
     }
 
     /// Unloads every analysis and rule module (`Analyzer.UnloadAllModules`).
@@ -177,10 +217,8 @@ impl Analyzer {
     /// # Errors
     /// [`Error`] if the COM call fails.
     pub fn set_cache_sequence_files(&self, cache: bool) -> Result<(), Error> {
-        self.dispatch.put(
-            analyzer::CACHE_SEQUENCE_FILES,
-            rs_teststand_sys::Value::Bool(cache),
-        )?;
+        self.dispatch
+            .put(analyzer::CACHE_SEQUENCE_FILES, Value::Bool(cache))?;
         Ok(())
     }
 }

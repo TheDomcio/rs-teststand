@@ -791,6 +791,14 @@ pub(crate) mod analyzer {
     pub(crate) const LOAD_RULES_FILES: i32 = 0x17;
     /// `CacheSequenceFiles`, read/write boolean.
     pub(crate) const CACHE_SEQUENCE_FILES: i32 = 0x18;
+    /// `NewRule`, one module parameter.
+    pub(crate) const NEW_RULE: i32 = 0xc;
+    /// `NewRuleSet`, one name parameter.
+    pub(crate) const NEW_RULE_SET: i32 = 0x13;
+    /// `Rules`, read-only collection.
+    pub(crate) const RULES: i32 = 0x2;
+    /// `RuleSets`, read-only collection.
+    pub(crate) const RULE_SETS: i32 = 0x4;
     /// `NewDirectoryToAnalyze`, path and recursive flag.
     pub(crate) const NEW_DIRECTORY_TO_ANALYZE: i32 = 0xd;
 }
@@ -799,6 +807,8 @@ pub(crate) mod analyzer {
 pub(crate) mod project {
     /// `Path`, read/write.
     pub(crate) const PATH: i32 = 0x1;
+    /// `RuleSet`, read/write object.
+    pub(crate) const RULE_SET: i32 = 0xd;
     /// `DirectoriesToAnalyze`, read-only collection.
     pub(crate) const DIRECTORIES_TO_ANALYZE: i32 = 0x3;
     /// `AnalyzeNITypePalettes`, read/write boolean.
@@ -1308,6 +1318,88 @@ pub(crate) mod report_sections {
     pub(crate) const CLEAR: i32 = 0xc;
     /// `InsertExisting`, section and index.
     pub(crate) const INSERT_EXISTING: i32 = 0xd;
+}
+
+/// Members of `Rule`.
+pub(crate) mod rule {
+    /// `Id`, read/write string.
+    pub(crate) const ID: i32 = 0x1;
+    /// `Name`, read/write string.
+    pub(crate) const NAME: i32 = 0x2;
+    /// `Description`, read/write string.
+    pub(crate) const DESCRIPTION: i32 = 0x3;
+    /// `Category`, read/write string.
+    pub(crate) const CATEGORY: i32 = 0x4;
+    /// `StringResourceCategory`, read/write string.
+    pub(crate) const STRING_RESOURCE_CATEGORY: i32 = 0x5;
+    /// `Severity`, read/write enum.
+    pub(crate) const SEVERITY: i32 = 0x6;
+    /// `IsBuiltin`, read/write boolean.
+    pub(crate) const IS_BUILTIN: i32 = 0x9;
+    /// `RuleSettingDefinitions`, read-only collection.
+    pub(crate) const RULE_SETTING_DEFINITIONS: i32 = 0xb;
+    /// `Clone`, no parameters.
+    pub(crate) const CLONE: i32 = 0xe;
+    /// `DisplayName`, read-only string.
+    pub(crate) const DISPLAY_NAME: i32 = 0xf;
+    /// `GetDisplayDescription`, one parameter.
+    pub(crate) const GET_DISPLAY_DESCRIPTION: i32 = 0x10;
+}
+
+/// Members of `Rules`.
+pub(crate) mod rules {
+    /// `Item`, one index.
+    pub(crate) const ITEM: i32 = 0x0;
+    /// `Count`, read-only integer.
+    pub(crate) const COUNT: i32 = 0x2;
+    /// `Insert`, index and rule.
+    pub(crate) const INSERT: i32 = 0x3;
+    /// `Remove`, one index.
+    pub(crate) const REMOVE: i32 = 0x4;
+    /// `Clear`, no parameters.
+    pub(crate) const CLEAR: i32 = 0x5;
+}
+
+/// Members of `RuleSet`.
+pub(crate) mod rule_set {
+    /// `Name`, read/write string.
+    pub(crate) const NAME: i32 = 0x1;
+    /// `GetRuleConfiguration`, one rule-id parameter.
+    pub(crate) const GET_RULE_CONFIGURATION: i32 = 0x2;
+    /// `Clone`, no parameters.
+    pub(crate) const CLONE: i32 = 0x4;
+    /// `RenameRuleId`, old and new ids.
+    pub(crate) const RENAME_RULE_ID: i32 = 0x5;
+}
+
+/// Members of `RuleSets`.
+pub(crate) mod rule_sets {
+    /// `Item`, one index.
+    pub(crate) const ITEM: i32 = 0x0;
+    /// `Count`, read-only integer.
+    pub(crate) const COUNT: i32 = 0x2;
+    /// `Insert`, index and rule set.
+    pub(crate) const INSERT: i32 = 0x3;
+    /// `Remove`, one index.
+    pub(crate) const REMOVE: i32 = 0x4;
+    /// `Clear`, no parameters.
+    pub(crate) const CLEAR: i32 = 0x5;
+}
+
+/// Members of `RuleConfiguration`.
+pub(crate) mod rule_configuration {
+    /// `RuleId`, read-only string.
+    pub(crate) const RULE_ID: i32 = 0x1;
+    /// `Enabled`, read/write boolean.
+    pub(crate) const ENABLED: i32 = 0x2;
+    /// `ConfigurationData`, read-only property object.
+    pub(crate) const CONFIGURATION_DATA: i32 = 0x3;
+    /// `RuleSettingValues`, read-only collection.
+    pub(crate) const RULE_SETTING_VALUES: i32 = 0x4;
+    /// `Severity`, read/write enum.
+    pub(crate) const SEVERITY: i32 = 0x5;
+    /// `Description`, read/write string.
+    pub(crate) const DESCRIPTION: i32 = 0x6;
 }
 
 /// Members of `WatchExpressions`.

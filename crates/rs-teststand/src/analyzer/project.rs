@@ -142,6 +142,30 @@ impl Project {
             .as_i32()?)
     }
 
+    /// The rule set this project applies (`Project.RuleSet`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn rule_set(&self) -> Result<super::RuleSet, Error> {
+        Ok(super::RuleSet::new(
+            self.dispatch.get(project::RULE_SET)?.into_object()?,
+        ))
+    }
+
+    /// Selects the rule set this project applies (`Project.RuleSet`).
+    ///
+    /// # Errors
+    /// [`Error`] if the rule set has no COM identity or the COM call fails.
+    pub fn set_rule_set(&self, rule_set: &super::RuleSet) -> Result<(), Error> {
+        let handle = rule_set.duplicate_dispatch().ok_or(Error::UnexpectedType {
+            expected: "a live analyzer rule set",
+            actual: "a test fake with no COM identity",
+        })?;
+        self.dispatch
+            .put(project::RULE_SET, Value::Object(handle))?;
+        Ok(())
+    }
+
     /// The directories the project analyzes (`Project.DirectoriesToAnalyze`).
     ///
     /// # Errors

@@ -44,7 +44,8 @@ pub mod workspace;
 pub use adapters::{Adapter, AdapterKeyName};
 pub use analyzer::{
     AnalysisMessage, AnalysisMessages, AnalysisStatus, Analyzer, DirectoriesToAnalyze,
-    DirectoryToAnalyze, Location, LocationKind, Locations, MessageStatus, Project, RuleSeverity,
+    DirectoryToAnalyze, Location, LocationKind, Locations, MessageStatus, Project, Rule,
+    RuleConfiguration, RuleSet, RuleSets, RuleSeverity, Rules,
 };
 pub use engine::Engine;
 pub use engine_environment::EngineInitializationSettings;
