@@ -234,6 +234,8 @@ The last row is the one to care about for deployment. A default Rust MSVC binary
 
 **The rest of the surface** follows the object model: version and directory queries, [station options][ts-stationoptions], search directories, station globals, and the factories for sequence files, executions, steps, sequences, users, property objects and workspace files.
 
+**Environments.** `Engine::new_with_environment` selects a `.tsenv` file before the engine is constructed. The settings object has no `ProgID`, so it is created by class ID and lives only for the call; the engine it creates keeps the selected environment.
+
 #### Dialogs and the watchdog
 
 The engine runs in-process on a single-threaded COM apartment. When a dialog goes up, the calling thread is stuck _inside_ COM: the call does not return, so there is nothing to time out and no Rust code can cancel it. Construction removes the dialogs the engine raises on its own, but it cannot remove the ones a sequence asks for, and it should not, a [message popup][ts-messagepopup] step exists to stop and ask a person something.
