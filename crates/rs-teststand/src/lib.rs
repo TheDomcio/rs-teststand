@@ -21,6 +21,7 @@ pub mod adapters;
 pub mod analyzer;
 mod dispids;
 pub mod engine;
+mod engine_environment;
 pub mod enums;
 pub mod error;
 mod error_codes;
@@ -38,10 +39,11 @@ pub mod workspace;
 
 pub use adapters::AdapterKeyName;
 pub use analyzer::{
-    AnalysisMessage, AnalysisMessages, AnalysisStatus, Analyzer, Location, LocationKind, Locations,
-    MessageStatus, Project, RuleSeverity,
+    AnalysisMessage, AnalysisMessages, AnalysisStatus, Analyzer, DirectoriesToAnalyze,
+    DirectoryToAnalyze, Location, LocationKind, Locations, MessageStatus, Project, RuleSeverity,
 };
 pub use engine::Engine;
+pub use engine_environment::EngineInitializationSettings;
 pub use enums::{
     ExecRunState, ExecTermState, OpenWorkspaceFileOptions, PropValType, PropertyValueTypeFlags,
     SaveWorkspaceFileOptions, SearchDirectoryType, StepGroup,

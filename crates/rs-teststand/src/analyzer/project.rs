@@ -142,6 +142,172 @@ impl Project {
             .as_i32()?)
     }
 
+    /// The directories the project analyzes (`Project.DirectoriesToAnalyze`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn directories_to_analyze(&self) -> Result<super::DirectoriesToAnalyze, Error> {
+        Ok(super::DirectoriesToAnalyze::new(
+            self.dispatch
+                .get(project::DIRECTORIES_TO_ANALYZE)?
+                .into_object()?,
+        ))
+    }
+
+    /// Starts an analysis of one open file (`Project.StartFileAnalysis`).
+    ///
+    /// The file must be open in the analyzer's engine.
+    ///
+    /// # Errors
+    /// [`Error`] if the file has no COM identity or the COM call fails.
+    pub fn start_file_analysis(&self, file: &crate::PropertyObjectFile) -> Result<(), Error> {
+        let handle = file.duplicate_dispatch().ok_or(Error::UnexpectedType {
+            expected: "a live file object",
+            actual: "a test fake with no COM identity",
+        })?;
+        self.dispatch
+            .call(project::START_FILE_ANALYSIS, &[Value::Object(handle)])?;
+        Ok(())
+    }
+
+    /// Whether NI type palettes are analyzed
+    /// (`Project.AnalyzeNITypePalettes`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn analyze_ni_type_palettes(&self) -> Result<bool, Error> {
+        self.get_bool(project::ANALYZE_NI_TYPE_PALETTES)
+    }
+
+    /// Sets whether NI type palettes are analyzed
+    /// (`Project.AnalyzeNITypePalettes`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_analyze_ni_type_palettes(&self, analyze: bool) -> Result<(), Error> {
+        self.put_bool(project::ANALYZE_NI_TYPE_PALETTES, analyze)
+    }
+
+    /// Whether public type palettes are analyzed
+    /// (`Project.AnalyzePublicTypePalettes`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn analyze_public_type_palettes(&self) -> Result<bool, Error> {
+        self.get_bool(project::ANALYZE_PUBLIC_TYPE_PALETTES)
+    }
+
+    /// Sets whether public type palettes are analyzed
+    /// (`Project.AnalyzePublicTypePalettes`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_analyze_public_type_palettes(&self, analyze: bool) -> Result<(), Error> {
+        self.put_bool(project::ANALYZE_PUBLIC_TYPE_PALETTES, analyze)
+    }
+
+    /// Whether the users file is analyzed (`Project.AnalyzeUsersFile`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn analyze_users_file(&self) -> Result<bool, Error> {
+        self.get_bool(project::ANALYZE_USERS_FILE)
+    }
+
+    /// Sets whether the users file is analyzed (`Project.AnalyzeUsersFile`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_analyze_users_file(&self, analyze: bool) -> Result<(), Error> {
+        self.put_bool(project::ANALYZE_USERS_FILE, analyze)
+    }
+
+    /// Whether the station globals file is analyzed
+    /// (`Project.AnalyzeStationGlobalsFile`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn analyze_station_globals_file(&self) -> Result<bool, Error> {
+        self.get_bool(project::ANALYZE_STATION_GLOBALS_FILE)
+    }
+
+    /// Sets whether the station globals file is analyzed
+    /// (`Project.AnalyzeStationGlobalsFile`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_analyze_station_globals_file(&self, analyze: bool) -> Result<(), Error> {
+        self.put_bool(project::ANALYZE_STATION_GLOBALS_FILE, analyze)
+    }
+
+    /// Whether the templates file is analyzed
+    /// (`Project.AnalyzeTemplatesFile`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn analyze_templates_file(&self) -> Result<bool, Error> {
+        self.get_bool(project::ANALYZE_TEMPLATES_FILE)
+    }
+
+    /// Sets whether the templates file is analyzed
+    /// (`Project.AnalyzeTemplatesFile`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_analyze_templates_file(&self, analyze: bool) -> Result<(), Error> {
+        self.put_bool(project::ANALYZE_TEMPLATES_FILE, analyze)
+    }
+
+    /// Whether files reached by sequence calls are analyzed
+    /// (`Project.AnalyzeFilesCalledBySequenceCalls`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn analyze_files_called_by_sequence_calls(&self) -> Result<bool, Error> {
+        self.get_bool(project::ANALYZE_FILES_CALLED_BY_SEQUENCE_CALLS)
+    }
+
+    /// Sets whether files reached by sequence calls are analyzed
+    /// (`Project.AnalyzeFilesCalledBySequenceCalls`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_analyze_files_called_by_sequence_calls(&self, analyze: bool) -> Result<(), Error> {
+        self.put_bool(project::ANALYZE_FILES_CALLED_BY_SEQUENCE_CALLS, analyze)
+    }
+
+    /// Whether model files are analyzed (`Project.AnalyzeModelFiles`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn analyze_model_files(&self) -> Result<bool, Error> {
+        self.get_bool(project::ANALYZE_MODEL_FILES)
+    }
+
+    /// Sets whether model files are analyzed (`Project.AnalyzeModelFiles`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_analyze_model_files(&self, analyze: bool) -> Result<(), Error> {
+        self.put_bool(project::ANALYZE_MODEL_FILES, analyze)
+    }
+
+    /// Whether skipped steps are analyzed (`Project.AnalyzeSkippedSteps`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn analyze_skipped_steps(&self) -> Result<bool, Error> {
+        self.get_bool(project::ANALYZE_SKIPPED_STEPS)
+    }
+
+    /// Sets whether skipped steps are analyzed (`Project.AnalyzeSkippedSteps`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_analyze_skipped_steps(&self, analyze: bool) -> Result<(), Error> {
+        self.put_bool(project::ANALYZE_SKIPPED_STEPS, analyze)
+    }
+
     /// Starts an analysis of the project (`Project.StartAnalysis`).
     ///
     /// `options` is the integer the member takes; pass `0` for the default
@@ -228,6 +394,17 @@ impl Project {
     /// fails.
     pub fn write(&self) -> Result<(), Error> {
         self.dispatch.call(project::WRITE, &[])?;
+        Ok(())
+    }
+
+    /// Reads a boolean project switch.
+    fn get_bool(&self, dispid: i32) -> Result<bool, Error> {
+        Ok(self.dispatch.get(dispid)?.as_bool()?)
+    }
+
+    /// Writes a boolean project switch.
+    fn put_bool(&self, dispid: i32, value: bool) -> Result<(), Error> {
+        self.dispatch.put(dispid, Value::Bool(value))?;
         Ok(())
     }
 }

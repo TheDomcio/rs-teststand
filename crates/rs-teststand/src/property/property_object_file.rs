@@ -22,6 +22,11 @@ impl PropertyObjectFile {
         Self { dispatch }
     }
 
+    /// An owned handle to the same file, for passing it back to the engine.
+    pub(crate) fn duplicate_dispatch(&self) -> Option<Box<dyn Dispatch>> {
+        self.dispatch.duplicate()
+    }
+
     /// Writes the file to disk if it has changed
     /// (`PropertyObjectFile.SaveFileIfModified`).
     ///

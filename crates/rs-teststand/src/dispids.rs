@@ -720,6 +720,14 @@ pub(crate) mod expression {
     pub(crate) const EVALUATE: i32 = 0x6;
 }
 
+/// Members of the engine initialization settings object.
+pub(crate) mod engine_initialization_settings {
+    /// `SetEnvironmentPath`, one path parameter.
+    pub(crate) const SET_ENVIRONMENT_PATH: i32 = 0x1;
+    /// `CanInitializeEngine`, no parameters.
+    pub(crate) const CAN_INITIALIZE_ENGINE: i32 = 0x2;
+}
+
 /// Members of the sequence analyzer object (`IAnalyzer`).
 pub(crate) mod analyzer {
     /// `Initialize`, no parameters. Required before any other member.
@@ -736,12 +744,34 @@ pub(crate) mod analyzer {
     pub(crate) const LOAD_RULES_FILES: i32 = 0x17;
     /// `CacheSequenceFiles`, read/write boolean.
     pub(crate) const CACHE_SEQUENCE_FILES: i32 = 0x18;
+    /// `NewDirectoryToAnalyze`, path and recursive flag.
+    pub(crate) const NEW_DIRECTORY_TO_ANALYZE: i32 = 0xd;
 }
 
 /// Members of an analyzer project.
 pub(crate) mod project {
     /// `Path`, read/write.
     pub(crate) const PATH: i32 = 0x1;
+    /// `DirectoriesToAnalyze`, read-only collection.
+    pub(crate) const DIRECTORIES_TO_ANALYZE: i32 = 0x3;
+    /// `AnalyzeNITypePalettes`, read/write boolean.
+    pub(crate) const ANALYZE_NI_TYPE_PALETTES: i32 = 0x5;
+    /// `AnalyzePublicTypePalettes`, read/write boolean.
+    pub(crate) const ANALYZE_PUBLIC_TYPE_PALETTES: i32 = 0x6;
+    /// `AnalyzeUsersFile`, read/write boolean.
+    pub(crate) const ANALYZE_USERS_FILE: i32 = 0x7;
+    /// `AnalyzeStationGlobalsFile`, read/write boolean.
+    pub(crate) const ANALYZE_STATION_GLOBALS_FILE: i32 = 0x8;
+    /// `AnalyzeTemplatesFile`, read/write boolean.
+    pub(crate) const ANALYZE_TEMPLATES_FILE: i32 = 0x9;
+    /// `StartFileAnalysis`, one file parameter.
+    pub(crate) const START_FILE_ANALYSIS: i32 = 0xf;
+    /// `AnalyzeFilesCalledBySequenceCalls`, read/write boolean.
+    pub(crate) const ANALYZE_FILES_CALLED_BY_SEQUENCE_CALLS: i32 = 0x13;
+    /// `AnalyzeModelFiles`, read/write boolean.
+    pub(crate) const ANALYZE_MODEL_FILES: i32 = 0x14;
+    /// `AnalyzeSkippedSteps`, read/write boolean.
+    pub(crate) const ANALYZE_SKIPPED_STEPS: i32 = 0x19;
     /// `WorkspaceFileToAnalyze`, read/write.
     pub(crate) const WORKSPACE_FILE_TO_ANALYZE: i32 = 0x2;
     /// `FilesToAnalyze`, read/write string array.
@@ -770,6 +800,28 @@ pub(crate) mod project {
     pub(crate) const AUTO_SAVE: i32 = 0x1e;
     /// `GenerateReport`, no parameters, returns the report text.
     pub(crate) const GENERATE_REPORT: i32 = 0x15;
+}
+
+/// Members of `DirectoriesToAnalyze`.
+pub(crate) mod directories_to_analyze {
+    /// `Item`, one index parameter.
+    pub(crate) const ITEM: i32 = 0x0;
+    /// `Count`, read-only integer.
+    pub(crate) const COUNT: i32 = 0x2;
+    /// `Insert`, index and directory.
+    pub(crate) const INSERT: i32 = 0x3;
+    /// `Remove`, one index parameter.
+    pub(crate) const REMOVE: i32 = 0x4;
+    /// `Clear`, no parameters.
+    pub(crate) const CLEAR: i32 = 0x5;
+}
+
+/// Members of `DirectoryToAnalyze`.
+pub(crate) mod directory_to_analyze {
+    /// `Path`, read/write.
+    pub(crate) const PATH: i32 = 0x1;
+    /// `AnalyzeSubDirectories`, read/write boolean.
+    pub(crate) const ANALYZE_SUB_DIRECTORIES: i32 = 0x2;
 }
 
 /// Members of `AnalysisStatus`.

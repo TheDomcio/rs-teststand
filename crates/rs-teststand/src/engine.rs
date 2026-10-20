@@ -57,6 +57,22 @@ impl Engine {
         Ok(engine)
     }
 
+    /// Creates the engine in a selected environment
+    /// (`EngineInitializationSettings.SetEnvironmentPath` + `Engine`).
+    ///
+    /// `path` names a `.tsenv` file. Pass an empty string for the global
+    /// environment. The settings object lives only for this call; the engine it
+    /// creates keeps the environment.
+    ///
+    /// # Errors
+    /// [`Error`] if the environment file is missing or unreadable, or the engine
+    /// cannot be created.
+    pub fn new_with_environment(path: &str) -> Result<Self, Error> {
+        let settings = crate::EngineInitializationSettings::new()?;
+        settings.set_environment_path(path)?;
+        Self::new()
+    }
+
     /// Dialogs that were closed while this engine was being created.
     ///
     /// A non-empty list is worth logging: it is the only record that something

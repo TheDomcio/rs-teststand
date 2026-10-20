@@ -11,9 +11,9 @@ use std::fmt;
 
 use windows::Win32::Globalization::LOCALE_USER_DEFAULT;
 use windows::Win32::System::Com::{
-    CLSCTX_ALL, CLSIDFromProgID, COINIT_APARTMENTTHREADED, CoCreateInstance, CoInitializeEx,
-    CoUninitialize, DISPATCH_FLAGS, DISPATCH_METHOD, DISPATCH_PROPERTYGET, DISPATCH_PROPERTYPUT,
-    DISPPARAMS, EXCEPINFO, IDispatch,
+    CLSCTX_ALL, CLSIDFromProgID, CLSIDFromString, COINIT_APARTMENTTHREADED, CoCreateInstance,
+    CoInitializeEx, CoUninitialize, DISPATCH_FLAGS, DISPATCH_METHOD, DISPATCH_PROPERTYGET,
+    DISPATCH_PROPERTYPUT, DISPPARAMS, EXCEPINFO, IDispatch,
 };
 use windows::Win32::System::Variant::VARIANT;
 use windows_core::{BSTR, GUID, HSTRING};
@@ -341,9 +341,33 @@ pub fn create_dispatch(prog_id: &str) -> Result<ComDispatch, ComError> {
     let clsid = unsafe { CLSIDFromProgID(&prog_id) }
         .map_err(|error| ComError::hresult(error.code().0, "CLSIDFromProgID"))?;
 
+    instantiate(&clsid)
+}
+
+/// Creates a COM object from a class ID and returns it as a dispatch handle.
+///
+/// For coclasses that have no `ProgID` in the registry. The string must be a
+/// braced GUID, for example `{00000000-0000-0000-0000-000000000000}`.
+///
+/// # Errors
+/// [`ComError::Hresult`] if the apartment cannot be initialized, the class ID is
+/// malformed, or the class cannot be instantiated.
+pub fn create_dispatch_from_class_id(class_id: &str) -> Result<ComDispatch, ComError> {
+    init_apartment()?;
+    let class_id = HSTRING::from(class_id);
+
+    // SAFETY: `class_id` is a valid, live wide string for the duration of the call.
+    let clsid = unsafe { CLSIDFromString(&class_id) }
+        .map_err(|error| ComError::hresult(error.code().0, "CLSIDFromString"))?;
+
+    instantiate(&clsid)
+}
+
+/// Instantiates a class and asks for `IDispatch`.
+fn instantiate(clsid: &GUID) -> Result<ComDispatch, ComError> {
     // SAFETY: `clsid` is a valid CLSID; no aggregation (None); the requested
     // interface `IDispatch` matches the returned type parameter.
-    let dispatch: IDispatch = unsafe { CoCreateInstance(&raw const clsid, None, CLSCTX_ALL) }
+    let dispatch: IDispatch = unsafe { CoCreateInstance(&raw const *clsid, None, CLSCTX_ALL) }
         .map_err(|error| ComError::hresult(error.code().0, "CoCreateInstance"))?;
 
     Ok(ComDispatch::new(dispatch))

@@ -11,8 +11,8 @@
 use std::time::{Duration, Instant};
 
 use rs_teststand::{
-    Analyzer, Engine, Error, LocationKind, MessageStatus, RuleSeverity, StepGroup,
-    pump_thread_messages,
+    Analyzer, ConflictHandler, Engine, Error, GetSeqFileOptions, LocationKind, MessageStatus,
+    RuleSeverity, StepGroup, pump_thread_messages,
 };
 
 /// How long a small fixture may take on a station that is still loading rules.
@@ -33,7 +33,7 @@ fn broken_fixture_path(engine: &Engine) -> Result<String, Error> {
 }
 
 fn write_fixture(engine: &Engine, precondition: Option<&str>) -> Result<String, Error> {
-    engine.load_type_palette_files_ex(rs_teststand::ConflictHandler::Error, 0)?;
+    engine.load_type_palette_files_ex(ConflictHandler::Error, 0)?;
     let file = engine.new_sequence_file()?;
     let main_sequence = file.get_sequence_by_name("MainSequence")?;
     let step = engine.new_step("", "Statement")?;
@@ -193,6 +193,65 @@ fn a_rule_violation_reports_where_it_happened() -> Result<(), Error> {
         located >= 1,
         "a broken precondition should produce an error with a location"
     );
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires a live analyzer"]
+fn a_directory_entry_can_be_added_to_a_project() -> Result<(), Error> {
+    let analyzer = Analyzer::new()?;
+    let project = analyzer.new_project()?;
+    let path = std::env::temp_dir().to_string_lossy().into_owned();
+
+    let directory = analyzer.new_directory_to_analyze(&path, false)?;
+    assert_eq!(directory.path()?, path);
+    assert!(!directory.analyze_sub_directories()?);
+
+    let directories = project.directories_to_analyze()?;
+    directories.insert(0, &directory)?;
+    assert_eq!(directories.count()?, 1);
+    assert_eq!(directories.get(0)?.path()?, path);
+    directories.clear()?;
+    assert_eq!(directories.count()?, 0);
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires a live analyzer"]
+fn a_single_open_file_can_be_analyzed() -> Result<(), Error> {
+    let analyzer = Analyzer::new()?;
+    analyzer.load_rules_files()?;
+    let engine = analyzer.engine()?;
+    engine.load_type_palette_files_ex(ConflictHandler::Error, 0)?;
+    let fixture = broken_fixture_path(&engine)?;
+
+    let sequence_file = engine.get_sequence_file_ex(
+        &fixture,
+        GetSeqFileOptions::DO_NOT_RUN_LOAD_CALLBACK,
+        ConflictHandler::Error,
+    )?;
+    let file = sequence_file.as_property_object_file()?;
+    let project = analyzer.new_project()?;
+    project.start_file_analysis(&file)?;
+
+    let status = project.analysis_status()?;
+    let deadline = Instant::now() + ANALYSIS_TIMEOUT;
+    while status.is_analyzing()? {
+        let _ = pump_thread_messages();
+        assert!(
+            Instant::now() < deadline,
+            "analysis did not finish: {}",
+            status.last_status_message()?
+        );
+        std::thread::sleep(Duration::from_millis(100));
+    }
+
+    assert!(
+        project.messages()?.count()? > 0,
+        "the broken file should produce a message"
+    );
+    engine.release_sequence_file_ex(sequence_file, 0)?;
+    let _ = std::fs::remove_file(&fixture);
     Ok(())
 }
 

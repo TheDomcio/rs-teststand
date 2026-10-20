@@ -28,6 +28,7 @@
 mod analysis_message;
 mod analysis_messages;
 mod analysis_status;
+mod directory;
 pub mod enums;
 mod location;
 mod project;
@@ -40,6 +41,7 @@ use crate::dispids::analyzer;
 pub use analysis_message::AnalysisMessage;
 pub use analysis_messages::{AnalysisMessages, AnalysisMessagesIter};
 pub use analysis_status::AnalysisStatus;
+pub use directory::{DirectoriesToAnalyze, DirectoriesToAnalyzeIter, DirectoryToAnalyze};
 pub use enums::{LocationKind, MessageStatus, RuleSeverity};
 pub use location::{Location, Locations, LocationsIter};
 pub use project::Project;
@@ -108,6 +110,32 @@ impl Analyzer {
                 .call(
                     analyzer::OPEN_PROJECT,
                     &[rs_teststand_sys::Value::Str(path.to_owned())],
+                )?
+                .into_object()?,
+        ))
+    }
+
+    /// Creates a directory entry for a project
+    /// (`Analyzer.NewDirectoryToAnalyze`).
+    ///
+    /// `analyze_sub_directories` decides whether the analysis descends into the
+    /// directory.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn new_directory_to_analyze(
+        &self,
+        directory_path: &str,
+        analyze_sub_directories: bool,
+    ) -> Result<DirectoryToAnalyze, Error> {
+        Ok(DirectoryToAnalyze::new(
+            self.dispatch
+                .call(
+                    analyzer::NEW_DIRECTORY_TO_ANALYZE,
+                    &[
+                        rs_teststand_sys::Value::Str(directory_path.to_owned()),
+                        rs_teststand_sys::Value::Bool(analyze_sub_directories),
+                    ],
                 )?
                 .into_object()?,
         ))
