@@ -7,7 +7,7 @@ use crate::rendering::markdown::{code_block, sanitize};
 ///
 /// Showing the code beats showing the word "Action": a reader can look an
 /// unknown code up, and it surfaces gaps in this table instead of hiding them.
-fn action_label(code: &str) -> &str {
+const fn action_label(code: &str) -> &str {
     match code.as_bytes() {
         b"Next" | b"1" => "Continue",
         // The engine reports a step jump under either name.

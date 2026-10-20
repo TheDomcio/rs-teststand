@@ -48,7 +48,7 @@ mod tests {
     #[test]
     fn renders_empty_string_to_empty_svg() -> Result<(), Error> {
         let svg = render_mermaid_to_svg("   ")?;
-        assert!(svg.is_empty());
+        assert_eq!(svg, "");
         Ok(())
     }
 

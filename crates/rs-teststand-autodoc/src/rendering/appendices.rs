@@ -283,7 +283,7 @@ mod container_tests {
     #[test]
     fn a_bare_vi_has_no_containers() {
         let (containers, name) = containers_of(r"C:\lab\vis\Measure.vi");
-        assert!(containers.is_empty());
+        assert_eq!(containers, Vec::<String>::new());
         assert_eq!(name, "Measure.vi");
     }
 
@@ -319,7 +319,7 @@ mod container_tests {
     #[test]
     fn a_dll_is_not_a_container() {
         let (containers, name) = containers_of(r"C:\lab\drivers\meter.dll");
-        assert!(containers.is_empty());
+        assert_eq!(containers, Vec::<String>::new());
         assert_eq!(name, "meter.dll");
     }
 }

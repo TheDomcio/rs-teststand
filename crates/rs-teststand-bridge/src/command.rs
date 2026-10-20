@@ -257,12 +257,12 @@ mod tests {
         // Almost every file uses MainSequence, and requiring it of every caller
         // is friction with no benefit.
         let parsed: Command =
-            serde_json::from_str(r#"{"command":"run","sequence_file":"C:\\x.seq"}"#)
+            serde_json::from_str(r#"{"command":"run","sequence_file":"station.seq"}"#)
                 .unwrap_or(Command::Shutdown);
         assert_eq!(
             parsed,
             Command::Run {
-                sequence_file: r"C:\x.seq".to_owned(),
+                sequence_file: "station.seq".to_owned(),
                 sequence: "MainSequence".to_owned(),
             }
         );

@@ -169,7 +169,10 @@ mod tests {
     /// A file where nothing calls anything has no hierarchy to show.
     #[test]
     fn a_file_without_calls_renders_nothing() {
-        assert!(render(&[file_with(vec![SequenceData::default()])]).is_empty());
+        assert_eq!(
+            render(&[file_with(vec![SequenceData::default()])]),
+            Vec::<String>::new()
+        );
     }
 
     /// A caller is named once, with what it reaches underneath.

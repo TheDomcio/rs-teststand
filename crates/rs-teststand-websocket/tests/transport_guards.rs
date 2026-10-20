@@ -74,7 +74,7 @@ async fn a_reply_reaches_the_client_as_a_five_field_acknowledgement() {
     // `code` and `description` are present on every acknowledgement, which is
     // what lets a client treat success and failure with one code path.
     assert_eq!(ack.code, 0);
-    assert!(!ack.description.is_empty());
+    assert_ne!(ack.description, "");
 }
 
 #[tokio::test]
