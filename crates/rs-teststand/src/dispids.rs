@@ -94,6 +94,7 @@ define_dispid_group! {
         GET_SYNC_MANAGER = 0x0203;
         GET_TYPE_DEFINITION = 0x01dc;
         GET_TYPE_NAMES = 0x01dd;
+        DIFF_SEQUENCE_FILES = 0x0258;
         DOT_NET_GARBAGE_COLLECTION_INTERVAL = 0x02be;
         DO_DOT_NET_GARBAGE_COLLECTION = 0x02bf;
         DOT_NET_CLR_VERSION = 0x02c3;
@@ -1090,6 +1091,52 @@ pub(crate) mod batch {
     pub(crate) const GET_INFO: i32 = 0x8;
     /// `GetBatchThreads`, no parameters, returns an integer array.
     pub(crate) const GET_BATCH_THREADS: i32 = 0x9;
+}
+
+/// Members of `SequenceFileDiffer`.
+pub(crate) mod sequence_file_differ {
+    /// `DifferencesRoot`, read-only.
+    pub(crate) const DIFFERENCES_ROOT: i32 = 0x1;
+    /// `UpdateDifferences`, one section parameter, returns an integer.
+    pub(crate) const UPDATE_DIFFERENCES: i32 = 0x2;
+    /// `DiffSequenceFiles`, no parameters.
+    pub(crate) const DIFF_SEQUENCE_FILES: i32 = 0x3;
+}
+
+/// Members of `SequenceFileDifferenceSection`.
+pub(crate) mod sequence_file_difference_section {
+    /// `Name`, read-only string.
+    pub(crate) const NAME: i32 = 0x1;
+    /// `SmallIconIndex`, read-only integer.
+    pub(crate) const SMALL_ICON_INDEX: i32 = 0x2;
+    /// `File1Section`, read-only property object.
+    pub(crate) const FILE1_SECTION: i32 = 0x3;
+    /// `File2Section`, read-only property object.
+    pub(crate) const FILE2_SECTION: i32 = 0x4;
+    /// `File1Location`, read-only string.
+    pub(crate) const FILE1_LOCATION: i32 = 0x5;
+    /// `File2Location`, read-only string.
+    pub(crate) const FILE2_LOCATION: i32 = 0x6;
+    /// `File1Differences`, read-only integer array.
+    pub(crate) const FILE1_DIFFERENCES: i32 = 0x7;
+    /// `File2Differences`, read-only integer array.
+    pub(crate) const FILE2_DIFFERENCES: i32 = 0x8;
+    /// `NumberOfDifferenceGroups`, read-only integer.
+    pub(crate) const NUMBER_OF_DIFFERENCE_GROUPS: i32 = 0x9;
+    /// `NumberOfDifferences`, read-only integer.
+    pub(crate) const NUMBER_OF_DIFFERENCES: i32 = 0xb;
+    /// `TotalNumberOfDifferences`, read-only integer.
+    pub(crate) const TOTAL_NUMBER_OF_DIFFERENCES: i32 = 0xc;
+    /// `SubSections`, read-only collection.
+    pub(crate) const SUB_SECTIONS: i32 = 0xd;
+}
+
+/// Members of `SequenceFileDifferenceSections`.
+pub(crate) mod sequence_file_difference_sections {
+    /// `Item`, one index parameter.
+    pub(crate) const ITEM: i32 = 0x0;
+    /// `Count`, read-only integer.
+    pub(crate) const COUNT: i32 = 0x2;
 }
 
 /// Members of `SyncManager`.

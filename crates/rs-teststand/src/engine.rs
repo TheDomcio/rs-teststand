@@ -188,6 +188,42 @@ impl Engine {
         Ok(())
     }
 
+    /// Compares two sequence files (`Engine.DiffSequenceFiles`).
+    ///
+    /// The result is a difference tree; call
+    /// [`SequenceFileDiffer::diff_sequence_files`](crate::SequenceFileDiffer::diff_sequence_files)
+    /// if the tree must be recomputed after a change.
+    ///
+    /// # Errors
+    /// [`Error`] if a file has no COM identity or the COM call fails.
+    pub fn diff_sequence_files(
+        &self,
+        file1: &crate::SequenceFile,
+        file2: &crate::SequenceFile,
+        options: crate::SequenceFileDifferOptions,
+    ) -> Result<crate::SequenceFileDiffer, Error> {
+        let file1 = file1.duplicate_dispatch().ok_or(Error::UnexpectedType {
+            expected: "a live sequence file",
+            actual: "a test fake with no COM identity",
+        })?;
+        let file2 = file2.duplicate_dispatch().ok_or(Error::UnexpectedType {
+            expected: "a live sequence file",
+            actual: "a test fake with no COM identity",
+        })?;
+        Ok(crate::SequenceFileDiffer::new(
+            self.dispatch
+                .call(
+                    dispid::DIFF_SEQUENCE_FILES,
+                    &[
+                        Value::Object(file1),
+                        Value::Object(file2),
+                        Value::I32(options.bits()),
+                    ],
+                )?
+                .into_object()?,
+        ))
+    }
+
     /// The names of every type currently loaded (`Engine.GetTypeNames`).
     ///
     /// Includes step types, custom data types, and the built-in types. Use

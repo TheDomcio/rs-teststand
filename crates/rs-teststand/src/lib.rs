@@ -27,6 +27,7 @@ pub mod error;
 mod error_codes;
 pub mod execution;
 pub mod expression;
+pub mod file_differ;
 pub mod license;
 pub mod messaging;
 pub mod property;
@@ -62,6 +63,10 @@ pub use expression::{
     ExpressionError, LogicalOperator, NumericFunction, Operator, OperatorClass, OtherConstant,
     OtherFunction, OtherOperator, PropertyFunction, StringFunction, SwitchingFunction,
     TimeFunction,
+};
+pub use file_differ::{
+    SequenceFileDiffer, SequenceFileDifferOptions, SequenceFileDifferenceSection,
+    SequenceFileDifferenceSections, SequenceFileDifferenceSectionsIter, SequenceFileDifferenceType,
 };
 pub use license::{AcquireLicenseOptions, ApplicationLicense, HeldLicense, LicenseType};
 pub use messaging::{UIMessage, UIMessageCode, pump_thread_messages};
