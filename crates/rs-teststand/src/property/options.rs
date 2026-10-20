@@ -123,6 +123,16 @@ bitflags::bitflags! {
     }
 }
 
+/// Clone options for a copy that has to stand on its own.
+///
+/// A plain clone shares the subproperties the original marks as shared, which
+/// keeps the copy tied to the template. Copying every property and every flag
+/// detaches it, and that is what lets a cloned step or sequence be inserted
+/// somewhere else.
+pub(crate) const fn detached_clone_options() -> i32 {
+    PropertyOptions::DO_NOT_SHARE_PROPERTIES.bits() | PropertyOptions::COPY_ALL_FLAGS.bits()
+}
+
 #[cfg(test)]
 mod tests {
     use super::{GetTemplatesFileOptions, PropertyOptions};

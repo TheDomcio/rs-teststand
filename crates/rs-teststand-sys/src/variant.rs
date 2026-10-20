@@ -10,9 +10,14 @@
 //! [`OwnedVariant`] makes that obligation the compiler's job: it owns the
 //! `VARIANT` and clears it on drop, on every path.
 
+use std::mem::size_of;
+
 use windows::Win32::Foundation::VARIANT_BOOL;
 use windows::Win32::System::Com::{IDispatch, SAFEARRAY};
-use windows::Win32::System::Ole::{SafeArrayGetElement, SafeArrayGetLBound, SafeArrayGetUBound};
+use windows::Win32::System::Ole::{
+    SafeArrayCreateVector, SafeArrayDestroy, SafeArrayGetElement, SafeArrayGetLBound,
+    SafeArrayGetUBound, SafeArrayLock, SafeArrayPutElement, SafeArrayUnlock,
+};
 use windows::Win32::System::Variant::{
     VARIANT, VT_ARRAY, VT_BOOL, VT_BSTR, VT_BYREF, VT_DISPATCH, VT_EMPTY, VT_I4, VT_I8, VT_NULL,
     VT_R8, VT_UI8, VT_UNKNOWN, VariantClear,
@@ -166,6 +171,10 @@ impl OwnedVariant {
                         actual: "an array, which is read-only here",
                     });
                 }
+                Value::StrArray(strings) => {
+                    inner.vt = windows::Win32::System::Variant::VARENUM(VT_ARRAY.0 | VT_BSTR.0);
+                    inner.Anonymous.parray = build_string_array(strings)?;
+                }
                 Value::Object(object) => {
                     let Some(dispatch) = object.as_idispatch() else {
                         return Err(ComError::UnexpectedType {
@@ -244,6 +253,9 @@ impl OwnedVariant {
                 variant_type if variant_type.0 == VT_ARRAY.0 | VT_I4.0 => {
                     Value::I32Array(read_i32_array(slot.parray)?)
                 }
+                variant_type if variant_type.0 == VT_ARRAY.0 | VT_BSTR.0 => {
+                    Value::StrArray(read_string_array(slot.parray)?)
+                }
                 _ => {
                     return Err(ComError::UnexpectedType {
                         expected: "a VARIANT type this layer models",
@@ -302,6 +314,142 @@ fn read_i32_array(array: *mut SAFEARRAY) -> Result<Vec<i32>, ComError> {
             SafeArrayGetElement(array, &raw const index, (&raw mut element).cast())
                 .map_err(|error| ComError::hresult(error.code().0, "SafeArray"))?;
             elements.push(element);
+        }
+        Ok(elements)
+    }
+}
+
+/// Builds a one-dimensional `VT_BSTR` SAFEARRAY from owned strings.
+///
+/// The array takes ownership of each `BSTR` pointer. After a successful put the
+/// local wrapper is consumed with `into_raw` so it does not free a string the
+/// array now owns; on failure the array is destroyed, which frees the elements
+/// already stored, and the failure is reported as the COM error that caused it.
+///
+/// # Errors
+/// [`ComError`] if the array cannot be created or an element cannot be stored.
+fn build_string_array(strings: &[String]) -> Result<*mut SAFEARRAY, ComError> {
+    let count = u32::try_from(strings.len()).map_err(|_| {
+        ComError::hresult(-2_147_024_809, "string array exceeds the COM element limit")
+    })?;
+
+    // SAFETY: `SafeArrayCreateVector` returns a one-dimensional array of
+    // `count` `VT_BSTR` elements with lower bound 0, or null on failure. Each
+    // `SafeArrayPutElement` writes one in-range index; the pointer handed to it
+    // is a live BSTR. Ownership transfers to the array on success, so the
+    // wrapper is consumed without freeing it. On failure the partially filled
+    // array is destroyed, freeing what it already owns, and the error is
+    // returned.
+    unsafe {
+        let array = SafeArrayCreateVector(VT_BSTR, 0, count);
+        if array.is_null() {
+            return Err(ComError::hresult(
+                -2_147_024_807,
+                "the OLE allocator refused a string array",
+            ));
+        }
+        for (index, text) in strings.iter().enumerate() {
+            let position = i32::try_from(index)
+                .map_err(|_| ComError::hresult(-2_147_024_809, "string array index exceeds i32"))?;
+            // `BSTR::from("")` is a null pointer, which the array cannot tell
+            // apart from an absent element. Allocate a real zero-length BSTR.
+            // A zero-length BSTR is a null pointer. Pass that through; the
+            // array stores an absent element, which reads back as an empty
+            // string.
+            let element = BSTR::from(text.as_str());
+            let source = if text.is_empty() {
+                std::ptr::null()
+            } else {
+                element.as_ptr().cast()
+            };
+            if let Err(error) = SafeArrayPutElement(array, &raw const position, source) {
+                let _ = SafeArrayDestroy(array);
+                return Err(ComError::hresult(error.code().0, "SafeArrayPutElement"));
+            }
+            // The array owns the BSTR now; disposing the wrapper would free it.
+            let _ = element.into_raw();
+        }
+        Ok(array)
+    }
+}
+
+/// Copies a one-dimensional `VT_BSTR` SAFEARRAY into owned strings.
+///
+/// The array is locked and its element pointers are read directly, then copied
+/// into Rust strings. The BSTRs stay owned by the array: each wrapper is
+/// consumed with `into_raw` after the copy so it does not free storage the
+/// array will free again. A null element is an empty string rather than a
+/// failure, matching how the array reports an empty slot.
+///
+/// # Errors
+/// [`ComError`] if the array is null, cannot be locked, or its bounds cannot be
+/// read.
+fn read_string_array(array: *mut SAFEARRAY) -> Result<Vec<String>, ComError> {
+    if array.is_null() {
+        return Err(ComError::UnexpectedType {
+            expected: "a SAFEARRAY of strings",
+            actual: "a null array pointer",
+        });
+    }
+
+    // SAFETY: `array` is non-null and, because `vt` said `VT_ARRAY | VT_BSTR`,
+    // points to a live one-dimensional SAFEARRAY of BSTR. `SafeArrayLock`
+    // prevents the data from moving while the pointers are read; every offset
+    // lies inside the bounds read below. Each BSTR pointer is wrapped only for
+    // the length and copy, then handed back to the array with `into_raw`.
+    unsafe {
+        let lower = SafeArrayGetLBound(array, 1)
+            .map_err(|error| ComError::hresult(error.code().0, "SafeArray"))?;
+        let upper = SafeArrayGetUBound(array, 1)
+            .map_err(|error| ComError::hresult(error.code().0, "SafeArray"))?;
+
+        if upper < lower {
+            return Ok(Vec::new());
+        }
+
+        if SafeArrayLock(array).is_err() {
+            return Err(ComError::hresult(-2_147_024_807, "SafeArrayLock"));
+        }
+        let result = read_locked_string_array(array, lower, upper);
+        let _ = SafeArrayUnlock(array);
+        result
+    }
+}
+
+/// Reads the elements of a locked `VT_BSTR` SAFEARRAY.
+///
+/// # Safety
+/// The caller must hold the array lock and pass bounds read from the same
+/// array.
+unsafe fn read_locked_string_array(
+    array: *mut SAFEARRAY,
+    lower: i32,
+    upper: i32,
+) -> Result<Vec<String>, ComError> {
+    // SAFETY: the array is locked and the indices are in range, so `pvData`
+    // points to a contiguous vector of BSTR pointers.
+    unsafe {
+        let descriptor = &*array;
+        if descriptor.cDims != 1 || descriptor.cbElements as usize != size_of::<*const u16>() {
+            return Err(ComError::UnexpectedType {
+                expected: "a one-dimensional BSTR array",
+                actual: "a different SAFEARRAY shape",
+            });
+        }
+
+        let base = descriptor.pvData.cast::<*const u16>();
+        let mut elements = Vec::with_capacity((upper - lower + 1).unsigned_abs() as usize);
+        for index in lower..=upper {
+            let offset = (index - lower).unsigned_abs() as usize;
+            let raw = *base.add(offset);
+            if raw.is_null() {
+                elements.push(String::new());
+            } else {
+                let element = BSTR::from_raw(raw);
+                elements.push(String::from_utf16_lossy(&element));
+                // The array still owns the BSTR.
+                let _ = element.into_raw();
+            }
         }
         Ok(elements)
     }
@@ -441,7 +589,28 @@ mod tests {
         // An execution with no child executions hands back a zero-length array,
         // which is an ordinary answer and not a failure.
         let elements = i32_array_variant(&[])?.to_value()?.into_i32_array()?;
-        assert!(elements.is_empty());
+        assert_eq!(elements, Vec::<i32>::new());
+        Ok(())
+    }
+
+    #[test]
+    fn round_trips_a_string_array_including_an_empty_slot() -> Result<(), ComError> {
+        // File lists are BSTR arrays. The empty string is a legitimate member,
+        // so it must not be mistaken for the end of the array.
+        let strings = vec![
+            "MainSequence.seq".to_owned(),
+            String::new(),
+            "b.seq".to_owned(),
+        ];
+        let actual = round_trip(&Value::StrArray(strings.clone()))?.into_string_array()?;
+        assert_eq!(actual, strings);
+        Ok(())
+    }
+
+    #[test]
+    fn an_empty_string_array_is_empty_rather_than_an_error() -> Result<(), ComError> {
+        let strings = round_trip(&Value::StrArray(Vec::new()))?.into_string_array()?;
+        assert_eq!(strings, Vec::<String>::new());
         Ok(())
     }
 

@@ -662,3 +662,141 @@ pub(crate) mod expression {
     /// `Evaluate`, 2 parameters, returns a property object.
     pub(crate) const EVALUATE: i32 = 0x6;
 }
+
+/// Members of the sequence analyzer object (`IAnalyzer`).
+pub(crate) mod analyzer {
+    /// `Initialize`, no parameters. Required before any other member.
+    pub(crate) const INITIALIZE: i32 = 0x1;
+    /// `Engine`, read-only. The engine the analyzer created.
+    pub(crate) const ENGINE: i32 = 0x7;
+    /// `NewProject`, no parameters.
+    pub(crate) const NEW_PROJECT: i32 = 0x9;
+    /// `OpenProject`, one path parameter.
+    pub(crate) const OPEN_PROJECT: i32 = 0xa;
+    /// `UnloadAllModules`, no parameters.
+    pub(crate) const UNLOAD_ALL_MODULES: i32 = 0x15;
+    /// `LoadRulesFiles`, no parameters.
+    pub(crate) const LOAD_RULES_FILES: i32 = 0x17;
+    /// `CacheSequenceFiles`, read/write boolean.
+    pub(crate) const CACHE_SEQUENCE_FILES: i32 = 0x18;
+}
+
+/// Members of an analyzer project.
+pub(crate) mod project {
+    /// `Path`, read/write.
+    pub(crate) const PATH: i32 = 0x1;
+    /// `WorkspaceFileToAnalyze`, read/write.
+    pub(crate) const WORKSPACE_FILE_TO_ANALYZE: i32 = 0x2;
+    /// `FilesToAnalyze`, read/write string array.
+    pub(crate) const FILES_TO_ANALYZE: i32 = 0x4;
+    /// `Messages`, read-only.
+    pub(crate) const MESSAGES: i32 = 0xa;
+    /// `Write`, no parameters.
+    pub(crate) const WRITE: i32 = 0xb;
+    /// `Read`, no parameters.
+    pub(crate) const READ: i32 = 0xc;
+    /// `StartAnalysis`, one integer parameter.
+    pub(crate) const START_ANALYSIS: i32 = 0xe;
+    /// `StopAnalysis`, no parameters.
+    pub(crate) const STOP_ANALYSIS: i32 = 0x10;
+    /// `IsModified`, read-only.
+    pub(crate) const IS_MODIFIED: i32 = 0x11;
+    /// `AnalysisStatus`, read-only.
+    pub(crate) const ANALYSIS_STATUS: i32 = 0x12;
+    /// `AnalyzedFiles`, read-only string array.
+    pub(crate) const ANALYZED_FILES: i32 = 0x17;
+    /// `AbortAnalysis`, no parameters.
+    pub(crate) const ABORT_ANALYSIS: i32 = 0x18;
+    /// `NumberOfStepsNotAnalyzed`, read-only.
+    pub(crate) const NUMBER_OF_STEPS_NOT_ANALYZED: i32 = 0x1a;
+    /// `AutoSave`, read/write boolean.
+    pub(crate) const AUTO_SAVE: i32 = 0x1e;
+}
+
+/// Members of `AnalysisStatus`.
+pub(crate) mod analysis_status {
+    /// `IsAnalyzing`, read-only boolean.
+    pub(crate) const IS_ANALYZING: i32 = 0x1;
+    /// `NumberOfFilesAnalyzed`, read-only integer.
+    pub(crate) const NUMBER_OF_FILES_ANALYZED: i32 = 0x2;
+    /// `NumberOfFilesToAnalyze`, read-only integer.
+    pub(crate) const NUMBER_OF_FILES_TO_ANALYZE: i32 = 0x3;
+    /// `LastStatusMessage`, read-only string.
+    pub(crate) const LAST_STATUS_MESSAGE: i32 = 0x4;
+    /// `NumberOfSequencesAnalyzed`, read-only integer.
+    pub(crate) const NUMBER_OF_SEQUENCES_ANALYZED: i32 = 0x7;
+    /// `NumberOfSequencesToAnalyze`, read-only integer.
+    pub(crate) const NUMBER_OF_SEQUENCES_TO_ANALYZE: i32 = 0x8;
+    /// `UserName`, read-only string.
+    pub(crate) const USER_NAME: i32 = 0x9;
+    /// `ComputerName`, read-only string.
+    pub(crate) const COMPUTER_NAME: i32 = 0xa;
+    /// `TestStandVersion`, read-only string.
+    pub(crate) const TEST_STAND_VERSION: i32 = 0xb;
+    /// `AnalysisStopped`, read-only boolean.
+    pub(crate) const ANALYSIS_STOPPED: i32 = 0xc;
+    /// `StartTime`, read-only date.
+    pub(crate) const START_TIME: i32 = 0xd;
+    /// `ElapsedTime`, read-only integer.
+    pub(crate) const ELAPSED_TIME: i32 = 0xe;
+}
+
+/// Members of `AnalysisMessage`.
+pub(crate) mod analysis_message {
+    /// `RuleId`, read/write string.
+    pub(crate) const RULE_ID: i32 = 0x1;
+    /// `Text`, read/write string.
+    pub(crate) const TEXT: i32 = 0x2;
+    /// `Locations`, read-only.
+    pub(crate) const LOCATIONS: i32 = 0x3;
+    /// `Severity`, read-only enum.
+    pub(crate) const SEVERITY: i32 = 0x4;
+    /// `IsCurrent`, read-only boolean.
+    pub(crate) const IS_CURRENT: i32 = 0x5;
+    /// `Status`, read/write enum.
+    pub(crate) const STATUS: i32 = 0x6;
+    /// `JustificationForIgnore`, read/write string.
+    pub(crate) const JUSTIFICATION_FOR_IGNORE: i32 = 0x7;
+}
+
+/// Members of `AnalysisMessages`.
+pub(crate) mod analysis_messages {
+    /// `Item`, one index parameter.
+    pub(crate) const ITEM: i32 = 0x0;
+    /// `Count`, read-only integer.
+    pub(crate) const COUNT: i32 = 0x2;
+    /// `Remove`, one index parameter.
+    pub(crate) const REMOVE: i32 = 0x3;
+    /// `Clear`, no parameters.
+    pub(crate) const CLEAR: i32 = 0x4;
+}
+
+/// Members of `Location`.
+pub(crate) mod location {
+    /// `Kind`, read-only enum.
+    pub(crate) const KIND: i32 = 0x1;
+    /// `FilePath`, read-only string.
+    pub(crate) const FILE_PATH: i32 = 0x2;
+    /// `FileDisplayName`, read-only string.
+    pub(crate) const FILE_DISPLAY_NAME: i32 = 0x4;
+    /// `PropertyPath`, read-only string.
+    pub(crate) const PROPERTY_PATH: i32 = 0x5;
+    /// `SequenceName`, read-only string.
+    pub(crate) const SEQUENCE_NAME: i32 = 0x7;
+    /// `StepGroup`, read-only enum.
+    pub(crate) const STEP_GROUP: i32 = 0x8;
+    /// `StepName`, read-only string.
+    pub(crate) const STEP_NAME: i32 = 0x9;
+    /// `StepId`, read-only string.
+    pub(crate) const STEP_ID: i32 = 0xa;
+    /// `StepIndex`, read-only integer.
+    pub(crate) const STEP_INDEX: i32 = 0xb;
+}
+
+/// Members of `Locations`.
+pub(crate) mod locations {
+    /// `Item`, one index parameter.
+    pub(crate) const ITEM: i32 = 0x0;
+    /// `Count`, read-only integer.
+    pub(crate) const COUNT: i32 = 0x1;
+}

@@ -5,6 +5,7 @@ use rs_teststand_sys::{Dispatch, Value};
 use crate::Error;
 use crate::dispids::sequence;
 use crate::property::PropertyObject;
+use crate::property::options::detached_clone_options;
 
 /// One sequence inside a [`SequenceFile`](crate::SequenceFile).
 ///
@@ -191,14 +192,14 @@ impl Sequence {
     /// (`PropertyObject.Clone` + `Sequence.InsertStep`).
     ///
     /// Composed rather than a COM member of its own, because the raw sequence
-    /// has a trap in it. `Clone` lives on `PropertyObject`, so a copied step
-    /// arrives on the `PropertyObject` interface, and the `Step` interface
-    /// shares none of its dispatch identifiers. Reading `Name` off such a copy
-    /// would dispatch a step identifier against a property-object interface and
-    /// take the process down rather than fail. Inserting first and reading the
-    /// step back from the sequence is the route that stays on the right
-    /// interface, so this returns the inserted step and never exposes the
-    /// intermediate.
+    /// has a trap in it. A cloned step still supports the `Step` interface, but
+    /// only when the clone is detached from the original: a shared clone is an
+    /// alias of the template and the engine refuses to insert it. So the clone
+    /// must copy every property and every flag rather than share them.
+    ///
+    /// The copy is looked up from the sequence after insertion, so the caller
+    /// never holds the clone through an interface that does not carry step
+    /// identifiers.
     ///
     /// The template itself is untouched and can be inserted any number of
     /// times. Each copy still carries the template's step ID until
@@ -214,19 +215,8 @@ impl Sequence {
         index: i32,
         group: crate::StepGroup,
     ) -> Result<crate::Step, Error> {
-        let copy = template.clone_property("", crate::PropertyOptions::NONE.bits())?;
-        let handle = copy.duplicate_dispatch().ok_or(Error::UnexpectedType {
-            expected: "a live template object",
-            actual: "a test fake with no COM identity",
-        })?;
-        self.dispatch.call(
-            sequence::INSERT_STEP,
-            &[
-                Value::Object(handle),
-                Value::I32(index),
-                Value::I32(group.bits()),
-            ],
-        )?;
+        let copy = template.clone_property("", detached_clone_options())?;
+        self.insert_step(&crate::Step::new(copy.into_dispatch()), index, group)?;
         self.get_step(index, group)
     }
 
@@ -289,12 +279,14 @@ impl Sequence {
 #[cfg(test)]
 mod tests {
     use std::collections::HashMap;
+    use std::sync::{Arc, Mutex};
 
     use rs_teststand_sys::{ComError, Dispatch, Value};
 
     use super::Sequence;
     use crate::Error;
-    use crate::dispids::sequence;
+    use crate::dispids::{property_object, sequence};
+    use crate::property::PropertyObject;
 
     #[derive(Debug)]
     struct Fake {
@@ -335,5 +327,104 @@ mod tests {
         assert_ne!(sequence::LOCALS, sequence::PARAMETERS);
         assert_eq!(sequence::LOCALS, 0x33);
         assert_eq!(sequence::PARAMETERS, 0x32);
+    }
+
+    /// One call the fake saw: its dispatch id, and the scalar arguments.
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    struct Call {
+        dispid: i32,
+        text: Option<String>,
+        numbers: Vec<i32>,
+    }
+
+    #[derive(Debug)]
+    struct Recording {
+        calls: Arc<Mutex<Vec<Call>>>,
+    }
+
+    impl Recording {
+        fn boxed(calls: &Arc<Mutex<Vec<Call>>>) -> Box<dyn Dispatch> {
+            Box::new(Self {
+                calls: Arc::clone(calls),
+            })
+        }
+    }
+
+    impl Dispatch for Recording {
+        fn get(&self, _dispid: i32) -> Result<Value, ComError> {
+            Err(ComError::hresult(-17000, "fake: unscripted get"))
+        }
+
+        fn put(&self, _dispid: i32, _value: Value) -> Result<(), ComError> {
+            Ok(())
+        }
+
+        fn call(&self, dispid: i32, args: &[Value]) -> Result<Value, ComError> {
+            let text = args.iter().find_map(|value| match value {
+                Value::Str(text) => Some(text.clone()),
+                _ => None,
+            });
+            let numbers = args
+                .iter()
+                .filter_map(|value| match value {
+                    Value::I32(number) => Some(*number),
+                    _ => None,
+                })
+                .collect();
+            self.calls
+                .lock()
+                .map_err(|_| ComError::hresult(-17000, "fake: call log was poisoned"))?
+                .push(Call {
+                    dispid,
+                    text,
+                    numbers,
+                });
+
+            match dispid {
+                property_object::CLONE => Ok(Value::Object(Self::boxed(&self.calls))),
+                sequence::INSERT_STEP | sequence::GET_STEP => {
+                    Ok(Value::Object(Self::boxed(&self.calls)))
+                }
+                _ => Err(ComError::hresult(-17000, "fake: unscripted call")),
+            }
+        }
+
+        fn duplicate(&self) -> Option<Box<dyn Dispatch>> {
+            Some(Self::boxed(&self.calls))
+        }
+    }
+
+    #[test]
+    fn a_template_is_cloned_detached_before_it_is_inserted() -> Result<(), Error> {
+        // A shared clone is an alias of the template, and the engine refuses to
+        // insert one. The two copy flags are the difference between a working
+        // insertion and DISP_E_TYPEMISMATCH.
+        let calls = Arc::new(Mutex::new(Vec::new()));
+        let sequence = Sequence::new(Recording::boxed(&calls));
+        let template = PropertyObject::new(Recording::boxed(&calls));
+
+        sequence.insert_step_from_template(&template, 0, crate::StepGroup::Main)?;
+
+        let calls = calls.lock().map_err(|_| Error::UnexpectedType {
+            expected: "an unpoisoned call log",
+            actual: "a poisoned call log",
+        })?;
+        let clone = calls
+            .iter()
+            .find(|call| call.dispid == property_object::CLONE)
+            .cloned()
+            .ok_or(Error::UnexpectedType {
+                expected: "a clone call",
+                actual: "no clone call",
+            })?;
+        let inserted = calls
+            .iter()
+            .any(|call| call.dispid == sequence::INSERT_STEP);
+        drop(calls);
+
+        assert_eq!(clone.text.as_deref(), Some(""));
+        assert_eq!(clone.numbers, vec![671_088_640]);
+        assert!(inserted, "the clone should have been inserted");
+        Ok(())
     }
 }

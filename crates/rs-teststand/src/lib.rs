@@ -18,6 +18,7 @@
 #![forbid(unsafe_code)]
 
 pub mod adapters;
+pub mod analyzer;
 mod dispids;
 pub mod engine;
 pub mod enums;
@@ -36,6 +37,10 @@ pub mod watchdog;
 pub mod workspace;
 
 pub use adapters::AdapterKeyName;
+pub use analyzer::{
+    AnalysisMessage, AnalysisMessages, AnalysisStatus, Analyzer, Location, LocationKind, Locations,
+    MessageStatus, Project, RuleSeverity,
+};
 pub use engine::Engine;
 pub use enums::{
     ExecRunState, ExecTermState, OpenWorkspaceFileOptions, PropValType, PropertyValueTypeFlags,

@@ -4,6 +4,7 @@ use rs_teststand_sys::{Dispatch, Value};
 
 use crate::Error;
 use crate::dispids::sequence_file;
+use crate::property::options::detached_clone_options;
 
 /// A sequence file held open by the engine.
 ///
@@ -68,14 +69,14 @@ impl SequenceFile {
     ///
     /// The sequence-level counterpart of
     /// [`Sequence::insert_step_from_template`](crate::Sequence::insert_step_from_template),
-    /// and composed for the same reason: a clone arrives on the
-    /// `PropertyObject` interface, which shares no dispatch identifiers with
-    /// `Sequence`. The copy is looked up by name after insertion so the caller
-    /// only ever holds the right interface.
+    /// and composed for the same reason: the copy must be detached from the
+    /// template before the engine will accept it. A shared clone is an alias and
+    /// is refused.
     ///
     /// The copy keeps the template's name, so inserting the same template twice
     /// without renaming the first copy puts two sequences of one name in the
-    /// file. Every step in the copy also still carries the template's step ID, /// see
+    /// file. Every step in the copy also still carries the template's step ID,
+    /// see
     /// [`Sequence::create_new_unique_step_ids`](crate::Sequence::create_new_unique_step_ids).
     ///
     /// # Errors
@@ -86,13 +87,8 @@ impl SequenceFile {
         template: &crate::property::PropertyObject,
     ) -> Result<crate::Sequence, Error> {
         let name = template.name()?;
-        let copy = template.clone_property("", crate::PropertyOptions::NONE.bits())?;
-        let handle = copy.duplicate_dispatch().ok_or(Error::UnexpectedType {
-            expected: "a live template object",
-            actual: "a test fake with no COM identity",
-        })?;
-        self.dispatch
-            .call(sequence_file::INSERT_SEQUENCE, &[Value::Object(handle)])?;
+        let copy = template.clone_property("", detached_clone_options())?;
+        self.insert_sequence(&crate::Sequence::new(copy.into_dispatch()))?;
         self.get_sequence_by_name(&name)
     }
 

@@ -163,7 +163,7 @@ mod tests {
     fn an_empty_array_has_a_dimension_of_length_zero() -> Result<(), crate::Error> {
         // Measured: an empty 1D array reports lower "[0]" and upper "[]".
         assert_eq!(parse_bounds("[0]")?, vec![0]);
-        assert!(parse_bounds("[]")?.is_empty());
+        assert_eq!(parse_bounds("[]")?, Vec::<i32>::new());
         Ok(())
     }
 
@@ -171,8 +171,8 @@ mod tests {
     fn a_non_array_reports_no_bounds() -> Result<(), crate::Error> {
         // A scalar has zero dimensions, and its bound string is empty rather
         // than malformed, that must not read as an error.
-        assert!(parse_bounds("")?.is_empty());
-        assert!(parse_bounds("[]")?.is_empty());
+        assert_eq!(parse_bounds("")?, Vec::<i32>::new());
+        assert_eq!(parse_bounds("[]")?, Vec::<i32>::new());
         Ok(())
     }
 

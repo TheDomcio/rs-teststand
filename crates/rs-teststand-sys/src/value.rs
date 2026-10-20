@@ -43,6 +43,11 @@ pub enum Value {
     /// Copied out rather than borrowed: the SAFEARRAY belongs to the VARIANT
     /// that carried it, and that is freed as soon as the call returns.
     I32Array(Vec<i32>),
+    /// `VT_ARRAY | VT_BSTR`, a one-dimensional SAFEARRAY of strings.
+    ///
+    /// Copied out and back in for the same reason as [`Self::I32Array`]. The
+    /// engine uses this shape for file lists.
+    StrArray(Vec<String>),
 }
 
 impl Value {
@@ -61,6 +66,7 @@ impl Value {
             Self::U64(_) => "U64",
             Self::Object(_) => "Object",
             Self::I32Array(_) => "I32Array",
+            Self::StrArray(_) => "StrArray",
         }
     }
 
@@ -129,6 +135,20 @@ impl Value {
             Self::I32Array(elements) => Ok(elements),
             other => Err(ComError::UnexpectedType {
                 expected: "I32Array",
+                actual: other.kind(),
+            }),
+        }
+    }
+
+    /// Consumes the value as a list of strings (`VT_ARRAY | VT_BSTR`).
+    ///
+    /// # Errors
+    /// [`ComError::UnexpectedType`] if the value is not a string array.
+    pub fn into_string_array(self) -> Result<Vec<String>, ComError> {
+        match self {
+            Self::StrArray(elements) => Ok(elements),
+            other => Err(ComError::UnexpectedType {
+                expected: "StrArray",
                 actual: other.kind(),
             }),
         }

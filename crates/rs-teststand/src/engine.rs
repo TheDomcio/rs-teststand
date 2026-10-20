@@ -1408,9 +1408,10 @@ impl Engine {
         Ok(())
     }
 
-    /// Builds an engine over a caller-supplied dispatch handle. Test-only seam
-    /// for exercising wrapper logic against a fake, with no live COM.
-    #[cfg(test)]
+    /// Builds an engine over a caller-supplied dispatch handle.
+    ///
+    /// Used by the analyzer, whose server already owns an engine, and by tests,
+    /// which have a fake instead of COM.
     pub(crate) fn from_dispatch(dispatch: Box<dyn Dispatch>) -> Self {
         Self {
             dispatch,

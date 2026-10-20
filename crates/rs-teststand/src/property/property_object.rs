@@ -480,6 +480,14 @@ impl PropertyObject {
         self.dispatch.duplicate()
     }
 
+    /// Consumes the wrapper and returns the dispatch handle it owns.
+    ///
+    /// Used when a clone has to be viewed through a narrower interface, such as
+    /// a step or a sequence, without giving up the object.
+    pub(crate) fn into_dispatch(self) -> Box<dyn Dispatch> {
+        self.dispatch
+    }
+
     /// Evaluates an expression in this object's context (`Evaluate`).
     ///
     /// Superseded by [`evaluate_ex`](Self::evaluate_ex), which adds an options

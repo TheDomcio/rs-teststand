@@ -1,0 +1,212 @@
+//! The sequence analyzer, its projects, and the messages an analysis reports.
+//!
+//! The analyzer is a separate COM server. Creating one also creates the
+//! engine it uses, so [`Analyzer::new`] initializes the server before
+//! returning: reading the engine or a project before initialization is not a
+//! recoverable error, it takes the process down.
+//!
+//! ```no_run
+//! use rs_teststand::analyzer::Analyzer;
+//!
+//! let analyzer = Analyzer::new()?;
+//! let project = analyzer.new_project()?;
+//! project.set_files_to_analyze(&["station.seq".to_owned()])?;
+//! project.start_analysis(0)?;
+//! let status = project.analysis_status()?;
+//! while status.is_analyzing()? {
+//!     let _ = rs_teststand::pump_thread_messages();
+//!     std::thread::sleep(std::time::Duration::from_millis(100));
+//! }
+//! println!("{} message(s)", project.messages()?.count()?);
+//! # Ok::<(), rs_teststand::Error>(())
+//! ```
+
+mod analysis_message;
+mod analysis_messages;
+mod analysis_status;
+pub mod enums;
+mod location;
+mod project;
+
+use rs_teststand_sys::{Dispatch, create_dispatch};
+
+use crate::Error;
+use crate::dispids::analyzer;
+
+pub use analysis_message::AnalysisMessage;
+pub use analysis_messages::{AnalysisMessages, AnalysisMessagesIter};
+pub use analysis_status::AnalysisStatus;
+pub use enums::{LocationKind, MessageStatus, RuleSeverity};
+pub use location::{Location, Locations, LocationsIter};
+pub use project::Project;
+
+/// ProgID of the version-independent analyzer coclass.
+const ANALYZER_PROG_ID: &str = "Analyzer.AnalyzerEngine";
+
+/// The sequence analyzer (`Analyzer`).
+///
+/// Constructing this value creates the analyzer server and initializes it. The
+/// server keeps its own engine, reached with [`engine`](Self::engine), and
+/// every project it creates belongs to that engine.
+#[derive(Debug)]
+pub struct Analyzer {
+    dispatch: Box<dyn Dispatch>,
+}
+
+impl Analyzer {
+    /// Creates and initializes the analyzer (`Analyzer.Initialize`).
+    ///
+    /// # Errors
+    /// [`Error::Com`] if COM cannot be initialized, the analyzer class is not
+    /// registered, or initialization fails.
+    pub fn new() -> Result<Self, Error> {
+        let dispatch: Box<dyn Dispatch> = Box::new(create_dispatch(ANALYZER_PROG_ID)?);
+        dispatch.call(analyzer::INITIALIZE, &[])?;
+        Ok(Self { dispatch })
+    }
+
+    /// Wraps a dispatch handle, for tests.
+    #[cfg(test)]
+    pub(crate) fn from_dispatch(dispatch: Box<dyn Dispatch>) -> Self {
+        Self { dispatch }
+    }
+
+    /// The engine the analyzer created (`Analyzer.Engine`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn engine(&self) -> Result<crate::Engine, Error> {
+        Ok(crate::Engine::from_dispatch(
+            self.dispatch.get(analyzer::ENGINE)?.into_object()?,
+        ))
+    }
+
+    /// Creates a project with no files and no path (`Analyzer.NewProject`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn new_project(&self) -> Result<Project, Error> {
+        Ok(Project::new(
+            self.dispatch
+                .call(analyzer::NEW_PROJECT, &[])?
+                .into_object()?,
+        ))
+    }
+
+    /// Opens an existing analyzer project (`Analyzer.OpenProject`).
+    ///
+    /// # Errors
+    /// [`Error`] if the file does not exist, is not an analyzer project, or the
+    /// COM call fails.
+    pub fn open_project(&self, path: &str) -> Result<Project, Error> {
+        Ok(Project::new(
+            self.dispatch
+                .call(
+                    analyzer::OPEN_PROJECT,
+                    &[rs_teststand_sys::Value::Str(path.to_owned())],
+                )?
+                .into_object()?,
+        ))
+    }
+
+    /// Reloads the rule files from disk (`Analyzer.LoadRulesFiles`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn load_rules_files(&self) -> Result<(), Error> {
+        self.dispatch.call(analyzer::LOAD_RULES_FILES, &[])?;
+        Ok(())
+    }
+
+    /// Unloads every analysis and rule module (`Analyzer.UnloadAllModules`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn unload_all_modules(&self) -> Result<(), Error> {
+        self.dispatch.call(analyzer::UNLOAD_ALL_MODULES, &[])?;
+        Ok(())
+    }
+
+    /// Whether the analyzer keeps analyzed sequence files in memory
+    /// (`Analyzer.CacheSequenceFiles`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn cache_sequence_files(&self) -> Result<bool, Error> {
+        Ok(self
+            .dispatch
+            .get(analyzer::CACHE_SEQUENCE_FILES)?
+            .as_bool()?)
+    }
+
+    /// Sets whether analyzed sequence files stay in memory
+    /// (`Analyzer.CacheSequenceFiles`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_cache_sequence_files(&self, cache: bool) -> Result<(), Error> {
+        self.dispatch.put(
+            analyzer::CACHE_SEQUENCE_FILES,
+            rs_teststand_sys::Value::Bool(cache),
+        )?;
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+
+    use rs_teststand_sys::{ComError, Dispatch, Value};
+
+    use super::Analyzer;
+    use crate::dispids::analyzer;
+
+    #[derive(Debug)]
+    struct Fake {
+        properties: HashMap<i32, Value>,
+    }
+
+    impl Dispatch for Fake {
+        fn get(&self, dispid: i32) -> Result<Value, ComError> {
+            match self.properties.get(&dispid) {
+                Some(Value::Bool(flag)) => Ok(Value::Bool(*flag)),
+                Some(Value::Object(_)) => Ok(Value::Object(Box::new(Self {
+                    properties: HashMap::new(),
+                }))),
+                _ => Err(ComError::hresult(-17000, "fake: unscripted")),
+            }
+        }
+
+        fn put(&self, _dispid: i32, _value: Value) -> Result<(), ComError> {
+            Ok(())
+        }
+
+        fn call(&self, _dispid: i32, _args: &[Value]) -> Result<Value, ComError> {
+            Err(ComError::hresult(-17000, "fake: unscripted"))
+        }
+    }
+
+    #[test]
+    fn reads_the_cache_switch() -> Result<(), crate::Error> {
+        let analyzer = Analyzer::from_dispatch(Box::new(Fake {
+            properties: HashMap::from([(analyzer::CACHE_SEQUENCE_FILES, Value::Bool(true))]),
+        }));
+        assert!(analyzer.cache_sequence_files()?);
+        Ok(())
+    }
+
+    #[test]
+    fn the_engine_is_read_from_its_own_member() -> Result<(), crate::Error> {
+        let analyzer = Analyzer::from_dispatch(Box::new(Fake {
+            properties: HashMap::from([(
+                analyzer::ENGINE,
+                Value::Object(Box::new(Fake {
+                    properties: HashMap::new(),
+                })),
+            )]),
+        }));
+        analyzer.engine()?;
+        Ok(())
+    }
+}
