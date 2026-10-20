@@ -6,7 +6,9 @@
 
 #![cfg(feature = "live-engine")]
 
-use rs_teststand::{Engine, Error, FailureAction, SequenceType, StepGroup};
+use rs_teststand::{
+    ConflictHandler, Engine, Error, FailureAction, GetSeqFileOptions, SequenceType, StepGroup,
+};
 
 const INSERT_IF_MISSING: i32 = 1;
 const NO_OPTIONS: i32 = 0;
@@ -154,6 +156,48 @@ fn insertion_index_decides_order() -> Result<(), Error> {
     assert_eq!(sequence.get_step(2, StepGroup::Main)?.name()?, "Second");
 
     engine.release_sequence_file_ex(sequence_file, NO_OPTIONS)?;
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires a live engine"]
+fn a_step_comment_survives_a_save_and_reload() -> Result<(), Error> {
+    let engine = Engine::new()?;
+    let file = engine.new_sequence_file()?;
+    let sequence = file.get_sequence_by_name("MainSequence")?;
+    let step = engine.new_step(NO_ADAPTER, "Statement")?;
+    step.set_name("Commented")?;
+    step.as_property_object()?
+        .set_comment("reviewed by the station owner")?;
+    sequence.insert_step(&step, 0, StepGroup::Main)?;
+    assert_eq!(
+        sequence
+            .get_step(0, StepGroup::Main)?
+            .as_property_object()?
+            .comment()?,
+        "reviewed by the station owner"
+    );
+
+    let path = std::env::temp_dir().join("rs_teststand_step_comment.seq");
+    let path = path.to_string_lossy().into_owned();
+    file.save(&path)?;
+    engine.release_sequence_file_ex(file, NO_OPTIONS)?;
+
+    let reopened = engine.get_sequence_file_ex(
+        &path,
+        GetSeqFileOptions::DO_NOT_RUN_LOAD_CALLBACK,
+        ConflictHandler::Error,
+    )?;
+    let sequence = reopened.get_sequence_by_name("MainSequence")?;
+    assert_eq!(
+        sequence
+            .get_step(0, StepGroup::Main)?
+            .as_property_object()?
+            .comment()?,
+        "reviewed by the station owner"
+    );
+    engine.release_sequence_file_ex(reopened, NO_OPTIONS)?;
+    let _ = std::fs::remove_file(&path);
     Ok(())
 }
 
