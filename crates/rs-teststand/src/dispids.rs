@@ -91,6 +91,7 @@ define_dispid_group! {
         GET_WATCH_EXPRESSIONS_CHANGE_COUNT = 0x0226;
         GET_WATCH_EXPRESSIONS = 0x0227;
         SEARCH_FILES = 0x0225;
+        GET_SYNC_MANAGER = 0x0203;
         DOT_NET_GARBAGE_COLLECTION_INTERVAL = 0x02be;
         DO_DOT_NET_GARBAGE_COLLECTION = 0x02bf;
         DOT_NET_CLR_VERSION = 0x02c3;
@@ -1067,6 +1068,161 @@ pub(crate) mod report {
     pub(crate) const REPORT_SECTION: i32 = 0x28;
     /// `SuspendReportRefresh`, read/write boolean.
     pub(crate) const SUSPEND_REPORT_REFRESH: i32 = 0x2a;
+}
+
+/// Members of `Batch`.
+pub(crate) mod batch {
+    /// `AddThread`, engine, thread, and order number.
+    pub(crate) const ADD_THREAD: i32 = 0x1;
+    /// `RemoveThread`, engine and thread.
+    pub(crate) const REMOVE_THREAD: i32 = 0x2;
+    /// `EnterSynchronizedSection`, section, sync type, timeout, context, etc.
+    pub(crate) const ENTER_SYNCHRONIZED_SECTION: i32 = 0x3;
+    /// `ExitSynchronizedSection`, section, timeout, context, and message flag.
+    pub(crate) const EXIT_SYNCHRONIZED_SECTION: i32 = 0x4;
+    /// `Name`, read-only string.
+    pub(crate) const NAME: i32 = 0x6;
+    /// `DefaultBatchSynchronization`, read/write enum.
+    pub(crate) const DEFAULT_BATCH_SYNCHRONIZATION: i32 = 0x7;
+    /// `GetInfo`, two integer outputs.
+    pub(crate) const GET_INFO: i32 = 0x8;
+    /// `GetBatchThreads`, no parameters, returns an integer array.
+    pub(crate) const GET_BATCH_THREADS: i32 = 0x9;
+}
+
+/// Members of `SyncManager`.
+pub(crate) mod sync_manager {
+    /// `CreateSemaphore`, name, initial count, max count, and an existing flag.
+    pub(crate) const CREATE_SEMAPHORE: i32 = 0x1;
+    /// `GetSemaphore`, one name.
+    pub(crate) const GET_SEMAPHORE: i32 = 0x2;
+    /// `CreateMutex`, name and an existing flag.
+    pub(crate) const CREATE_MUTEX: i32 = 0x3;
+    /// `GetMutex`, one name.
+    pub(crate) const GET_MUTEX: i32 = 0x4;
+    /// `CreateRendezvous`, name, count, and an existing flag.
+    pub(crate) const CREATE_RENDEZVOUS: i32 = 0x5;
+    /// `GetRendezvous`, one name.
+    pub(crate) const GET_RENDEZVOUS: i32 = 0x6;
+    /// `CreateQueue`, name, size limit, and an existing flag.
+    pub(crate) const CREATE_QUEUE: i32 = 0x7;
+    /// `GetQueue`, one name.
+    pub(crate) const GET_QUEUE: i32 = 0x8;
+    /// `CreateNotification`, name and an existing flag.
+    pub(crate) const CREATE_NOTIFICATION: i32 = 0x9;
+    /// `GetNotification`, one name.
+    pub(crate) const GET_NOTIFICATION: i32 = 0xa;
+    /// `CreateBatch`, name and an existing flag.
+    pub(crate) const CREATE_BATCH: i32 = 0xc;
+    /// `GetBatch`, one name.
+    pub(crate) const GET_BATCH: i32 = 0xd;
+    /// `IsAlive`, no parameters.
+    pub(crate) const IS_ALIVE: i32 = 0xf;
+    /// `MachineID`, read-only string.
+    pub(crate) const MACHINE_ID: i32 = 0x14;
+    /// `ProcessID`, read-only integer.
+    pub(crate) const PROCESS_ID: i32 = 0x15;
+    /// `LoggingEnabled`, read-only boolean.
+    pub(crate) const LOGGING_ENABLED: i32 = 0x16;
+    /// `LoggingOutputMessageCategoryName`, read-only string.
+    pub(crate) const LOGGING_OUTPUT_MESSAGE_CATEGORY_NAME: i32 = 0x18;
+    /// `BeginLogging`, no parameters.
+    pub(crate) const BEGIN_LOGGING: i32 = 0x19;
+    /// `EndLogging`, no parameters.
+    pub(crate) const END_LOGGING: i32 = 0x1a;
+    /// `Sleep`, one seconds parameter.
+    pub(crate) const SLEEP: i32 = 0x1e;
+}
+
+/// Members of `Semaphore`.
+pub(crate) mod semaphore {
+    /// `AcquireSemaphore`, timeout, context, message flag, and result output.
+    pub(crate) const ACQUIRE_SEMAPHORE: i32 = 0x1;
+    /// `AcquireSemaphoreWithAutoReleaser`, same shape, returns an
+    /// `AutoReleaser`.
+    pub(crate) const ACQUIRE_SEMAPHORE_WITH_AUTO_RELEASER: i32 = 0x2;
+    /// `ReleaseSemaphore`, no parameters.
+    pub(crate) const RELEASE_SEMAPHORE: i32 = 0x3;
+    /// `GetInfo`, four integer outputs.
+    pub(crate) const GET_INFO: i32 = 0x4;
+    /// `Name`, read-only string.
+    pub(crate) const NAME: i32 = 0x5;
+    /// `ReleaseSemaphoreEx`, context and thread id.
+    pub(crate) const RELEASE_SEMAPHORE_EX: i32 = 0x6;
+}
+
+/// Members of `Mutex`.
+pub(crate) mod mutex {
+    /// `GetInfo`, one integer output.
+    pub(crate) const GET_INFO: i32 = 0x1;
+    /// `EarlyUnlockMutex`, thread id.
+    pub(crate) const EARLY_UNLOCK_MUTEX: i32 = 0x2;
+    /// `LockMutex`, seven inputs and two outputs.
+    pub(crate) const LOCK_MUTEX: i32 = 0x3;
+    /// `Name`, read-only string.
+    pub(crate) const NAME: i32 = 0x4;
+    /// `GetSavedOwnerInfo`, three outputs.
+    pub(crate) const GET_SAVED_OWNER_INFO: i32 = 0x6;
+    /// `EarlyUnlockMutexEx`, context and thread id.
+    pub(crate) const EARLY_UNLOCK_MUTEX_EX: i32 = 0x9;
+}
+
+/// Members of `Notification`.
+pub(crate) mod notification {
+    /// `Set`, data object, by-reference flag, and auto-clear flag.
+    pub(crate) const SET: i32 = 0x1;
+    /// `Clear`, no parameters.
+    pub(crate) const CLEAR: i32 = 0x2;
+    /// `Pulse`, data object, by-reference flag, and all-waiters flag.
+    pub(crate) const PULSE: i32 = 0x3;
+    /// `Wait`, destination, timeout, context, message flag, result output.
+    pub(crate) const WAIT: i32 = 0x4;
+    /// `GetInfo`, context, destination, and three outputs.
+    pub(crate) const GET_INFO: i32 = 0x5;
+    /// `Name`, read-only string.
+    pub(crate) const NAME: i32 = 0x6;
+    /// `SetEx`, context plus the three `Set` parameters.
+    pub(crate) const SET_EX: i32 = 0xb;
+    /// `ClearEx`, context.
+    pub(crate) const CLEAR_EX: i32 = 0xc;
+    /// `PulseEx`, context plus the three `Pulse` parameters.
+    pub(crate) const PULSE_EX: i32 = 0xd;
+}
+
+/// Members of `Queue`.
+pub(crate) mod queue {
+    /// `Enqueue`, seven inputs and two outputs.
+    pub(crate) const ENQUEUE: i32 = 0x1;
+    /// `Dequeue`, six inputs and one output.
+    pub(crate) const DEQUEUE: i32 = 0x2;
+    /// `Flush`, context and destination array.
+    pub(crate) const FLUSH: i32 = 0x3;
+    /// `GetInfo`, context, destination, and four outputs.
+    pub(crate) const GET_INFO: i32 = 0x4;
+    /// `Name`, read-only string.
+    pub(crate) const NAME: i32 = 0x9;
+}
+
+/// Members of `Rendezvous`.
+pub(crate) mod rendezvous {
+    /// `Rendezvous`, timeout, context, message flag, and result output.
+    pub(crate) const RENDEZVOUS: i32 = 0x1;
+    /// `GetInfo`, two integer outputs.
+    pub(crate) const GET_INFO: i32 = 0x2;
+    /// `Name`, read-only string.
+    pub(crate) const NAME: i32 = 0x3;
+}
+
+/// Members of `AutoReleaser`.
+pub(crate) mod auto_releaser {
+    /// `EarlyRelease`, no parameters.
+    pub(crate) const EARLY_RELEASE: i32 = 0x1;
+    /// `ReleasePending`, no parameters.
+    pub(crate) const RELEASE_PENDING: i32 = 0x2;
+    /// `EarlyReleaseEx`, one context.
+    pub(crate) const EARLY_RELEASE_EX: i32 = 0x3;
+    /// `SetReleaserThreadId`, one thread id.
+    pub(crate) const SET_RELEASER_THREAD_ID: i32 = 0x4;
 }
 
 /// Members of `WatchExpressions`.

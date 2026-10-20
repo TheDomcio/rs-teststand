@@ -225,6 +225,26 @@ impl Engine {
         ))
     }
 
+    /// The synchronization manager for a named object
+    /// (`Engine.GetSyncManager`).
+    ///
+    /// The name selects the manager: a plain name is in-process, a leading
+    /// `*` is out-of-process, and a `\\machine\object` name is remote.
+    ///
+    /// # Errors
+    /// [`Error`] if the engine cannot create or reach the manager, or the COM
+    /// call returns an unexpected type.
+    pub fn get_sync_manager(&self, sync_object_name: &str) -> Result<crate::SyncManager, Error> {
+        Ok(crate::SyncManager::new(
+            self.dispatch
+                .call(
+                    dispid::GET_SYNC_MANAGER,
+                    &[Value::Str(sync_object_name.to_owned())],
+                )?
+                .into_object()?,
+        ))
+    }
+
     /// Searches files and open property trees (`Engine.SearchFiles`).
     ///
     /// `open_files` are already-loaded files to search; pass an empty slice to

@@ -33,6 +33,7 @@ pub mod property;
 pub mod search;
 pub mod sequence;
 pub mod station;
+pub mod sync;
 pub mod types;
 pub mod users;
 pub mod watch;
@@ -77,6 +78,10 @@ pub use sequence::{
 pub use station::{
     DebugOptions, ExecutionMask, RunTimeErrorOption, SearchDirectories, SearchDirectory,
     StationOptions,
+};
+pub use sync::{
+    AutoReleaser, Batch, BatchSyncType, EnqueueResult, FullQueueOption, Mutex, Notification, Queue,
+    Rendezvous, Semaphore, SyncManager, WaitResult,
 };
 pub use types::{TypeCategory, TypeUsageList};
 pub use users::{User, UserPrivilege, UsersFile};
