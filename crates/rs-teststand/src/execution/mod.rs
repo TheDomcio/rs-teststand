@@ -5,6 +5,7 @@
     reason = "file is named after the type it holds"
 )]
 pub mod execution;
+pub mod report;
 pub mod result_list;
 pub mod sequence_context;
 mod termination_option;
@@ -12,6 +13,7 @@ pub(crate) mod thread;
 
 pub use execution::Execution;
 pub use execution::ExecutionStates;
+pub use report::{Report, ReportConversion};
 pub use result_list::{Limits, ResultError, ResultList, ResultValue, StepResult};
 pub use sequence_context::SequenceContext;
 pub use termination_option::ThreadTerminationOption;

@@ -486,6 +486,8 @@ pub(crate) mod execution {
     pub(crate) const ERROR_OBJECT: i32 = 0x79;
     /// `ResultObject`, read-only.
     pub(crate) const RESULT_OBJECT: i32 = 0x7d;
+    /// `Report`, read-only.
+    pub(crate) const REPORT: i32 = 0x7a;
     /// `GetStates`, 2 `[out]` byref params.
     pub(crate) const GET_STATES: i32 = 0x13;
 }
@@ -974,6 +976,46 @@ pub(crate) mod watch_expression {
     pub(crate) const USE_SCOPING_CONTEXT: i32 = 0xd;
     /// `GetScopingContext`, one context parameter.
     pub(crate) const GET_SCOPING_CONTEXT: i32 = 0xe;
+}
+
+/// Members of `Report`.
+pub(crate) mod report {
+    /// `Append`, one string parameter, returns an integer.
+    pub(crate) const APPEND: i32 = 0x1;
+    /// `Reset`, one string parameter, returns an integer.
+    pub(crate) const RESET: i32 = 0x2;
+    /// `GetSection`, oldest and latest indices.
+    pub(crate) const GET_SECTION: i32 = 0x3;
+    /// `Save`, path, append flag, and conversion.
+    pub(crate) const SAVE: i32 = 0x5;
+    /// `Load`, path and conversion.
+    pub(crate) const LOAD: i32 = 0x6;
+    /// `GetTempFile`, conversion and optional extension.
+    pub(crate) const GET_TEMP_FILE: i32 = 0x8;
+    /// `AsPropertyObject`, no parameters.
+    pub(crate) const AS_PROPERTY_OBJECT: i32 = 0x1d;
+    /// `LatestAppendIndex`, read-only integer.
+    pub(crate) const LATEST_APPEND_INDEX: i32 = 0x1e;
+    /// `ResetCount`, read-only integer.
+    pub(crate) const RESET_COUNT: i32 = 0x1f;
+    /// `All`, read-only string.
+    pub(crate) const ALL: i32 = 0x20;
+    /// `Id`, read-only integer.
+    pub(crate) const ID: i32 = 0x21;
+    /// `Location`, read/write string.
+    pub(crate) const LOCATION: i32 = 0x22;
+    /// `Format`, read/write string.
+    pub(crate) const FORMAT: i32 = 0x23;
+    /// `IsEmpty`, read-only boolean.
+    pub(crate) const IS_EMPTY: i32 = 0x24;
+    /// `StyleSheetPath`, read/write string.
+    pub(crate) const STYLE_SHEET_PATH: i32 = 0x25;
+    /// `TempFileDirectory`, read/write string.
+    pub(crate) const TEMP_FILE_DIRECTORY: i32 = 0x26;
+    /// `ReportSection`, read/write object.
+    pub(crate) const REPORT_SECTION: i32 = 0x28;
+    /// `SuspendReportRefresh`, read/write boolean.
+    pub(crate) const SUSPEND_REPORT_REFRESH: i32 = 0x2a;
 }
 
 /// Members of `WatchExpressions`.

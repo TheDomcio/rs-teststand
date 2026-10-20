@@ -347,6 +347,19 @@ impl Execution {
         ))
     }
 
+    /// The report this run builds (`Execution.Report`).
+    ///
+    /// The report object stays attached to the execution, so read it before
+    /// releasing the execution if the text is still needed.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn report(&self) -> Result<crate::Report, Error> {
+        Ok(crate::Report::new(
+            self.dispatch.get(execution::REPORT)?.into_object()?,
+        ))
+    }
+
     /// What the run recorded (`Execution.ResultObject`).
     ///
     /// The root of the results tree. `ResultList` beneath it holds one entry per
