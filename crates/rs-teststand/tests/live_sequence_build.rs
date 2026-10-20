@@ -6,7 +6,7 @@
 
 #![cfg(feature = "live-engine")]
 
-use rs_teststand::{Engine, Error, StepGroup};
+use rs_teststand::{Engine, Error, FailureAction, SequenceType, StepGroup};
 
 const INSERT_IF_MISSING: i32 = 1;
 const NO_OPTIONS: i32 = 0;
@@ -152,6 +152,102 @@ fn insertion_index_decides_order() -> Result<(), Error> {
     assert_eq!(sequence.get_step(0, StepGroup::Main)?.name()?, "Zeroth");
     assert_eq!(sequence.get_step(1, StepGroup::Main)?.name()?, "First");
     assert_eq!(sequence.get_step(2, StepGroup::Main)?.name()?, "Second");
+
+    engine.release_sequence_file_ex(sequence_file, NO_OPTIONS)?;
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires a live engine"]
+fn typed_step_expressions_round_trip() -> Result<(), Error> {
+    let engine = Engine::new()?;
+    let step = engine.new_step(NO_ADAPTER, "Statement")?;
+
+    step.set_pre_expression("Locals.Pre = 1")?;
+    step.set_status_expression("\"Done\"")?;
+    step.set_pass_action("Next")?;
+    step.set_pass_action_target("")?;
+    step.set_fail_action("Terminate")?;
+    step.set_fail_action_target("")?;
+    step.set_loop_type("NoLooping")?;
+    step.set_loop_while_expression("True")?;
+    step.set_loop_status_expression("\"Done\"")?;
+    step.set_loop_init_expression("Locals.I = 0")?;
+    step.set_loop_inc_expression("Locals.I = Locals.I + 1")?;
+
+    assert_eq!(step.pre_expression()?, "Locals.Pre = 1");
+    assert_eq!(step.status_expression()?, "\"Done\"");
+    assert_eq!(step.pass_action()?, "Next");
+    assert_eq!(step.pass_action_target()?, "");
+    assert_eq!(step.fail_action()?, "Terminate");
+    assert_eq!(step.fail_action_target()?, "");
+    assert_eq!(step.loop_type()?, "NoLooping");
+    assert_eq!(step.loop_while_expression()?, "True");
+    assert_eq!(step.loop_status_expression()?, "\"Done\"");
+    assert_eq!(step.loop_init_expression()?, "Locals.I = 0");
+    assert_eq!(step.loop_inc_expression()?, "Locals.I = Locals.I + 1");
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires a live engine"]
+fn deleting_a_step_shifts_the_next_one_into_its_index() -> Result<(), Error> {
+    let engine = Engine::new()?;
+    let sequence_file = engine.new_sequence_file()?;
+    let sequence = sequence_file.get_sequence_by_name("MainSequence")?;
+
+    for name in ["First", "Second", "Third"] {
+        let step = engine.new_step(NO_ADAPTER, "Action")?;
+        step.set_name(name)?;
+        sequence.insert_step(
+            &step,
+            sequence.get_num_steps(StepGroup::Main)?,
+            StepGroup::Main,
+        )?;
+    }
+
+    sequence.delete_step(1, StepGroup::Main)?;
+
+    assert_eq!(sequence.get_num_steps(StepGroup::Main)?, 2);
+    assert_eq!(sequence.get_step(0, StepGroup::Main)?.name()?, "First");
+    assert_eq!(sequence.get_step(1, StepGroup::Main)?.name()?, "Third");
+
+    engine.release_sequence_file_ex(sequence_file, NO_OPTIONS)?;
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires a live engine"]
+fn typed_sequence_settings_round_trip() -> Result<(), Error> {
+    let engine = Engine::new()?;
+    let sequence_file = engine.new_sequence_file()?;
+    let sequence = sequence_file.get_sequence_by_name("MainSequence")?;
+
+    sequence.set_sequence_type(SequenceType::Callback)?;
+    sequence.set_goto_cleanup_on_failure(true)?;
+    assert!(
+        sequence.goto_cleanup_on_failure()?,
+        "the obsolete property should still read after a write"
+    );
+    sequence.set_disable_results(true)?;
+    sequence.set_failure_action(FailureAction::UseStationOption)?;
+    sequence.set_entry_point_name_expression("MainSequence")?;
+    sequence.set_show_entry_point_for_all_windows(true)?;
+    sequence.set_show_entry_point_for_file_window(true)?;
+    sequence.set_show_entry_point_for_exe_window(true)?;
+    sequence.set_show_entry_point_for_editor_only(true)?;
+
+    assert_eq!(sequence.sequence_type()?, Some(SequenceType::Callback));
+    assert!(sequence.disable_results()?);
+    assert_eq!(
+        sequence.failure_action()?,
+        Some(FailureAction::UseStationOption)
+    );
+    assert_eq!(sequence.entry_point_name_expression()?, "MainSequence");
+    assert!(sequence.show_entry_point_for_all_windows()?);
+    assert!(sequence.show_entry_point_for_file_window()?);
+    assert!(sequence.show_entry_point_for_exe_window()?);
+    assert!(sequence.show_entry_point_for_editor_only()?);
 
     engine.release_sequence_file_ex(sequence_file, NO_OPTIONS)?;
     Ok(())

@@ -621,6 +621,165 @@ impl PropertyObject {
         Ok(crate::PropertyValueTypeFlags::from_bits_retain(raw))
     }
 
+    /// A property's flags (`GetFlags`).
+    ///
+    /// `lookup_string` follows the same rules as the value getters: an empty
+    /// string means this object, a name means a subproperty, and a lookup path
+    /// is accepted.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn get_flags(
+        &self,
+        lookup_string: &str,
+        options: i32,
+    ) -> Result<crate::PropertyFlags, Error> {
+        let raw = self
+            .dispatch
+            .call(
+                introspect::GET_FLAGS,
+                &[Value::Str(lookup_string.to_owned()), Value::I32(options)],
+            )?
+            .as_i32()?;
+        Ok(crate::PropertyFlags::from_bits_retain(raw))
+    }
+
+    /// Sets a property's flags (`SetFlags`).
+    ///
+    /// The value is the complete mask, so read the current flags first when
+    /// only one bit should change.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_flags(
+        &self,
+        lookup_string: &str,
+        options: i32,
+        flags: crate::PropertyFlags,
+    ) -> Result<(), Error> {
+        self.dispatch.call(
+            introspect::SET_FLAGS,
+            &[
+                Value::Str(lookup_string.to_owned()),
+                Value::I32(options),
+                Value::I32(flags.bits()),
+            ],
+        )?;
+        Ok(())
+    }
+
+    /// The default flags for instances of a type (`GetInstanceDefaultFlags`).
+    ///
+    /// Valid only when this object is a type definition.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn get_instance_default_flags(
+        &self,
+        lookup_string: &str,
+        options: i32,
+    ) -> Result<crate::PropertyFlags, Error> {
+        let raw = self
+            .dispatch
+            .call(
+                introspect::GET_INSTANCE_DEFAULT_FLAGS,
+                &[Value::Str(lookup_string.to_owned()), Value::I32(options)],
+            )?
+            .as_i32()?;
+        Ok(crate::PropertyFlags::from_bits_retain(raw))
+    }
+
+    /// Sets the default flags for instances of a type
+    /// (`SetInstanceDefaultFlags`).
+    ///
+    /// Valid only when this object is a type definition.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_instance_default_flags(
+        &self,
+        lookup_string: &str,
+        options: i32,
+        flags: crate::PropertyFlags,
+    ) -> Result<(), Error> {
+        self.dispatch.call(
+            introspect::SET_INSTANCE_DEFAULT_FLAGS,
+            &[
+                Value::Str(lookup_string.to_owned()),
+                Value::I32(options),
+                Value::I32(flags.bits()),
+            ],
+        )?;
+        Ok(())
+    }
+
+    /// The flags a type controls in its instances
+    /// (`GetInstanceOverrideFlags`).
+    ///
+    /// Valid only when this object is a type definition.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn get_instance_override_flags(
+        &self,
+        lookup_string: &str,
+        options: i32,
+    ) -> Result<crate::PropertyFlags, Error> {
+        let raw = self
+            .dispatch
+            .call(
+                introspect::GET_INSTANCE_OVERRIDE_FLAGS,
+                &[Value::Str(lookup_string.to_owned()), Value::I32(options)],
+            )?
+            .as_i32()?;
+        Ok(crate::PropertyFlags::from_bits_retain(raw))
+    }
+
+    /// Sets the flags a type controls in its instances
+    /// (`SetInstanceOverrideFlags`).
+    ///
+    /// Valid only when this object is a type definition.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_instance_override_flags(
+        &self,
+        lookup_string: &str,
+        options: i32,
+        flags: crate::PropertyFlags,
+    ) -> Result<(), Error> {
+        self.dispatch.call(
+            introspect::SET_INSTANCE_OVERRIDE_FLAGS,
+            &[
+                Value::Str(lookup_string.to_owned()),
+                Value::I32(options),
+                Value::I32(flags.bits()),
+            ],
+        )?;
+        Ok(())
+    }
+
+    /// The property's comment (`Comment`).
+    ///
+    /// A comment is an attribute, not a subproperty, so `GetValString` cannot
+    /// reach it.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn comment(&self) -> Result<String, Error> {
+        Ok(self.dispatch.get(introspect::COMMENT)?.into_string()?)
+    }
+
+    /// Sets the property's comment (`Comment`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_comment(&self, comment: &str) -> Result<(), Error> {
+        self.dispatch
+            .put(introspect::COMMENT, Value::Str(comment.to_owned()))?;
+        Ok(())
+    }
+
     /// An array element by position (`GetPropertyObjectByOffset`).
     ///
     /// # Errors
@@ -769,4 +928,148 @@ pub struct PropertyType {
     pub is_array: bool,
     /// The named type, empty when the property has none.
     pub type_name: String,
+}
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+    use std::sync::{Arc, Mutex};
+
+    use rs_teststand_sys::{ComError, Dispatch, Value};
+
+    use super::PropertyObject;
+    use crate::PropertyFlags;
+    use crate::dispids::property_object_introspect as introspect;
+
+    #[derive(Debug, Clone, PartialEq, Eq)]
+    struct Recorded {
+        dispid: i32,
+        text: Option<String>,
+        numbers: Vec<i32>,
+    }
+
+    #[derive(Debug)]
+    struct Fake {
+        properties: HashMap<i32, Value>,
+        calls: Arc<Mutex<Vec<Recorded>>>,
+    }
+
+    impl Fake {
+        fn boxed(
+            properties: HashMap<i32, Value>,
+            calls: &Arc<Mutex<Vec<Recorded>>>,
+        ) -> Box<dyn Dispatch> {
+            Box::new(Self {
+                properties,
+                calls: Arc::clone(calls),
+            })
+        }
+    }
+
+    impl Dispatch for Fake {
+        fn get(&self, dispid: i32) -> Result<Value, ComError> {
+            match self.properties.get(&dispid) {
+                Some(Value::Str(text)) => Ok(Value::Str(text.clone())),
+                Some(Value::I32(number)) => Ok(Value::I32(*number)),
+                _ => Err(ComError::hresult(-17000, "fake: unscripted get")),
+            }
+        }
+
+        fn put(&self, dispid: i32, value: Value) -> Result<(), ComError> {
+            self.calls
+                .lock()
+                .map_err(|_| ComError::hresult(-17000, "fake: call log was poisoned"))?
+                .push(Recorded {
+                    dispid,
+                    text: match value {
+                        Value::Str(text) => Some(text),
+                        _ => None,
+                    },
+                    numbers: Vec::new(),
+                });
+            Ok(())
+        }
+
+        fn call(&self, dispid: i32, args: &[Value]) -> Result<Value, ComError> {
+            self.calls
+                .lock()
+                .map_err(|_| ComError::hresult(-17000, "fake: call log was poisoned"))?
+                .push(Recorded {
+                    dispid,
+                    text: args.iter().find_map(|value| match value {
+                        Value::Str(text) => Some(text.clone()),
+                        _ => None,
+                    }),
+                    numbers: args
+                        .iter()
+                        .filter_map(|value| match value {
+                            Value::I32(number) => Some(*number),
+                            _ => None,
+                        })
+                        .collect(),
+                });
+            match dispid {
+                introspect::GET_FLAGS
+                | introspect::GET_INSTANCE_DEFAULT_FLAGS
+                | introspect::GET_INSTANCE_OVERRIDE_FLAGS => Ok(Value::I32(0x9)),
+                introspect::SET_FLAGS
+                | introspect::SET_INSTANCE_DEFAULT_FLAGS
+                | introspect::SET_INSTANCE_OVERRIDE_FLAGS => Ok(Value::Empty),
+                _ => Err(ComError::hresult(-17000, "fake: unscripted call")),
+            }
+        }
+    }
+
+    #[test]
+    fn reads_flags_and_comment_from_their_own_members() -> Result<(), crate::Error> {
+        let calls = Arc::new(Mutex::new(Vec::new()));
+        let object = PropertyObject::new(Fake::boxed(
+            HashMap::from([
+                (introspect::COMMENT, Value::Str("measured note".to_owned())),
+                (introspect::GET_FLAGS, Value::I32(0x9)),
+            ]),
+            &calls,
+        ));
+
+        assert_eq!(object.comment()?, "measured note");
+        assert_eq!(
+            object.get_flags("", 0)?,
+            PropertyFlags::NOT_EDITABLE | PropertyFlags::HIDDEN
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn setting_flags_sends_the_complete_mask() -> Result<(), crate::Error> {
+        let calls = Arc::new(Mutex::new(Vec::new()));
+        let object = PropertyObject::new(Fake::boxed(HashMap::new(), &calls));
+        let flags = PropertyFlags::NOT_EDITABLE | PropertyFlags::HIDDEN;
+
+        object.set_flags("", 0, flags)?;
+        object.set_comment("a note")?;
+
+        let (setter, comment_set) = {
+            let calls = calls.lock().map_err(|_| crate::Error::UnexpectedType {
+                expected: "an unpoisoned call log",
+                actual: "a poisoned call log",
+            })?;
+            let setter = calls
+                .iter()
+                .find(|call| call.dispid == introspect::SET_FLAGS)
+                .cloned()
+                .ok_or(crate::Error::UnexpectedType {
+                    expected: "a SetFlags call",
+                    actual: "no SetFlags call",
+                })?;
+            let comment_set = calls.iter().any(|call| {
+                call.dispid == introspect::COMMENT && call.text.as_deref() == Some("a note")
+            });
+            drop(calls);
+            (setter, comment_set)
+        };
+        assert_eq!(setter.text.as_deref(), Some(""));
+        assert_eq!(setter.numbers, vec![0, 0x9]);
+        assert!(comment_set);
+        Ok(())
+    }
 }

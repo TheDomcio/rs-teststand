@@ -188,6 +188,230 @@ impl Sequence {
         Ok(())
     }
 
+    /// Deletes a step from a group (`Sequence.DeleteStep`).
+    ///
+    /// The step at `index` is removed and every later step in that group moves
+    /// up by one. Other groups are untouched.
+    ///
+    /// # Errors
+    /// [`Error`] if the index is out of range or the COM call fails.
+    pub fn delete_step(&self, index: i32, group: crate::StepGroup) -> Result<(), Error> {
+        self.dispatch.call(
+            sequence::DELETE_STEP,
+            &[Value::I32(index), Value::I32(group.bits())],
+        )?;
+        Ok(())
+    }
+
+    /// The sequence's type (`Sequence.Type`).
+    ///
+    /// `None` means the engine reported a type this build does not name.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn sequence_type(&self) -> Result<Option<crate::SequenceType>, Error> {
+        let raw = self.dispatch.get(sequence::TYPE)?.as_i32()?;
+        Ok(crate::SequenceType::from_bits(raw).ok())
+    }
+
+    /// Sets the sequence's type (`Sequence.Type`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_sequence_type(&self, sequence_type: crate::SequenceType) -> Result<(), Error> {
+        self.dispatch
+            .put(sequence::TYPE, Value::I32(sequence_type.bits()))?;
+        Ok(())
+    }
+
+    /// Whether a failed step jumps to cleanup (`Sequence.GotoCleanupOnFailure`).
+    ///
+    /// The vendor marks this property obsolete in favor of
+    /// [`failure_action`](Self::failure_action). It is kept because it still
+    /// reads and writes on the supported engines.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn goto_cleanup_on_failure(&self) -> Result<bool, Error> {
+        Ok(self
+            .dispatch
+            .get(sequence::GOTO_CLEANUP_ON_FAILURE)?
+            .as_bool()?)
+    }
+
+    /// Sets whether a failed step jumps to cleanup
+    /// (`Sequence.GotoCleanupOnFailure`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_goto_cleanup_on_failure(&self, goto_cleanup: bool) -> Result<(), Error> {
+        self.dispatch
+            .put(sequence::GOTO_CLEANUP_ON_FAILURE, Value::Bool(goto_cleanup))?;
+        Ok(())
+    }
+
+    /// Whether the sequence records results (`Sequence.DisableResults`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn disable_results(&self) -> Result<bool, Error> {
+        Ok(self.dispatch.get(sequence::DISABLE_RESULTS)?.as_bool()?)
+    }
+
+    /// Sets whether the sequence records results (`Sequence.DisableResults`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_disable_results(&self, disable: bool) -> Result<(), Error> {
+        self.dispatch
+            .put(sequence::DISABLE_RESULTS, Value::Bool(disable))?;
+        Ok(())
+    }
+
+    /// What happens when a step fails (`Sequence.FailureAction`).
+    ///
+    /// `None` means the engine reported an action this build does not name.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn failure_action(&self) -> Result<Option<crate::FailureAction>, Error> {
+        let raw = self.dispatch.get(sequence::FAILURE_ACTION)?.as_i32()?;
+        Ok(crate::FailureAction::from_bits(raw).ok())
+    }
+
+    /// Sets what happens when a step fails (`Sequence.FailureAction`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_failure_action(&self, action: crate::FailureAction) -> Result<(), Error> {
+        self.dispatch
+            .put(sequence::FAILURE_ACTION, Value::I32(action.bits()))?;
+        Ok(())
+    }
+
+    /// The expression naming the sequence's entry point
+    /// (`Sequence.EntryPointNameExpression`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn entry_point_name_expression(&self) -> Result<String, Error> {
+        Ok(self
+            .dispatch
+            .get(sequence::ENTRY_POINT_NAME_EXPRESSION)?
+            .into_string()?)
+    }
+
+    /// Sets the expression naming the sequence's entry point
+    /// (`Sequence.EntryPointNameExpression`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_entry_point_name_expression(&self, expression: &str) -> Result<(), Error> {
+        self.dispatch.put(
+            sequence::ENTRY_POINT_NAME_EXPRESSION,
+            Value::Str(expression.to_owned()),
+        )?;
+        Ok(())
+    }
+
+    /// Whether every window shows the entry point
+    /// (`Sequence.ShowEntryPointForAllWindows`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn show_entry_point_for_all_windows(&self) -> Result<bool, Error> {
+        Ok(self
+            .dispatch
+            .get(sequence::SHOW_ENTRY_POINT_FOR_ALL_WINDOWS)?
+            .as_bool()?)
+    }
+
+    /// Sets whether every window shows the entry point
+    /// (`Sequence.ShowEntryPointForAllWindows`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_show_entry_point_for_all_windows(&self, show: bool) -> Result<(), Error> {
+        self.dispatch.put(
+            sequence::SHOW_ENTRY_POINT_FOR_ALL_WINDOWS,
+            Value::Bool(show),
+        )?;
+        Ok(())
+    }
+
+    /// Whether the file window shows the entry point
+    /// (`Sequence.ShowEntryPointForFileWindow`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn show_entry_point_for_file_window(&self) -> Result<bool, Error> {
+        Ok(self
+            .dispatch
+            .get(sequence::SHOW_ENTRY_POINT_FOR_FILE_WINDOW)?
+            .as_bool()?)
+    }
+
+    /// Sets whether the file window shows the entry point
+    /// (`Sequence.ShowEntryPointForFileWindow`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_show_entry_point_for_file_window(&self, show: bool) -> Result<(), Error> {
+        self.dispatch.put(
+            sequence::SHOW_ENTRY_POINT_FOR_FILE_WINDOW,
+            Value::Bool(show),
+        )?;
+        Ok(())
+    }
+
+    /// Whether the executable window shows the entry point
+    /// (`Sequence.ShowEntryPointForExeWindow`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn show_entry_point_for_exe_window(&self) -> Result<bool, Error> {
+        Ok(self
+            .dispatch
+            .get(sequence::SHOW_ENTRY_POINT_FOR_EXE_WINDOW)?
+            .as_bool()?)
+    }
+
+    /// Sets whether the executable window shows the entry point
+    /// (`Sequence.ShowEntryPointForExeWindow`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_show_entry_point_for_exe_window(&self, show: bool) -> Result<(), Error> {
+        self.dispatch
+            .put(sequence::SHOW_ENTRY_POINT_FOR_EXE_WINDOW, Value::Bool(show))?;
+        Ok(())
+    }
+
+    /// Whether only the editor shows the entry point
+    /// (`Sequence.ShowEntryPointForEditorOnly`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn show_entry_point_for_editor_only(&self) -> Result<bool, Error> {
+        Ok(self
+            .dispatch
+            .get(sequence::SHOW_ENTRY_POINT_FOR_EDITOR_ONLY)?
+            .as_bool()?)
+    }
+
+    /// Sets whether only the editor shows the entry point
+    /// (`Sequence.ShowEntryPointForEditorOnly`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_show_entry_point_for_editor_only(&self, show: bool) -> Result<(), Error> {
+        self.dispatch.put(
+            sequence::SHOW_ENTRY_POINT_FOR_EDITOR_ONLY,
+            Value::Bool(show),
+        )?;
+        Ok(())
+    }
+
     /// Inserts a copy of a template step and returns the copy
     /// (`PropertyObject.Clone` + `Sequence.InsertStep`).
     ///
@@ -297,6 +521,8 @@ mod tests {
         fn get(&self, dispid: i32) -> Result<Value, ComError> {
             match self.properties.get(&dispid) {
                 Some(Value::Str(text)) => Ok(Value::Str(text.clone())),
+                Some(Value::I32(number)) => Ok(Value::I32(*number)),
+                Some(Value::Bool(flag)) => Ok(Value::Bool(*flag)),
                 _ => Err(ComError::hresult(-17000, "fake: unscripted")),
             }
         }
@@ -316,6 +542,40 @@ mod tests {
             properties: HashMap::from([(sequence::NAME, Value::Str("MainSequence".to_owned()))]),
         }));
         assert_eq!(sequence.name()?, "MainSequence");
+        Ok(())
+    }
+
+    #[test]
+    fn reads_typed_sequence_settings() -> Result<(), Error> {
+        let sequence = Sequence::new(Box::new(Fake {
+            properties: HashMap::from([
+                (sequence::TYPE, Value::I32(1)),
+                (sequence::FAILURE_ACTION, Value::I32(2)),
+                (sequence::GOTO_CLEANUP_ON_FAILURE, Value::Bool(true)),
+                (sequence::DISABLE_RESULTS, Value::Bool(false)),
+                (
+                    sequence::ENTRY_POINT_NAME_EXPRESSION,
+                    Value::Str("MainSequence".to_owned()),
+                ),
+                (
+                    sequence::SHOW_ENTRY_POINT_FOR_ALL_WINDOWS,
+                    Value::Bool(true),
+                ),
+            ]),
+        }));
+
+        assert_eq!(
+            sequence.sequence_type()?,
+            Some(crate::SequenceType::Callback)
+        );
+        assert_eq!(
+            sequence.failure_action()?,
+            Some(crate::FailureAction::UseStationOption)
+        );
+        assert!(sequence.goto_cleanup_on_failure()?);
+        assert!(!sequence.disable_results()?);
+        assert_eq!(sequence.entry_point_name_expression()?, "MainSequence");
+        assert!(sequence.show_entry_point_for_all_windows()?);
         Ok(())
     }
 
@@ -385,6 +645,7 @@ mod tests {
                 sequence::INSERT_STEP | sequence::GET_STEP => {
                     Ok(Value::Object(Self::boxed(&self.calls)))
                 }
+                sequence::DELETE_STEP => Ok(Value::Empty),
                 _ => Err(ComError::hresult(-17000, "fake: unscripted call")),
             }
         }
@@ -425,6 +686,31 @@ mod tests {
         assert_eq!(clone.text.as_deref(), Some(""));
         assert_eq!(clone.numbers, vec![671_088_640]);
         assert!(inserted, "the clone should have been inserted");
+        Ok(())
+    }
+
+    #[test]
+    fn deleting_a_step_sends_the_index_and_group() -> Result<(), Error> {
+        let calls = Arc::new(Mutex::new(Vec::new()));
+        let sequence = Sequence::new(Recording::boxed(&calls));
+
+        sequence.delete_step(2, crate::StepGroup::Cleanup)?;
+
+        let call = {
+            let calls = calls.lock().map_err(|_| Error::UnexpectedType {
+                expected: "an unpoisoned call log",
+                actual: "a poisoned call log",
+            })?;
+            calls
+                .iter()
+                .find(|call| call.dispid == sequence::DELETE_STEP)
+                .cloned()
+                .ok_or(Error::UnexpectedType {
+                    expected: "a DeleteStep call",
+                    actual: "no DeleteStep call",
+                })?
+        };
+        assert_eq!(call.numbers, vec![2, crate::StepGroup::Cleanup.bits()]);
         Ok(())
     }
 }

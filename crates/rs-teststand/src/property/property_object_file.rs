@@ -46,6 +46,24 @@ impl PropertyObjectFile {
             .as_bool()?)
     }
 
+    /// Writes the file to disk in a chosen format
+    /// (`PropertyObjectFile.WriteFile`).
+    ///
+    /// The target is [`path`](Self::path). Use
+    /// [`WriteFileFormat::Current`](crate::WriteFileFormat::Current) unless the
+    /// file must remain readable by an older station.
+    ///
+    /// # Errors
+    /// [`Error`] if no path is set, the file cannot be written, or the COM call
+    /// fails.
+    pub fn write_file(&self, format: crate::WriteFileFormat) -> Result<(), Error> {
+        self.dispatch.call(
+            property_object_file::WRITE_FILE,
+            &[Value::I32(format.bits())],
+        )?;
+        Ok(())
+    }
+
     /// The types registered in this file (`TypeUsageList`).
     ///
     /// # Errors
@@ -198,10 +216,14 @@ mod tests {
     use crate::dispids::property_object_file;
     use rs_teststand_sys::{ComError, Dispatch, Value};
     use std::collections::HashMap;
+    use std::sync::{Arc, Mutex};
+
+    type CallLog = Arc<Mutex<Vec<(i32, Vec<i32>)>>>;
 
     #[derive(Debug)]
     struct FakeDispatch {
         reads: HashMap<i32, Value>,
+        calls: CallLog,
     }
 
     impl Dispatch for FakeDispatch {
@@ -218,7 +240,22 @@ mod tests {
             Ok(())
         }
 
-        fn call(&self, _dispid: i32, _args: &[Value]) -> Result<Value, ComError> {
+        fn call(&self, dispid: i32, args: &[Value]) -> Result<Value, ComError> {
+            if dispid == property_object_file::WRITE_FILE {
+                self.calls
+                    .lock()
+                    .map_err(|_| ComError::hresult(0, "fake: call log was poisoned"))?
+                    .push((
+                        dispid,
+                        args.iter()
+                            .filter_map(|value| match value {
+                                Value::I32(number) => Some(*number),
+                                _ => None,
+                            })
+                            .collect(),
+                    ));
+                return Ok(Value::Empty);
+            }
             Err(ComError::hresult(0, "fake: unscripted method"))
         }
     }
@@ -226,6 +263,7 @@ mod tests {
     fn file(reads: Vec<(i32, Value)>) -> PropertyObjectFile {
         PropertyObjectFile::new(Box::new(FakeDispatch {
             reads: reads.into_iter().collect(),
+            calls: Arc::new(Mutex::new(Vec::new())),
         }))
     }
 
@@ -250,6 +288,27 @@ mod tests {
         assert_eq!(subject.is_disk_file_modified()?, -1);
         assert!(!subject.is_disk_file_read_only()?);
         assert_eq!(subject.version()?, "1.2.3.4");
+        Ok(())
+    }
+
+    #[test]
+    fn write_file_sends_the_format_value() -> Result<(), Error> {
+        let calls = Arc::new(Mutex::new(Vec::new()));
+        let subject = PropertyObjectFile::new(Box::new(FakeDispatch {
+            reads: HashMap::new(),
+            calls: Arc::clone(&calls),
+        }));
+
+        subject.write_file(crate::WriteFileFormat::TestStand50)?;
+
+        let calls = calls.lock().map_err(|_| Error::UnexpectedType {
+            expected: "an unpoisoned call log",
+            actual: "a poisoned call log",
+        })?;
+        assert_eq!(
+            calls.as_slice(),
+            [(property_object_file::WRITE_FILE, vec![12])]
+        );
         Ok(())
     }
 

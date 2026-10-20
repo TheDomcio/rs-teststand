@@ -67,6 +67,7 @@ define_dispid_group! {
         CURRENT_USER = 0x012d;
         GET_SEQUENCE_FILE_EX = 0x01ab;
         RELEASE_SEQUENCE_FILE_EX = 0x01c5;
+        GET_STATION_MODEL_SEQUENCE_FILE = 0x0120;
         SEARCH_DIRECTORIES = 0x0231;
         STATION_OPTIONS = 0x023b;
         GLOBALS = 0x012c;
@@ -247,6 +248,8 @@ pub(crate) mod property_object_file {
     pub(crate) const IS_DISK_FILE_READ_ONLY: i32 = 0x79;
     /// `Version`, read/write.
     pub(crate) const VERSION: i32 = 0x7e;
+    /// `WriteFile`, one format parameter.
+    pub(crate) const WRITE_FILE: i32 = 0x69;
 }
 
 /// `UsersFile` dispinterface members.
@@ -343,6 +346,20 @@ pub(crate) mod property_object_introspect {
     pub(crate) const GET_TYPE_DISPLAY_STRING: i32 = 0x249;
     /// `GetTypeFlags`, 2 params.
     pub(crate) const GET_TYPE_FLAGS: i32 = 0x26c;
+    /// `GetFlags`, 2 params.
+    pub(crate) const GET_FLAGS: i32 = 0x212;
+    /// `SetFlags`, 3 params.
+    pub(crate) const SET_FLAGS: i32 = 0x213;
+    /// `GetInstanceDefaultFlags`, 2 params.
+    pub(crate) const GET_INSTANCE_DEFAULT_FLAGS: i32 = 0x25d;
+    /// `SetInstanceDefaultFlags`, 3 params.
+    pub(crate) const SET_INSTANCE_DEFAULT_FLAGS: i32 = 0x25e;
+    /// `GetInstanceOverrideFlags`, 2 params.
+    pub(crate) const GET_INSTANCE_OVERRIDE_FLAGS: i32 = 0x26e;
+    /// `SetInstanceOverrideFlags`, 3 params.
+    pub(crate) const SET_INSTANCE_OVERRIDE_FLAGS: i32 = 0x26f;
+    /// `Comment`, read/write.
+    pub(crate) const COMMENT: i32 = 0x24f;
     /// `Type`, read-only, yields a `PropertyObjectType`.
     pub(crate) const TYPE: i32 = 0x284;
     /// `GetValInteger64`, 2 params.
@@ -433,9 +450,7 @@ pub(crate) mod execution {
     pub(crate) const ERROR_OBJECT: i32 = 0x79;
     /// `ResultObject`, read-only.
     pub(crate) const RESULT_OBJECT: i32 = 0x7d;
-    /// `GetStates`, 2 `[out]` byref params, not bindable through the current
-    /// in-only dispatch seam. Recorded so nobody re-derives it.
-    #[allow(dead_code, reason = "needs byref out-param support in the sys crate")]
+    /// `GetStates`, 2 `[out]` byref params.
     pub(crate) const GET_STATES: i32 = 0x13;
 }
 
@@ -585,6 +600,28 @@ pub(crate) mod step {
     pub(crate) const RUN_MODE: i32 = 0x17;
     /// `Precondition`, read/write.
     pub(crate) const PRECONDITION: i32 = 0x1a;
+    /// `PreExpression`, read/write.
+    pub(crate) const PRE_EXPRESSION: i32 = 0x52;
+    /// `StatusExpression`, read/write.
+    pub(crate) const STATUS_EXPRESSION: i32 = 0x50;
+    /// `PassAction`, read/write.
+    pub(crate) const PASS_ACTION: i32 = 0x28;
+    /// `PassActionTarget`, read/write.
+    pub(crate) const PASS_ACTION_TARGET: i32 = 0x29;
+    /// `FailAction`, read/write.
+    pub(crate) const FAIL_ACTION: i32 = 0x2a;
+    /// `FailActionTarget`, read/write.
+    pub(crate) const FAIL_ACTION_TARGET: i32 = 0x2b;
+    /// `LoopType`, read/write.
+    pub(crate) const LOOP_TYPE: i32 = 0x3c;
+    /// `LoopWhileExpression`, read/write.
+    pub(crate) const LOOP_WHILE_EXPRESSION: i32 = 0x3d;
+    /// `LoopStatusExpression`, read/write.
+    pub(crate) const LOOP_STATUS_EXPRESSION: i32 = 0x3e;
+    /// `LoopInitExpression`, read/write.
+    pub(crate) const LOOP_INIT_EXPRESSION: i32 = 0x3f;
+    /// `LoopIncExpression`, read/write.
+    pub(crate) const LOOP_INC_EXPRESSION: i32 = 0x40;
     /// `PostExpression`, read/write.
     pub(crate) const POST_EXPRESSION: i32 = 0x53;
     /// `CreateNewUniqueStepId`, no params.
@@ -623,10 +660,30 @@ pub(crate) mod sequence {
     pub(crate) const GET_STEP: i32 = 0x2;
     /// `InsertStep`, 3 params.
     pub(crate) const INSERT_STEP: i32 = 0x4;
+    /// `DeleteStep`, 2 params.
+    pub(crate) const DELETE_STEP: i32 = 0x6;
     /// `AsPropertyObject`, no params.
     pub(crate) const AS_PROPERTY_OBJECT: i32 = 0xb;
     /// `CreateNewUniqueStepIds`, no params.
     pub(crate) const CREATE_NEW_UNIQUE_STEP_IDS: i32 = 0x46;
+    /// `Type`, read/write enum.
+    pub(crate) const TYPE: i32 = 0x38;
+    /// `GotoCleanupOnFailure`, read/write boolean.
+    pub(crate) const GOTO_CLEANUP_ON_FAILURE: i32 = 0x3a;
+    /// `DisableResults`, read/write boolean.
+    pub(crate) const DISABLE_RESULTS: i32 = 0x3b;
+    /// `FailureAction`, read/write enum.
+    pub(crate) const FAILURE_ACTION: i32 = 0x5a;
+    /// `EntryPointNameExpression`, read/write string.
+    pub(crate) const ENTRY_POINT_NAME_EXPRESSION: i32 = 0x43;
+    /// `ShowEntryPointForAllWindows`, read/write boolean.
+    pub(crate) const SHOW_ENTRY_POINT_FOR_ALL_WINDOWS: i32 = 0x3d;
+    /// `ShowEntryPointForFileWindow`, read/write boolean.
+    pub(crate) const SHOW_ENTRY_POINT_FOR_FILE_WINDOW: i32 = 0x35;
+    /// `ShowEntryPointForExeWindow`, read/write boolean.
+    pub(crate) const SHOW_ENTRY_POINT_FOR_EXE_WINDOW: i32 = 0x36;
+    /// `ShowEntryPointForEditorOnly`, read/write boolean.
+    pub(crate) const SHOW_ENTRY_POINT_FOR_EDITOR_ONLY: i32 = 0x3c;
 }
 
 /// `SequenceFile` dispinterface members.

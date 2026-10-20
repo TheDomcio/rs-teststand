@@ -48,8 +48,8 @@ pub use enums::{
 };
 pub use error::Error;
 pub use execution::{
-    Execution, Limits, ResultError, ResultList, ResultValue, SequenceContext, StepResult, Thread,
-    ThreadTerminationOption,
+    Execution, ExecutionStates, Limits, ResultError, ResultList, ResultValue, SequenceContext,
+    StepResult, Thread, ThreadTerminationOption,
 };
 pub use expression::{
     ArithmeticOperator, Arity, ArrayFunction, AssignmentOperator, BitwiseOperator, ColorConstant,
@@ -61,12 +61,12 @@ pub use expression::{
 pub use license::{AcquireLicenseOptions, ApplicationLicense, HeldLicense, LicenseType};
 pub use messaging::{UIMessage, UIMessageCode, pump_thread_messages};
 pub use property::{
-    ArrayDimensions, GetTemplatesFileOptions, PropertyObject, PropertyObjectFile,
-    PropertyObjectType, PropertyOptions, PropertyRepresentation, PropertyType,
+    ArrayDimensions, GetTemplatesFileOptions, PropertyFlags, PropertyObject, PropertyObjectFile,
+    PropertyObjectType, PropertyOptions, PropertyRepresentation, PropertyType, WriteFileFormat,
 };
 pub use sequence::{
-    BreakpointScope, ConflictHandler, GetSeqFileOptions, ResultRecordingOption, RunMode, Sequence,
-    SequenceFile, Step,
+    BreakpointScope, ConflictHandler, FailureAction, GetSeqFileOptions, ResultRecordingOption,
+    RunMode, Sequence, SequenceFile, SequenceType, Step,
 };
 pub use station::{
     DebugOptions, ExecutionMask, RunTimeErrorOption, SearchDirectories, SearchDirectory,

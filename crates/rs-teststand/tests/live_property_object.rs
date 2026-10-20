@@ -7,7 +7,7 @@
 
 #![cfg(feature = "live-engine")]
 
-use rs_teststand::{Engine, Error, PropValType, PropertyOptions};
+use rs_teststand::{Engine, Error, PropValType, PropertyFlags, PropertyOptions, WriteFileFormat};
 
 #[test]
 #[ignore = "requires a live engine"]
@@ -54,7 +54,47 @@ fn property_object_file_state_is_self_contained() -> Result<(), Error> {
     Ok(())
 }
 
-/// `GetType` reports a property's shape, through three by-reference arguments.
+/// `GetFlags`/`SetFlags` and `Comment` on an in-memory tree.
+///
+/// The comment is an attribute, so a value lookup for `Comment` must not be the
+/// route. Flags are a complete mask; this records what the engine does when a
+/// bit is removed rather than assuming it.
+#[test]
+#[ignore = "requires a live engine"]
+fn flags_and_comment_round_trip() -> Result<(), Error> {
+    let engine = Engine::new()?;
+    let root = engine.new_property_object(PropValType::Container, false, "", 0)?;
+    let insert = PropertyOptions::INSERT_IF_MISSING.bits();
+    let options = PropertyOptions::NONE.bits();
+
+    root.set_val_string("Mode", insert, "hello")?;
+    root.set_comment("root note")?;
+    assert_eq!(root.comment()?, "root note");
+
+    let mode = root.get_property_object("Mode", options)?;
+    mode.set_comment("mode note")?;
+    assert_eq!(mode.comment()?, "mode note");
+    assert_eq!(
+        root.get_property_object("Mode", options)?.comment()?,
+        "mode note"
+    );
+
+    let target = PropertyFlags::NOT_EDITABLE | PropertyFlags::HIDDEN;
+    mode.set_flags("", options, target)?;
+    let written = mode.get_flags("", options)?;
+    assert!(
+        written.contains(target),
+        "the engine dropped a requested flag: {written:?}"
+    );
+
+    mode.set_flags("", options, PropertyFlags::HIDDEN)?;
+    let after_clear = mode.get_flags("", options)?;
+    assert!(
+        !after_clear.contains(PropertyFlags::NOT_EDITABLE),
+        "SetFlags should replace the mask: {after_clear:?}"
+    );
+    Ok(())
+}
 ///
 /// The engine writes the two flags and the type name back into arguments the
 /// caller supplies, so this covers the by-reference path as much as the member:
@@ -96,5 +136,31 @@ fn property_type_is_reported_through_its_output_arguments() -> Result<(), Error>
     );
 
     println!("  container -> {container:?}");
+    Ok(())
+}
+
+/// `WriteFile` writes the file's `Path` in the requested format.
+///
+/// A workspace is used because it is cheap to create and its file view is a
+/// plain property-object file. The check is the file on disk, not the call's
+/// return value.
+#[test]
+#[ignore = "requires a live engine"]
+fn a_property_file_writes_in_an_older_format() -> Result<(), Error> {
+    let engine = Engine::new()?;
+    let workspace = engine.new_workspace_file()?;
+    let file = workspace.as_property_object_file()?;
+    let path = std::env::temp_dir().join("rs_teststand_write_file.tsw");
+    let path = path.to_string_lossy().into_owned();
+
+    file.set_path(&path)?;
+    file.write_file(WriteFileFormat::TestStand50)?;
+
+    let written = std::fs::metadata(&path).map_err(|_| Error::UnexpectedType {
+        expected: "a written file",
+        actual: "no file on disk",
+    })?;
+    assert!(written.len() > 0, "the written file is empty");
+    let _ = std::fs::remove_file(&path);
     Ok(())
 }

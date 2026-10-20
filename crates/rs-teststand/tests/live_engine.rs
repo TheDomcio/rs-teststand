@@ -96,6 +96,21 @@ fn breakpoint_switches_round_trip_and_are_restored() -> Result<(), Error> {
 
 #[test]
 #[ignore = "requires a live TestStand engine"]
+fn the_station_model_file_is_available_and_releasable() -> Result<(), Error> {
+    let engine = Engine::new()?;
+    let (file, description) = engine.get_station_model_sequence_file()?;
+
+    assert!(!description.is_empty(), "the model description is empty");
+    assert!(
+        file.num_sequences()? >= 1,
+        "the station model file should hold at least one sequence"
+    );
+    engine.release_sequence_file_ex(file, 0)?;
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires a live TestStand engine"]
 fn unloading_every_module_succeeds_with_nothing_loaded() -> Result<(), Error> {
     // No sequence has run, so there is nothing to unload. The call must still
     // succeed: a host calls it between runs without knowing what is loaded.

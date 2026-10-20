@@ -14,8 +14,8 @@ use std::path::PathBuf;
 use std::time::{Duration, Instant};
 
 use rs_teststand::{
-    AdapterKeyName, ConflictHandler, Engine, Error, GetSeqFileOptions, SequenceFile, StepGroup,
-    UIMessageCode, pump_thread_messages,
+    AdapterKeyName, ConflictHandler, Engine, Error, ExecRunState, ExecTermState, GetSeqFileOptions,
+    SequenceFile, StepGroup, UIMessageCode, pump_thread_messages,
 };
 
 const INSERT_IF_MISSING: i32 = 1;
@@ -183,6 +183,10 @@ fn the_result_status_settles_once_the_run_is_over(engine: &Engine) -> Result<(),
     let execution = engine.new_execution(&sequence_file, "MainSequence", None, false, 0)?;
 
     assert!(run_to_end(engine, Duration::from_secs(20))?);
+
+    let states = execution.get_states()?;
+    assert_eq!(states.run_state, Some(ExecRunState::Stopped));
+    assert_eq!(states.termination_state, Some(ExecTermState::Normal));
 
     let status = execution.result_status()?;
     println!("  final status: {status:?}");
@@ -463,6 +467,14 @@ fn suspending_takes_effect_before_a_resume_is_safe(engine: &Engine) -> Result<()
     // A run this short can finish before the suspend lands; that is a legitimate
     // outcome and is reported rather than asserted away.
     println!("  suspend observed: {suspended}");
+    if suspended {
+        let states = execution.get_states()?;
+        assert_eq!(
+            states.run_state,
+            Some(ExecRunState::Paused),
+            "a suspended run should read as paused, not running"
+        );
+    }
     execution.resume()?;
 
     assert!(

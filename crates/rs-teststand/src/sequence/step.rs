@@ -173,6 +173,191 @@ impl Step {
         Ok(())
     }
 
+    /// The expression evaluated before the step runs (`Step.PreExpression`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn pre_expression(&self) -> Result<String, Error> {
+        self.get_expression(step::PRE_EXPRESSION)
+    }
+
+    /// Sets the pre expression (`Step.PreExpression`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_pre_expression(&self, expression: &str) -> Result<(), Error> {
+        self.put_expression(step::PRE_EXPRESSION, expression)
+    }
+
+    /// The expression that sets the step's result status
+    /// (`Step.StatusExpression`).
+    ///
+    /// It must evaluate to a string.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn status_expression(&self) -> Result<String, Error> {
+        self.get_expression(step::STATUS_EXPRESSION)
+    }
+
+    /// Sets the status expression (`Step.StatusExpression`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_status_expression(&self, expression: &str) -> Result<(), Error> {
+        self.put_expression(step::STATUS_EXPRESSION, expression)
+    }
+
+    /// What happens after the step passes (`Step.PassAction`).
+    ///
+    /// The value is one of the `PostActionValues` string constants.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn pass_action(&self) -> Result<String, Error> {
+        self.get_expression(step::PASS_ACTION)
+    }
+
+    /// Sets what happens after the step passes (`Step.PassAction`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_pass_action(&self, action: &str) -> Result<(), Error> {
+        self.put_expression(step::PASS_ACTION, action)
+    }
+
+    /// Where a passing step goes (`Step.PassActionTarget`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn pass_action_target(&self) -> Result<String, Error> {
+        self.get_expression(step::PASS_ACTION_TARGET)
+    }
+
+    /// Sets where a passing step goes (`Step.PassActionTarget`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_pass_action_target(&self, target: &str) -> Result<(), Error> {
+        self.put_expression(step::PASS_ACTION_TARGET, target)
+    }
+
+    /// What happens after the step fails (`Step.FailAction`).
+    ///
+    /// The value is one of the `PostActionValues` string constants.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn fail_action(&self) -> Result<String, Error> {
+        self.get_expression(step::FAIL_ACTION)
+    }
+
+    /// Sets what happens after the step fails (`Step.FailAction`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_fail_action(&self, action: &str) -> Result<(), Error> {
+        self.put_expression(step::FAIL_ACTION, action)
+    }
+
+    /// Where a failing step goes (`Step.FailActionTarget`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn fail_action_target(&self) -> Result<String, Error> {
+        self.get_expression(step::FAIL_ACTION_TARGET)
+    }
+
+    /// Sets where a failing step goes (`Step.FailActionTarget`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_fail_action_target(&self, target: &str) -> Result<(), Error> {
+        self.put_expression(step::FAIL_ACTION_TARGET, target)
+    }
+
+    /// The step's loop type (`Step.LoopType`).
+    ///
+    /// The value is one of the `StepLoopTypes` string constants.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn loop_type(&self) -> Result<String, Error> {
+        self.get_expression(step::LOOP_TYPE)
+    }
+
+    /// Sets the loop type (`Step.LoopType`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_loop_type(&self, loop_type: &str) -> Result<(), Error> {
+        self.put_expression(step::LOOP_TYPE, loop_type)
+    }
+
+    /// The loop's continue condition (`Step.LoopWhileExpression`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn loop_while_expression(&self) -> Result<String, Error> {
+        self.get_expression(step::LOOP_WHILE_EXPRESSION)
+    }
+
+    /// Sets the loop's continue condition (`Step.LoopWhileExpression`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_loop_while_expression(&self, expression: &str) -> Result<(), Error> {
+        self.put_expression(step::LOOP_WHILE_EXPRESSION, expression)
+    }
+
+    /// The loop's status expression (`Step.LoopStatusExpression`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn loop_status_expression(&self) -> Result<String, Error> {
+        self.get_expression(step::LOOP_STATUS_EXPRESSION)
+    }
+
+    /// Sets the loop's status expression (`Step.LoopStatusExpression`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_loop_status_expression(&self, expression: &str) -> Result<(), Error> {
+        self.put_expression(step::LOOP_STATUS_EXPRESSION, expression)
+    }
+
+    /// The loop's initialization expression (`Step.LoopInitExpression`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn loop_init_expression(&self) -> Result<String, Error> {
+        self.get_expression(step::LOOP_INIT_EXPRESSION)
+    }
+
+    /// Sets the loop's initialization expression (`Step.LoopInitExpression`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_loop_init_expression(&self, expression: &str) -> Result<(), Error> {
+        self.put_expression(step::LOOP_INIT_EXPRESSION, expression)
+    }
+
+    /// The loop's increment expression (`Step.LoopIncExpression`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn loop_inc_expression(&self) -> Result<String, Error> {
+        self.get_expression(step::LOOP_INC_EXPRESSION)
+    }
+
+    /// Sets the loop's increment expression (`Step.LoopIncExpression`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_loop_inc_expression(&self, expression: &str) -> Result<(), Error> {
+        self.put_expression(step::LOOP_INC_EXPRESSION, expression)
+    }
+
     /// Gives the step a fresh unique identity (`Step.CreateNewUniqueStepId`).
     ///
     /// A copy of a step carries the original's step ID, so a sequence built by
@@ -374,6 +559,18 @@ impl Step {
                 scope.argument(),
             ],
         )?;
+        Ok(())
+    }
+
+    /// Reads a string-valued step member by dispatch id.
+    fn get_expression(&self, dispid: i32) -> Result<String, Error> {
+        Ok(self.dispatch.get(dispid)?.into_string()?)
+    }
+
+    /// Writes a string-valued step member by dispatch id.
+    fn put_expression(&self, dispid: i32, expression: &str) -> Result<(), Error> {
+        self.dispatch
+            .put(dispid, Value::Str(expression.to_owned()))?;
         Ok(())
     }
 }

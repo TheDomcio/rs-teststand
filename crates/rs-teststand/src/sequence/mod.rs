@@ -13,6 +13,7 @@ pub mod breakpoint;
 )]
 pub mod sequence;
 pub mod sequence_file;
+pub mod settings;
 pub mod step;
 
 pub use breakpoint::BreakpointScope;
@@ -21,4 +22,5 @@ pub use result_recording_option::ResultRecordingOption;
 pub use run_mode::RunMode;
 pub use sequence::Sequence;
 pub use sequence_file::SequenceFile;
+pub use settings::{FailureAction, SequenceType};
 pub use step::Step;

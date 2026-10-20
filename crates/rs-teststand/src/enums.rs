@@ -132,6 +132,30 @@ pub enum ExecRunState {
     Stopped = 3,
 }
 
+impl ExecRunState {
+    /// Every state, in the engine's order.
+    pub const ALL: [Self; 3] = [Self::Running, Self::Paused, Self::Stopped];
+
+    /// The value the COM boundary expects.
+    #[must_use]
+    pub const fn bits(self) -> i32 {
+        self as i32
+    }
+
+    /// Reads a raw value, returning it unchanged when unrecognized.
+    ///
+    /// # Errors
+    /// The raw value, when it matches no known state.
+    pub const fn from_bits(raw: i32) -> Result<Self, i32> {
+        Ok(match raw {
+            1 => Self::Running,
+            2 => Self::Paused,
+            3 => Self::Stopped,
+            other => return Err(other),
+        })
+    }
+}
+
 /// Execution termination states (`ExecTermState_*`).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[repr(i32)]
@@ -146,6 +170,38 @@ pub enum ExecTermState {
     Aborting = 4,
     /// Killing execution threads (`ExecTermState_KillingThreads = 5`).
     KillingThreads = 5,
+}
+
+impl ExecTermState {
+    /// Every state, in the engine's order.
+    pub const ALL: [Self; 5] = [
+        Self::Normal,
+        Self::Terminating,
+        Self::TerminatingInteractive,
+        Self::Aborting,
+        Self::KillingThreads,
+    ];
+
+    /// The value the COM boundary expects.
+    #[must_use]
+    pub const fn bits(self) -> i32 {
+        self as i32
+    }
+
+    /// Reads a raw value, returning it unchanged when unrecognized.
+    ///
+    /// # Errors
+    /// The raw value, when it matches no known state.
+    pub const fn from_bits(raw: i32) -> Result<Self, i32> {
+        Ok(match raw {
+            1 => Self::Normal,
+            2 => Self::Terminating,
+            3 => Self::TerminatingInteractive,
+            4 => Self::Aborting,
+            5 => Self::KillingThreads,
+            other => return Err(other),
+        })
+    }
 }
 
 /// Search directory categories (`SearchDirectoryType_*`).

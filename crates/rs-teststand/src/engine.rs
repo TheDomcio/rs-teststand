@@ -1311,6 +1311,38 @@ impl Engine {
         Ok(crate::sequence::SequenceFile::new(dispatch))
     }
 
+    /// The process model file the station uses
+    /// (`Engine.GetStationModelSequenceFile`).
+    ///
+    /// Returns the file and the description the engine gives for it. The file
+    /// carries a load reference, so pair it with
+    /// [`release_sequence_file_ex`](Self::release_sequence_file_ex) when done.
+    ///
+    /// # Errors
+    /// [`Error`] if the model file is missing or cannot be loaded, or the COM
+    /// call fails.
+    pub fn get_station_model_sequence_file(
+        &self,
+    ) -> Result<(crate::sequence::SequenceFile, String), Error> {
+        let (file, written) = self.dispatch.call_with_outputs(
+            dispid::GET_STATION_MODEL_SEQUENCE_FILE,
+            &[],
+            &[OutKind::Text],
+        )?;
+        let description = written
+            .into_iter()
+            .next()
+            .ok_or(Error::UnexpectedType {
+                expected: "a model description",
+                actual: "no output slot",
+            })?
+            .into_string()?;
+        Ok((
+            crate::sequence::SequenceFile::new(file.into_object()?),
+            description,
+        ))
+    }
+
     /// Drops one load reference on a sequence file
     /// (`Engine.ReleaseSequenceFileEx`).
     ///
@@ -1470,6 +1502,7 @@ mod tests {
         Bool(bool),
         I32(i32),
         Str(&'static str),
+        Model(&'static str),
         Fail(i32),
     }
 
@@ -1499,6 +1532,9 @@ mod tests {
                 Some(Scripted::Bool(value)) => Ok(Value::Bool(*value)),
                 Some(Scripted::I32(value)) => Ok(Value::I32(*value)),
                 Some(Scripted::Str(value)) => Ok(Value::Str((*value).to_owned())),
+                Some(Scripted::Model(_)) => {
+                    Err(ComError::hresult(0, "fake: model only via outputs"))
+                }
                 Some(Scripted::Fail(code)) => Err(ComError::hresult(*code, "fake")),
                 None => Err(ComError::hresult(0, "fake: unscripted dispid")),
             }
@@ -1516,6 +1552,25 @@ mod tests {
             };
             self.written.borrow_mut().push((dispid, first));
             Ok(Value::Empty)
+        }
+
+        fn call_with_outputs(
+            &self,
+            dispid: i32,
+            _args: &[Value],
+            outputs: &[rs_teststand_sys::OutKind],
+        ) -> Result<(Value, Vec<Value>), ComError> {
+            assert_eq!(outputs, [rs_teststand_sys::OutKind::Text]);
+            match self.responses.get(&dispid) {
+                Some(Scripted::Model(description)) => {
+                    let file = Value::Object(Box::new(Self::new(
+                        std::iter::empty::<(i32, Scripted)>(),
+                        std::rc::Rc::default(),
+                    )));
+                    Ok((file, vec![Value::Str((*description).to_owned())]))
+                }
+                _ => Err(ComError::hresult(0, "fake: unscripted outputs")),
+            }
         }
     }
 
@@ -1722,5 +1777,17 @@ mod tests {
             ),
             "expected a type-mismatch error, got {result:?}",
         );
+    }
+
+    #[test]
+    fn station_model_file_returns_the_file_and_description() -> Result<(), Error> {
+        let engine = engine_with([(
+            dispid::GET_STATION_MODEL_SEQUENCE_FILE,
+            Scripted::Model("Sequential model"),
+        )]);
+        let (file, description) = engine.get_station_model_sequence_file()?;
+        assert_eq!(description, "Sequential model");
+        drop(file);
+        Ok(())
     }
 }

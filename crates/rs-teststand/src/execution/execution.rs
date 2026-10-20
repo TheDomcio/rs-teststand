@@ -1,9 +1,21 @@
 //! A running sequence.
 
-use rs_teststand_sys::{Dispatch, Value};
+use rs_teststand_sys::{Dispatch, OutKind, Value};
 
 use crate::Error;
 use crate::dispids::execution;
+
+/// The two states `Execution.GetStates` reports.
+///
+/// `None` on either field means the engine returned a value this build does not
+/// name, which is worth telling apart from a failure to read the state at all.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ExecutionStates {
+    /// Whether the run is running, paused, or stopped.
+    pub run_state: Option<crate::ExecRunState>,
+    /// Whether the run is terminating, aborting, or killing threads.
+    pub termination_state: Option<crate::ExecTermState>,
+}
 
 /// A running sequence (`Execution`).
 ///
@@ -45,6 +57,35 @@ impl Execution {
     /// [`Error`] if the COM call fails or returns an unexpected type.
     pub fn id(&self) -> Result<i32, Error> {
         Ok(self.dispatch.get(execution::ID)?.as_i32()?)
+    }
+
+    /// The run and termination states together (`Execution.GetStates`).
+    ///
+    /// Both values arrive through by-reference arguments. Read them together
+    /// rather than polling two properties: a paused run and a terminating run
+    /// are different events, and a caller that only looks at one can miss the
+    /// transition.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or an output slot is missing.
+    pub fn get_states(&self) -> Result<ExecutionStates, Error> {
+        let (_, written) = self.dispatch.call_with_outputs(
+            execution::GET_STATES,
+            &[],
+            &[OutKind::Int, OutKind::Int],
+        )?;
+        let run = written.first().ok_or(Error::UnexpectedType {
+            expected: "a run-state output",
+            actual: "no output slot",
+        })?;
+        let termination = written.get(1).ok_or(Error::UnexpectedType {
+            expected: "a termination-state output",
+            actual: "no output slot",
+        })?;
+        Ok(ExecutionStates {
+            run_state: crate::ExecRunState::from_bits(run.as_i32()?).ok(),
+            termination_state: crate::ExecTermState::from_bits(termination.as_i32()?).ok(),
+        })
     }
 
     /// Waits for the execution to finish (`Execution.WaitForEndEx`).
@@ -341,5 +382,73 @@ impl Execution {
         Ok(crate::PropertyObject::new(
             self.dispatch.get(execution::ERROR_OBJECT)?.into_object()?,
         ))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rs_teststand_sys::{ComError, Dispatch, OutKind, Value};
+
+    use super::Execution;
+    use crate::{ExecRunState, ExecTermState};
+
+    #[derive(Debug)]
+    struct Fake {
+        run: i32,
+        termination: i32,
+    }
+
+    impl Dispatch for Fake {
+        fn get(&self, _dispid: i32) -> Result<Value, ComError> {
+            Err(ComError::hresult(-17000, "fake: unscripted get"))
+        }
+
+        fn put(&self, _dispid: i32, _value: Value) -> Result<(), ComError> {
+            Ok(())
+        }
+
+        fn call(&self, _dispid: i32, _args: &[Value]) -> Result<Value, ComError> {
+            Err(ComError::hresult(-17000, "fake: unscripted call"))
+        }
+
+        fn call_with_outputs(
+            &self,
+            _dispid: i32,
+            _args: &[Value],
+            outputs: &[OutKind],
+        ) -> Result<(Value, Vec<Value>), ComError> {
+            assert_eq!(outputs, [OutKind::Int, OutKind::Int]);
+            Ok((
+                Value::Empty,
+                vec![Value::I32(self.run), Value::I32(self.termination)],
+            ))
+        }
+    }
+
+    #[test]
+    fn reads_both_states_from_their_output_slots() -> Result<(), crate::Error> {
+        let execution = Execution::new(Box::new(Fake {
+            run: 2,
+            termination: 3,
+        }));
+        let states = execution.get_states()?;
+        assert_eq!(states.run_state, Some(ExecRunState::Paused));
+        assert_eq!(
+            states.termination_state,
+            Some(ExecTermState::TerminatingInteractive)
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn an_unknown_state_is_none_rather_than_an_error() -> Result<(), crate::Error> {
+        let execution = Execution::new(Box::new(Fake {
+            run: 99,
+            termination: 99,
+        }));
+        let states = execution.get_states()?;
+        assert_eq!(states.run_state, None);
+        assert_eq!(states.termination_state, None);
+        Ok(())
     }
 }
