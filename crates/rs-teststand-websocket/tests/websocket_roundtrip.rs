@@ -197,7 +197,7 @@ async fn a_command_from_a_panel_reaches_the_engine_thread() {
     assert!(wait_for_client(&bridge).await, "client not registered");
 
     let asked = Command::Run {
-        sequence_file: r"C:\line.seq".to_owned(),
+        sequence_file: r"line.seq".to_owned(),
         sequence: "MainSequence".to_owned(),
     };
     client

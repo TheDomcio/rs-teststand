@@ -195,14 +195,14 @@ mod tests {
         let files = [file_with(vec![calling(
             "MainSequence",
             "Shared Setup",
-            r"C:\lab\sequences\Common.seq",
+            r"lab\sequences\Common.seq",
             false,
         )])];
         let md = render(&files).join("\n");
 
         assert!(md.contains("in `Common.seq`"), "{md}");
         assert!(
-            !md.contains(r"C:\lab"),
+            !md.contains(r"lab"),
             "the full path should not appear:\n{md}"
         );
     }
@@ -271,7 +271,7 @@ mod tests {
         let files = [file_with(vec![calling(
             "MainSequence",
             "Shared",
-            r"C:\lab\Common.seq",
+            r"lab\Common.seq",
             false,
         )])];
         let md = render(&files).join(

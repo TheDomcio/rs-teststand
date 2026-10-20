@@ -17,7 +17,7 @@ fn document_from(steps: Vec<StepData>, profile: Profile) -> String {
 
     let file = FileData {
         name: "Synthetic.seq".to_owned(),
-        path: r"C:\synthetic\Synthetic.seq".to_owned(),
+        path: r"synthetic\Synthetic.seq".to_owned(),
         sequences: vec![SequenceData {
             name: "MainSequence".to_owned(),
             step_groups,
@@ -90,7 +90,7 @@ fn document_with_all_groups(profile: Profile) -> String {
 
     let file = FileData {
         name: "Synthetic.seq".to_owned(),
-        path: r"C:\synthetic\Synthetic.seq".to_owned(),
+        path: r"synthetic\Synthetic.seq".to_owned(),
         sequences: vec![SequenceData {
             name: "MainSequence".to_owned(),
             step_groups,
@@ -184,7 +184,7 @@ fn a_diagram_node_states_each_field_once() {
     step_groups.insert("Main".to_owned(), vec![measuring]);
     let file = FileData {
         name: "Synthetic.seq".to_owned(),
-        path: r"C:\synthetic\Synthetic.seq".to_owned(),
+        path: r"synthetic\Synthetic.seq".to_owned(),
         sequences: vec![SequenceData {
             name: "MainSequence".to_owned(),
             step_groups,
@@ -337,7 +337,7 @@ fn engineer_document_with_module() -> String {
         "Locals.Reading = Step.Result.Numeric".to_owned(),
     );
     calling.module_info = Some(rs_teststand_autodoc::data::ModuleInfo {
-        path: r"C:\lab\Measure.vi".to_owned(),
+        path: r"lab\Measure.vi".to_owned(),
         adapter_type: "G Flexible VI Adapter".to_owned(),
         occurrences: 1,
         entry_point: None,
@@ -347,7 +347,7 @@ fn engineer_document_with_module() -> String {
 
     let file = FileData {
         name: "Probe.seq".to_owned(),
-        path: r"C:\probe\Probe.seq".to_owned(),
+        path: r"probe\Probe.seq".to_owned(),
         sequences: vec![SequenceData {
             name: "MainSequence".to_owned(),
             step_groups,
@@ -409,7 +409,7 @@ fn a_conditional_expression_is_also_given_in_words() {
     step_groups.insert("Main".to_owned(), vec![deciding]);
     let file = FileData {
         name: "Synthetic.seq".to_owned(),
-        path: r"C:\synthetic\Synthetic.seq".to_owned(),
+        path: r"synthetic\Synthetic.seq".to_owned(),
         sequences: vec![SequenceData {
             name: "MainSequence".to_owned(),
             step_groups,
@@ -451,7 +451,7 @@ fn a_document_can_be_narrowed_to_named_sequences() {
 
     let file = FileData {
         name: "Synthetic.seq".to_owned(),
-        path: r"C:\synthetic\Synthetic.seq".to_owned(),
+        path: r"synthetic\Synthetic.seq".to_owned(),
         sequences: vec![
             sequence("MainSequence", "ID__a"),
             sequence("Voltage Tests", "ID__b"),
@@ -483,9 +483,9 @@ fn a_document_can_be_narrowed_to_named_sequences() {
 fn document_with_plumbing(profile: Profile) -> String {
     let mut main_steps = BTreeMap::new();
     let mut calls_a_module = step("ID__m1", "Measure Voltage", "NumericLimitTest");
-    r"C:\lab\drivers\meter.dll".clone_into(&mut calls_a_module.module_path);
+    r"lab\drivers\meter.dll".clone_into(&mut calls_a_module.module_path);
     calls_a_module.module_info = Some(rs_teststand_autodoc::data::ModuleInfo {
-        path: r"C:\lab\drivers\meter.dll".to_owned(),
+        path: r"lab\drivers\meter.dll".to_owned(),
         adapter_type: "C/CVI Standard Prototype Adapter".to_owned(),
         occurrences: 1,
         entry_point: Some("ReadVoltage".to_owned()),

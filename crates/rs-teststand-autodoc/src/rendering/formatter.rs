@@ -798,7 +798,7 @@ mod tests {
     fn sample_file_data() -> FileData {
         FileData {
             name: "TestSeq.seq".to_owned(),
-            path: r"C:\Tests\TestSeq.seq".to_owned(),
+            path: r"Tests\TestSeq.seq".to_owned(),
             sequences: vec![SequenceData {
                 name: "MainSequence".to_owned(),
                 category: Some(SequenceCategory::EntryPoint),

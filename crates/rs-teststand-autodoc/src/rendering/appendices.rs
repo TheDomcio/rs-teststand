@@ -282,7 +282,7 @@ mod container_tests {
     /// A plain VI on disk has no library around it.
     #[test]
     fn a_bare_vi_has_no_containers() {
-        let (containers, name) = containers_of(r"C:\lab\vis\Measure.vi");
+        let (containers, name) = containers_of(r"lab\vis\Measure.vi");
         assert_eq!(containers, Vec::<String>::new());
         assert_eq!(name, "Measure.vi");
     }
@@ -290,7 +290,7 @@ mod container_tests {
     /// LabVIEW writes a VI library into the path as though it were a folder.
     #[test]
     fn a_vi_library_is_one_level() {
-        let (containers, name) = containers_of(r"C:\lab\Plugin.llb\Append.vi");
+        let (containers, name) = containers_of(r"lab\Plugin.llb\Append.vi");
         assert_eq!(containers, vec!["Plugin.llb".to_owned()]);
         assert_eq!(name, "Append.vi");
     }
@@ -299,7 +299,7 @@ mod container_tests {
     /// order is the order the path gives, outermost first.
     #[test]
     fn a_packed_library_holding_a_class_is_two_levels_around_the_vi() {
-        let (containers, name) = containers_of(r"C:\lab\Packed.lvlibp\Motor.lvclass\Start.vi");
+        let (containers, name) = containers_of(r"lab\Packed.lvlibp\Motor.lvclass\Start.vi");
         assert_eq!(
             containers,
             vec!["Packed.lvlibp".to_owned(), "Motor.lvclass".to_owned()]
@@ -318,7 +318,7 @@ mod container_tests {
     /// A DLL is not a LabVIEW container and nests nothing.
     #[test]
     fn a_dll_is_not_a_container() {
-        let (containers, name) = containers_of(r"C:\lab\drivers\meter.dll");
+        let (containers, name) = containers_of(r"lab\drivers\meter.dll");
         assert_eq!(containers, Vec::<String>::new());
         assert_eq!(name, "meter.dll");
     }

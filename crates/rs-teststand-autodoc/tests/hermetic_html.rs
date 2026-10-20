@@ -18,7 +18,7 @@ fn hermetic_renders_multiple_flowcharts_to_svg() -> Result<(), Box<dyn std::erro
 fn hermetic_converts_full_report_to_standalone_html() {
     let report_md = r"# MySequence.seq
 
-`C:\Tests\MySequence.seq`
+`Tests\MySequence.seq`
 
 **Author**: Test Engineer
 **Company**: Automation Corp
