@@ -148,7 +148,7 @@ impl Engine {
     /// this returns [`Error::Unsupported`] before dispatching.
     ///
     /// # Errors
-    /// [`Error::Unsupported`] on an engine older than 2025, or [`Error`] if the
+    /// [`Error::Unsupported`] on an engine older than 2017, or [`Error`] if the
     /// file cannot be opened.
     pub fn new_csv_file_input_record_stream(
         &self,
@@ -172,7 +172,7 @@ impl Engine {
     /// this returns [`Error::Unsupported`] before dispatching.
     ///
     /// # Errors
-    /// [`Error::Unsupported`] on an engine older than 2025, or [`Error`] if the
+    /// [`Error::Unsupported`] on an engine older than 2017, or [`Error`] if the
     /// file cannot be opened.
     pub fn new_csv_file_output_record_stream(
         &self,
