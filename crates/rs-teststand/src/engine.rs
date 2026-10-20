@@ -142,6 +142,70 @@ impl Engine {
         Ok(())
     }
 
+    /// Creates a CSV input stream (`Engine.NewCsvFileInputRecordStream`).
+    ///
+    /// CSV record streams exist from TestStand 2025 onward. On an older engine
+    /// this returns [`Error::Unsupported`] before dispatching.
+    ///
+    /// # Errors
+    /// [`Error::Unsupported`] on an engine older than 2025, or [`Error`] if the
+    /// file cannot be opened.
+    pub fn new_csv_file_input_record_stream(
+        &self,
+        absolute_path: &str,
+    ) -> Result<crate::CsvFileInputRecordStream, Error> {
+        self.require_major(25, "CSV record streams")?;
+        Ok(crate::CsvFileInputRecordStream::new(
+            self.dispatch
+                .call(
+                    dispid::NEW_CSV_FILE_INPUT_RECORD_STREAM,
+                    &[Value::Str(absolute_path.to_owned())],
+                )?
+                .into_object()?,
+        ))
+    }
+
+    /// Creates a CSV output stream
+    /// (`Engine.NewCsvFileOutputRecordStream`).
+    ///
+    /// CSV record streams exist from TestStand 2025 onward. On an older engine
+    /// this returns [`Error::Unsupported`] before dispatching.
+    ///
+    /// # Errors
+    /// [`Error::Unsupported`] on an engine older than 2025, or [`Error`] if the
+    /// file cannot be opened.
+    pub fn new_csv_file_output_record_stream(
+        &self,
+        absolute_path: &str,
+        open_mode: crate::FileOpenMode,
+    ) -> Result<crate::CsvFileOutputRecordStream, Error> {
+        self.require_major(25, "CSV record streams")?;
+        Ok(crate::CsvFileOutputRecordStream::new(
+            self.dispatch
+                .call(
+                    dispid::NEW_CSV_FILE_OUTPUT_RECORD_STREAM,
+                    &[
+                        Value::Str(absolute_path.to_owned()),
+                        Value::I32(open_mode.bits()),
+                    ],
+                )?
+                .into_object()?,
+        ))
+    }
+
+    /// Refuses a feature on an engine older than `minimum_major`.
+    fn require_major(&self, minimum_major: i32, feature: &'static str) -> Result<(), Error> {
+        let actual_major = self.major_version()?;
+        if actual_major < minimum_major {
+            return Err(Error::Unsupported {
+                feature,
+                minimum_major,
+                actual_major,
+            });
+        }
+        Ok(())
+    }
+
     /// The type palette files currently loaded
     /// (`Engine.GetTypePaletteFileList`).    ///
     /// The returned files preserve the engine's order. Each one can be inspected
@@ -2010,6 +2074,20 @@ mod tests {
             "expected one argument-free call, got {written:?}",
         );
         Ok(())
+    }
+
+    #[test]
+    fn csv_streams_are_refused_before_2025() {
+        let engine = engine_with([(dispid::MAJOR_VERSION, Scripted::I32(16))]);
+        let result = engine.new_csv_file_input_record_stream("data.csv");
+        assert!(matches!(
+            result,
+            Err(Error::Unsupported {
+                minimum_major: 25,
+                actual_major: 16,
+                ..
+            })
+        ));
     }
 
     #[test]

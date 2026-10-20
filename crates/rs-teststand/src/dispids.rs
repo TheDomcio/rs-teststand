@@ -95,6 +95,8 @@ define_dispid_group! {
         GET_TYPE_DEFINITION = 0x01dc;
         GET_TYPE_NAMES = 0x01dd;
         DIFF_SEQUENCE_FILES = 0x0258;
+        NEW_CSV_FILE_INPUT_RECORD_STREAM = 0x041d;
+        NEW_CSV_FILE_OUTPUT_RECORD_STREAM = 0x041e;
         DOT_NET_GARBAGE_COLLECTION_INTERVAL = 0x02be;
         DO_DOT_NET_GARBAGE_COLLECTION = 0x02bf;
         DOT_NET_CLR_VERSION = 0x02c3;
@@ -1318,6 +1320,40 @@ pub(crate) mod report_sections {
     pub(crate) const CLEAR: i32 = 0xc;
     /// `InsertExisting`, section and index.
     pub(crate) const INSERT_EXISTING: i32 = 0xd;
+}
+
+/// Members of `CsvFileInputRecordStream`.
+pub(crate) mod csv_file_input_record_stream {
+    /// `Open`, one path.
+    pub(crate) const OPEN: i32 = 0x12d;
+    /// `Path`, read-only string.
+    pub(crate) const PATH: i32 = 0x12e;
+    /// `ReadLine`, one text output.
+    pub(crate) const READ_LINE: i32 = 0x12f;
+    /// `SeparatorChar`, read/write string.
+    pub(crate) const SEPARATOR_CHAR: i32 = 0x130;
+    /// `ScanForTag`, tag and ignore-case flag.
+    pub(crate) const SCAN_FOR_TAG: i32 = 0x131;
+    /// `SkipLines`, one count.
+    pub(crate) const SKIP_LINES: i32 = 0x132;
+}
+
+/// Members of `CsvFileOutputRecordStream`.
+pub(crate) mod csv_file_output_record_stream {
+    /// `Open`, path and open mode.
+    pub(crate) const OPEN: i32 = 0xc9;
+    /// `Path`, read-only string.
+    pub(crate) const PATH: i32 = 0xca;
+    /// `WriteFieldHeaders`, prototype and mapping.
+    pub(crate) const WRITE_FIELD_HEADERS: i32 = 0xcb;
+    /// `SeparatorChar`, read/write string.
+    pub(crate) const SEPARATOR_CHAR: i32 = 0xcc;
+    /// `WriteLine`, one string.
+    pub(crate) const WRITE_LINE: i32 = 0xcd;
+    /// `AutoFlush`, read/write boolean.
+    pub(crate) const AUTO_FLUSH: i32 = 0xce;
+    /// `WriteRecordPrototype`, prototype and mapping.
+    pub(crate) const WRITE_RECORD_PROTOTYPE: i32 = 0xd2;
 }
 
 /// Members of `Rule`.

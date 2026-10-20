@@ -47,6 +47,22 @@ pub enum Error {
         bits: i32,
     },
 
+    /// A member exists only on a newer engine than the one in use.
+    ///
+    /// The wrapper checks the major version before dispatching, so an older
+    /// engine reports a clear refusal instead of an unexplained COM error.
+    #[error(
+        "{feature} requires TestStand {minimum_major} or newer; this engine reports major {actual_major}"
+    )]
+    Unsupported {
+        /// The feature that is unavailable.
+        feature: &'static str,
+        /// The first engine major version that provides it.
+        minimum_major: i32,
+        /// The engine's major version.
+        actual_major: i32,
+    },
+
     /// A property tree was walked deeper than the caller allowed.
     ///
     /// Usually a cycle rather than genuine depth. A live `SequenceContext`
@@ -112,7 +128,8 @@ impl Error {
             Self::UnexpectedType { .. }
             | Self::RecursionLimit { .. }
             | Self::NoLicense
-            | Self::UnknownLicenseType { .. } => None,
+            | Self::UnknownLicenseType { .. }
+            | Self::Unsupported { .. } => None,
         }
     }
 
@@ -125,7 +142,8 @@ impl Error {
             Self::UnexpectedType { .. }
             | Self::RecursionLimit { .. }
             | Self::NoLicense
-            | Self::UnknownLicenseType { .. } => None,
+            | Self::UnknownLicenseType { .. }
+            | Self::Unsupported { .. } => None,
         }
     }
 }
