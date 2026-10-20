@@ -5,6 +5,10 @@
 //! returning: reading the engine or a project before initialization is not a
 //! recoverable error, it takes the process down.
 //!
+//! A file that uses station step types or custom rules needs
+//! [`Analyzer::load_rules_files`] and the analyzer engine's type palettes loaded
+//! before analysis. Built-in rules alone do not.
+//!
 //! ```no_run
 //! use rs_teststand::analyzer::Analyzer;
 //!

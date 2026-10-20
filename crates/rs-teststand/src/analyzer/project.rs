@@ -196,6 +196,21 @@ impl Project {
         ))
     }
 
+    /// Generates a report for the most recent analysis
+    /// (`Project.GenerateReport`).
+    ///
+    /// The engine returns the report as a string. It is the XML snapshot a
+    /// viewer can consume, not a path; write it yourself if you need a file.
+    ///
+    /// # Errors
+    /// [`Error`] if no analysis has run or the COM call fails.
+    pub fn generate_report(&self) -> Result<String, Error> {
+        Ok(self
+            .dispatch
+            .call(project::GENERATE_REPORT, &[])?
+            .into_string()?)
+    }
+
     /// Reads the project file into this object (`Project.Read`).
     ///
     /// # Errors

@@ -174,8 +174,8 @@ cargo run -p rs-teststand --example execution_run_test_headless
 | `data_type_manage`            | Query and modify custom data types.                                        |
 | `workspace_create`            | Create a `.tsw` workspace and add a sequence file to it.                   |
 | `result_list_parse`           | Walk an execution's ResultList to extract pass/fail status and step times. |
+| `analyzer_run`                | Analyze a sequence file and print rule messages with their locations.      |
 | `station_options_update`      | Safely modify station options (like disabling modal dialogs).              |
-
 | `version_print`               | Open the engine and report its version, bitness and install directory.     |
 
 You can run them all in sequence using the launcher:

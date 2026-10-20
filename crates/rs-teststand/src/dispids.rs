@@ -768,6 +768,8 @@ pub(crate) mod project {
     pub(crate) const NUMBER_OF_STEPS_NOT_ANALYZED: i32 = 0x1a;
     /// `AutoSave`, read/write boolean.
     pub(crate) const AUTO_SAVE: i32 = 0x1e;
+    /// `GenerateReport`, no parameters, returns the report text.
+    pub(crate) const GENERATE_REPORT: i32 = 0x15;
 }
 
 /// Members of `AnalysisStatus`.

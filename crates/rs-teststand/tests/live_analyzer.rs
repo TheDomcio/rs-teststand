@@ -128,6 +128,16 @@ fn an_analysis_completes_and_reports_its_progress() -> Result<(), Error> {
         }
     }
     assert_eq!(seen, count, "iteration should yield every message");
+
+    let report = project.generate_report()?;
+    assert!(
+        report.starts_with("<?xml"),
+        "the analyzer report should be XML"
+    );
+    assert!(
+        report.contains("<ReportData"),
+        "the report should carry the analysis data"
+    );
     Ok(())
 }
 
