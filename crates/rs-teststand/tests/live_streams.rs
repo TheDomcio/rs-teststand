@@ -1,11 +1,13 @@
-//! Live-engine acceptance test for CSV record streams.
+//! Live-engine acceptance test for CSV record streams and execution streams.
 
 #![cfg(feature = "live-engine")]
 
 use std::ops::Deref;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
-use rs_teststand::{Engine, Error, FileOpenMode};
+use rs_teststand::{
+    BreakpointScope, Engine, Error, FileOpenMode, StepGroup, UIMessageCode, pump_thread_messages,
+};
 
 struct EngineGuard(Engine);
 
@@ -21,6 +23,47 @@ impl Drop for EngineGuard {
     fn drop(&mut self) {
         let _ = self.0.shutdown(Duration::from_secs(2));
     }
+}
+
+/// Drains the engine's message queue until `EndExecution` or the deadline.
+fn run_to_end(engine: &Engine, deadline: Duration) -> Result<bool, Error> {
+    let started = Instant::now();
+    while started.elapsed() < deadline {
+        if pump_thread_messages() {
+            return Ok(false);
+        }
+        while !engine.is_ui_message_queue_empty()? {
+            let message = engine.get_ui_message()?;
+            let ended = matches!(
+                UIMessageCode::from_bits(message.event()?),
+                Ok(UIMessageCode::EndExecution)
+            );
+            message.acknowledge()?;
+            if ended {
+                return Ok(true);
+            }
+        }
+    }
+    Ok(false)
+}
+
+/// Pumps and drains until `wanted` arrives, or the deadline passes.
+fn wait_for(engine: &Engine, wanted: UIMessageCode, deadline: Duration) -> Result<bool, Error> {
+    let started = Instant::now();
+    while started.elapsed() < deadline {
+        if pump_thread_messages() {
+            return Ok(false);
+        }
+        while !engine.is_ui_message_queue_empty()? {
+            let message = engine.get_ui_message()?;
+            let code = UIMessageCode::from_bits(message.event()?);
+            message.acknowledge()?;
+            if matches!(code, Ok(seen) if seen == wanted) {
+                return Ok(true);
+            }
+        }
+    }
+    Ok(false)
 }
 
 #[test]
@@ -57,5 +100,49 @@ fn a_csv_file_round_trips_through_the_record_streams() -> Result<(), Error> {
     assert_eq!(end, "");
 
     let _ = std::fs::remove_file(&path);
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires TestStand 2017 or newer for execution output record streams"]
+fn an_output_record_stream_attaches_to_a_paused_execution() -> Result<(), Error> {
+    let engine = EngineGuard(Engine::new()?);
+    engine.set_ui_message_polling_enabled(true)?;
+    engine.set_breakpoints_enabled(true)?;
+
+    let file = engine.new_sequence_file()?;
+    let main = file.get_sequence_by_name("MainSequence")?;
+    let step = engine.new_step("", "Statement")?;
+    main.insert_step(&step, 0, StepGroup::Main)?;
+    main.get_step(0, StepGroup::Main)?
+        .set_break_on_step(true, BreakpointScope::Step)?;
+    let execution = engine.new_execution(&file, "MainSequence", None, false, 0)?;
+
+    let hit = wait_for(
+        &engine,
+        UIMessageCode::BreakOnBreakpoint,
+        Duration::from_secs(10),
+    )?;
+    assert!(hit, "the execution did not stop on its breakpoint");
+
+    let streams = execution.output_record_streams()?;
+    let stream = streams.new_stream("rs-teststand-live")?;
+    assert_eq!(stream.name()?, "rs-teststand-live");
+    stream.set_close_at_next_uut_or_batch(true)?;
+    assert!(stream.close_at_next_uut_or_batch()?);
+    stream.set_num_records_to_display_in_report_view(10)?;
+    assert_eq!(stream.num_records_to_display_in_report_view()?, 10);
+    assert_eq!(
+        streams.get_stream("rs-teststand-live")?.name()?,
+        "rs-teststand-live"
+    );
+    streams.close_and_remove_stream("rs-teststand-live")?;
+
+    execution.terminate()?;
+    assert!(
+        run_to_end(&engine, Duration::from_secs(10))?,
+        "the execution did not finish after terminate"
+    );
+    engine.release_sequence_file_ex(file, 0)?;
     Ok(())
 }
