@@ -40,6 +40,7 @@ pub mod sync;
 pub mod types;
 pub mod undo;
 pub mod users;
+pub mod validation;
 pub mod watch;
 pub mod watchdog;
 pub mod workspace;
@@ -107,6 +108,9 @@ pub use sync::{
 pub use types::{TypeCategory, TypeUsageList};
 pub use undo::{CreateUndoItemOption, EditKind, UndoItem, UndoItemCreator, UndoItems, UndoStack};
 pub use users::{User, UserPrivilege, UsersFile};
+pub use validation::{
+    ReferenceIssue, audit_sequence_references, undeclared_references_in_expression,
+};
 pub use watch::{
     WatchExpression, WatchExpressionBreakType, WatchExpressionFilterOptions, WatchExpressions,
     WatchExpressionsIter,
