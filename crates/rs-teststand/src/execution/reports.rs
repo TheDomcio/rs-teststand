@@ -162,3 +162,39 @@ impl ExactSizeIterator for ReportsIter<'_> {
         usize::try_from((self.count - self.current).max(0)).unwrap_or(0)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use rs_teststand_sys::{ComError, Dispatch, Value};
+
+    use super::Reports;
+    use crate::dispids::reports;
+
+    #[derive(Debug)]
+    struct Fake;
+
+    impl Dispatch for Fake {
+        fn get(&self, dispid: i32) -> Result<Value, ComError> {
+            if dispid == reports::COUNT {
+                Ok(Value::I32(2))
+            } else {
+                Err(ComError::hresult(0, "fake: unscripted get"))
+            }
+        }
+
+        fn put(&self, _dispid: i32, _value: Value) -> Result<(), ComError> {
+            Ok(())
+        }
+
+        fn call(&self, _dispid: i32, _args: &[Value]) -> Result<Value, ComError> {
+            Err(ComError::hresult(0, "fake: unscripted call"))
+        }
+    }
+
+    #[test]
+    fn reads_the_report_count() -> Result<(), crate::Error> {
+        let reports = Reports::new(Box::new(Fake));
+        assert_eq!(reports.count()?, 2);
+        Ok(())
+    }
+}
