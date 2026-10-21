@@ -102,6 +102,246 @@ impl PropertyObject {
             .as_f64()?)
     }
 
+    /// Reads a Boolean array element by flat offset
+    /// (`PropertyObject.GetValBooleanByOffset`).
+    ///
+    /// # Errors
+    /// [`Error`] if the offset is out of range or the COM call returns an
+    /// unexpected type.
+    pub fn get_val_boolean_by_offset(
+        &self,
+        array_offset: i32,
+        options: i32,
+    ) -> Result<bool, Error> {
+        Ok(self
+            .dispatch
+            .call(
+                property_object::GET_VAL_BOOLEAN_BY_OFFSET,
+                &[Value::I32(array_offset), Value::I32(options)],
+            )?
+            .as_bool()?)
+    }
+
+    /// Writes a Boolean array element by flat offset
+    /// (`PropertyObject.SetValBooleanByOffset`).
+    ///
+    /// # Errors
+    /// [`Error`] if the offset is out of range or the COM call fails.
+    pub fn set_val_boolean_by_offset(
+        &self,
+        array_offset: i32,
+        options: i32,
+        value: bool,
+    ) -> Result<(), Error> {
+        self.dispatch.call(
+            property_object::SET_VAL_BOOLEAN_BY_OFFSET,
+            &[
+                Value::I32(array_offset),
+                Value::I32(options),
+                Value::Bool(value),
+            ],
+        )?;
+        Ok(())
+    }
+
+    /// Reads a string array element by flat offset
+    /// (`PropertyObject.GetValStringByOffset`).
+    ///
+    /// # Errors
+    /// [`Error`] if the offset is out of range or the COM call returns an
+    /// unexpected type.
+    pub fn get_val_string_by_offset(
+        &self,
+        array_offset: i32,
+        options: i32,
+    ) -> Result<String, Error> {
+        Ok(self
+            .dispatch
+            .call(
+                property_object::GET_VAL_STRING_BY_OFFSET,
+                &[Value::I32(array_offset), Value::I32(options)],
+            )?
+            .into_string()?)
+    }
+
+    /// Writes a string array element by flat offset
+    /// (`PropertyObject.SetValStringByOffset`).
+    ///
+    /// # Errors
+    /// [`Error`] if the offset is out of range or the COM call fails.
+    pub fn set_val_string_by_offset(
+        &self,
+        array_offset: i32,
+        options: i32,
+        value: &str,
+    ) -> Result<(), Error> {
+        self.dispatch.call(
+            property_object::SET_VAL_STRING_BY_OFFSET,
+            &[
+                Value::I32(array_offset),
+                Value::I32(options),
+                Value::Str(value.to_owned()),
+            ],
+        )?;
+        Ok(())
+    }
+
+    /// Reads an object array element by flat offset
+    /// (`PropertyObject.GetPropertyObjectByOffset`).
+    ///
+    /// # Errors
+    /// [`Error`] if the offset is out of range or the COM call returns an
+    /// unexpected type.
+    pub fn get_property_object_by_offset(
+        &self,
+        array_offset: i32,
+        options: i32,
+    ) -> Result<Self, Error> {
+        Ok(Self::new(
+            self.dispatch
+                .call(
+                    introspect::GET_PROPERTY_OBJECT_BY_OFFSET,
+                    &[Value::I32(array_offset), Value::I32(options)],
+                )?
+                .into_object()?,
+        ))
+    }
+
+    /// Writes an object array element by flat offset
+    /// (`PropertyObject.SetPropertyObjectByOffset`).
+    ///
+    /// # Errors
+    /// [`Error`] if the value has no COM identity, the offset is out of range,
+    /// or the COM call fails.
+    pub fn set_property_object_by_offset(
+        &self,
+        array_offset: i32,
+        options: i32,
+        value: &Self,
+    ) -> Result<(), Error> {
+        let handle = value.duplicate_dispatch().ok_or(Error::UnexpectedType {
+            expected: "a live property object",
+            actual: "a test fake with no COM identity",
+        })?;
+        self.dispatch.call(
+            property_object::SET_PROPERTY_OBJECT_BY_OFFSET,
+            &[
+                Value::I32(array_offset),
+                Value::I32(options),
+                Value::Object(handle),
+            ],
+        )?;
+        Ok(())
+    }
+
+    /// Reads a signed 64-bit array element by flat offset
+    /// (`PropertyObject.GetValInteger64ByOffset`).
+    ///
+    /// # Errors
+    /// [`Error`] if the offset is out of range or the COM call returns an
+    /// unexpected type.
+    pub fn get_val_integer64_by_offset(
+        &self,
+        array_offset: i32,
+        options: i32,
+    ) -> Result<i64, Error> {
+        Ok(self
+            .dispatch
+            .call(
+                property_object::GET_VAL_INTEGER64_BY_OFFSET,
+                &[Value::I32(array_offset), Value::I32(options)],
+            )?
+            .as_i64()?)
+    }
+
+    /// Writes a signed 64-bit array element by flat offset
+    /// (`PropertyObject.SetValInteger64ByOffset`).
+    ///
+    /// # Errors
+    /// [`Error`] if the offset is out of range or the COM call fails.
+    pub fn set_val_integer64_by_offset(
+        &self,
+        array_offset: i32,
+        options: i32,
+        value: i64,
+    ) -> Result<(), Error> {
+        self.dispatch.call(
+            property_object::SET_VAL_INTEGER64_BY_OFFSET,
+            &[
+                Value::I32(array_offset),
+                Value::I32(options),
+                Value::I64(value),
+            ],
+        )?;
+        Ok(())
+    }
+
+    /// Reads an unsigned 64-bit array element by flat offset
+    /// (`PropertyObject.GetValUnsignedInteger64ByOffset`).
+    ///
+    /// # Errors
+    /// [`Error`] if the offset is out of range or the COM call returns an
+    /// unexpected type.
+    pub fn get_val_unsigned_integer64_by_offset(
+        &self,
+        array_offset: i32,
+        options: i32,
+    ) -> Result<u64, Error> {
+        Ok(self
+            .dispatch
+            .call(
+                property_object::GET_VAL_UNSIGNED_INTEGER64_BY_OFFSET,
+                &[Value::I32(array_offset), Value::I32(options)],
+            )?
+            .as_u64()?)
+    }
+
+    /// Writes an unsigned 64-bit array element by flat offset
+    /// (`PropertyObject.SetValUnsignedInteger64ByOffset`).
+    ///
+    /// # Errors
+    /// [`Error`] if the offset is out of range or the COM call fails.
+    pub fn set_val_unsigned_integer64_by_offset(
+        &self,
+        array_offset: i32,
+        options: i32,
+        value: u64,
+    ) -> Result<(), Error> {
+        self.dispatch.call(
+            property_object::SET_VAL_UNSIGNED_INTEGER64_BY_OFFSET,
+            &[
+                Value::I32(array_offset),
+                Value::I32(options),
+                Value::U64(value),
+            ],
+        )?;
+        Ok(())
+    }
+
+    /// Reads serialized content into the object
+    /// (`PropertyObject.UnserializeEx`).
+    ///
+    /// # Errors
+    /// [`Error`] if the stream is invalid or the COM call fails.
+    pub fn unserialize_ex(
+        &self,
+        stream: &str,
+        object_name: &str,
+        rw_options: i32,
+        handler_type: i32,
+    ) -> Result<(), Error> {
+        self.dispatch.call(
+            property_object::UNSERIALIZE_EX,
+            &[
+                Value::Str(stream.to_owned()),
+                Value::Str(object_name.to_owned()),
+                Value::I32(rw_options),
+                Value::I32(handler_type),
+            ],
+        )?;
+        Ok(())
+    }
+
     /// Generates XML for the object (`PropertyObject.GetXML`).
     ///
     /// # Errors
@@ -898,21 +1138,6 @@ impl PropertyObject {
         Ok(())
     }
 
-    /// An array element by position (`GetPropertyObjectByOffset`).
-    ///
-    /// # Errors
-    /// [`Error`] if the COM call fails or returns an unexpected type.
-    pub fn get_property_object_by_offset(&self, offset: i32, options: i32) -> Result<Self, Error> {
-        Ok(Self::new(
-            self.dispatch
-                .call(
-                    introspect::GET_PROPERTY_OBJECT_BY_OFFSET,
-                    &[Value::I32(offset), Value::I32(options)],
-                )?
-                .into_object()?,
-        ))
-    }
-
     /// Resizes an array property (`SetNumElements`).
     ///
     /// # Errors
@@ -1110,6 +1335,13 @@ mod tests {
             Ok(())
         }
 
+        fn duplicate(&self) -> Option<Box<dyn Dispatch>> {
+            Some(Box::new(Self {
+                properties: HashMap::new(),
+                calls: Arc::clone(&self.calls),
+            }))
+        }
+
         fn call(&self, dispid: i32, args: &[Value]) -> Result<Value, ComError> {
             self.calls
                 .lock()
@@ -1135,9 +1367,23 @@ mod tests {
                 introspect::SET_FLAGS
                 | introspect::SET_INSTANCE_DEFAULT_FLAGS
                 | introspect::SET_INSTANCE_OVERRIDE_FLAGS
-                | property_object::SET_XML => Ok(Value::Empty),
+                | property_object::SET_XML
+                | property_object::SET_VAL_BOOLEAN_BY_OFFSET
+                | property_object::SET_VAL_STRING_BY_OFFSET
+                | property_object::SET_VAL_INTEGER64_BY_OFFSET
+                | property_object::SET_VAL_UNSIGNED_INTEGER64_BY_OFFSET
+                | property_object::SET_PROPERTY_OBJECT_BY_OFFSET
+                | property_object::UNSERIALIZE_EX => Ok(Value::Empty),
                 property_object::GET_XML => Ok(Value::Str("<xml/>".to_owned())),
                 property_object::GET_VAL_NUMBER_BY_OFFSET => Ok(Value::F64(2.5)),
+                property_object::GET_VAL_BOOLEAN_BY_OFFSET => Ok(Value::Bool(true)),
+                property_object::GET_VAL_STRING_BY_OFFSET => Ok(Value::Str("value".to_owned())),
+                property_object::GET_VAL_INTEGER64_BY_OFFSET => Ok(Value::I64(9)),
+                property_object::GET_VAL_UNSIGNED_INTEGER64_BY_OFFSET => Ok(Value::U64(10)),
+                introspect::GET_PROPERTY_OBJECT_BY_OFFSET => Ok(Value::Object(Box::new(Self {
+                    properties: HashMap::new(),
+                    calls: Arc::clone(&self.calls),
+                }))),
                 _ => Err(ComError::hresult(-17000, "fake: unscripted call")),
             }
         }
@@ -1174,6 +1420,26 @@ mod tests {
         assert_eq!(object.get_xml(0, 0, "", "")?, "<xml/>");
         object.set_xml("<xml/>", 0, 1)?;
         assert!(object.is_type_definition()?);
+        Ok(())
+    }
+
+    #[test]
+    fn reads_and_writes_scalar_and_object_offsets() -> Result<(), crate::Error> {
+        let calls = Arc::new(Mutex::new(Vec::new()));
+        let object = PropertyObject::new(Fake::boxed(HashMap::new(), &calls));
+        let replacement = PropertyObject::new(Fake::boxed(HashMap::new(), &calls));
+
+        assert!(object.get_val_boolean_by_offset(0, 0)?);
+        assert_eq!(object.get_val_string_by_offset(0, 0)?, "value");
+        assert_eq!(object.get_val_integer64_by_offset(0, 0)?, 9);
+        assert_eq!(object.get_val_unsigned_integer64_by_offset(0, 0)?, 10);
+        object.get_property_object_by_offset(0, 0)?;
+        object.set_val_boolean_by_offset(0, 0, false)?;
+        object.set_val_string_by_offset(0, 0, "next")?;
+        object.set_val_integer64_by_offset(0, 0, 11)?;
+        object.set_val_unsigned_integer64_by_offset(0, 0, 12)?;
+        object.set_property_object_by_offset(0, 0, &replacement)?;
+        object.unserialize_ex("stream", "name", 0, 1)?;
         Ok(())
     }
 

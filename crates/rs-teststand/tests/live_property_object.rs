@@ -139,6 +139,30 @@ fn property_type_is_reported_through_its_output_arguments() -> Result<(), Error>
     Ok(())
 }
 
+#[test]
+#[ignore = "requires a live engine"]
+fn objects_round_trip_through_the_engine_serializer() -> Result<(), Error> {
+    let engine = Engine::new()?;
+    let root = engine.new_property_object(PropValType::Container, false, "", 0)?;
+    let insert = PropertyOptions::INSERT_IF_MISSING.bits();
+    let options = PropertyOptions::NONE.bits();
+    root.set_val_number("Value", insert, 42.0)?;
+
+    let stream = engine.serialize_objects(&[&root], 0)?;
+    assert!(
+        !stream.is_empty(),
+        "the serializer returned an empty stream"
+    );
+    let restored = engine.unserialize_objects(&stream, 0, 1)?;
+    assert_eq!(restored.len(), 1);
+    let first = restored.first().ok_or(Error::UnexpectedType {
+        expected: "one restored object",
+        actual: "an empty collection",
+    })?;
+    assert_eq!(first.get_val_number("Value", options)?, 42.0);
+    Ok(())
+}
+
 /// `WriteFile` writes the file's `Path` in the requested format.
 ///
 /// A workspace is used because it is cheap to create and its file view is a

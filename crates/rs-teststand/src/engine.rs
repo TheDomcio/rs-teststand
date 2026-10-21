@@ -508,13 +508,67 @@ impl Engine {
         ))
     }
 
-    /// Creates a custom step type (Engine.NewStepType).
-    ///
-    /// The returned type is empty until it is configured through its property
-    /// tree; Step.ChangeStepType can then apply it to a step.
+    /// Serializes property objects into a string
+    /// (`Engine.SerializeObjects`).
     ///
     /// # Errors
-    /// [Error] if the COM call fails or returns an unexpected type.
+    /// [`Error`] if an object has no COM identity or the COM call fails.
+    pub fn serialize_objects(
+        &self,
+        objects: &[&crate::PropertyObject],
+        options: i32,
+    ) -> Result<String, Error> {
+        let mut handles = Vec::with_capacity(objects.len());
+        for object in objects {
+            handles.push(object.duplicate_dispatch().ok_or(Error::UnexpectedType {
+                expected: "a live property object",
+                actual: "a test fake with no COM identity",
+            })?);
+        }
+        Ok(self
+            .dispatch
+            .call(
+                dispid::SERIALIZE_OBJECTS,
+                &[Value::ObjectArray(handles), Value::I32(options)],
+            )?
+            .into_string()?)
+    }
+
+    /// Converts serialized content into property objects
+    /// (`Engine.UnserializeObjects`).
+    ///
+    /// # Errors
+    /// [`Error`] if the stream is invalid or the COM call returns an
+    /// unexpected type.
+    pub fn unserialize_objects(
+        &self,
+        stream: &str,
+        reserved_param: i32,
+        handler_type: i32,
+    ) -> Result<Vec<crate::PropertyObject>, Error> {
+        Ok(self
+            .dispatch
+            .call(
+                dispid::UNSERIALIZE_OBJECTS,
+                &[
+                    Value::Str(stream.to_owned()),
+                    Value::I32(reserved_param),
+                    Value::I32(handler_type),
+                ],
+            )?
+            .into_object_array()?
+            .into_iter()
+            .map(crate::PropertyObject::new)
+            .collect())
+    }
+
+    /// Creates a custom step type (`Engine.NewStepType`).
+    ///
+    /// The returned type is empty until it is configured through its property
+    /// tree; `Step.ChangeStepType` can then apply it to a step.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
     pub fn new_step_type(&self) -> Result<crate::StepType, Error> {
         Ok(crate::StepType::new(
             self.dispatch
@@ -2238,7 +2292,23 @@ mod tests {
                     std::rc::Rc::default(),
                 ))));
             }
+            if dispid == dispid::SERIALIZE_OBJECTS {
+                return Ok(Value::Str("<serialized/>".to_owned()));
+            }
+            if dispid == dispid::UNSERIALIZE_OBJECTS {
+                return Ok(Value::ObjectArray(vec![Box::new(Self::new(
+                    std::iter::empty::<(i32, Scripted)>(),
+                    std::rc::Rc::default(),
+                ))]));
+            }
             Ok(Value::Empty)
+        }
+
+        fn duplicate(&self) -> Option<Box<dyn rs_teststand_sys::Dispatch>> {
+            Some(Box::new(Self::new(
+                self.responses.clone(),
+                std::rc::Rc::clone(&self.written),
+            )))
         }
 
         fn call_with_outputs(
@@ -2569,6 +2639,19 @@ mod tests {
         let engine = engine_with(std::iter::empty());
         let step_type = engine.new_step_type()?;
         drop(step_type);
+        Ok(())
+    }
+
+    #[test]
+    fn objects_serialize_and_unserialize_through_the_engine() -> Result<(), Error> {
+        let engine = engine_with(std::iter::empty());
+        let object = crate::PropertyObject::new(Box::new(FakeDispatch::new(
+            std::iter::empty::<(i32, Scripted)>(),
+            std::rc::Rc::default(),
+        )));
+        assert_eq!(engine.serialize_objects(&[&object], 0)?, "<serialized/>");
+        let objects = engine.unserialize_objects("<serialized/>", 0, 1)?;
+        assert_eq!(objects.len(), 1);
         Ok(())
     }
 

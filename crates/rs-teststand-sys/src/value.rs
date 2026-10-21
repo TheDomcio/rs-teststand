@@ -104,6 +104,20 @@ impl Value {
         }
     }
 
+    /// Reads the value as a `u64` (`VT_UI8`).
+    ///
+    /// # Errors
+    /// [`ComError::UnexpectedType`] if the value is not a [`Value::U64`].
+    pub const fn as_u64(&self) -> Result<u64, ComError> {
+        match self {
+            Self::U64(value) => Ok(*value),
+            other => Err(ComError::UnexpectedType {
+                expected: "U64",
+                actual: other.kind(),
+            }),
+        }
+    }
+
     /// Reads the value as a `f64` (`VT_R8`).
     ///
     /// # Errors
