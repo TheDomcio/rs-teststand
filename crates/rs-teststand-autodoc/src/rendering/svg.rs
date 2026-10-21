@@ -3,6 +3,8 @@
 //! Provides 100% offline diagram rendering without requiring headless browsers,
 //! Node.js, or external remote CDN scripts.
 
+use merman::{OperationControl, RenderOutput, RenderRequest, Renderer, SvgRequest};
+
 use crate::error::Error;
 
 /// Renders a Mermaid diagram source string into a standalone SVG string in pure Rust.
@@ -10,12 +12,7 @@ use crate::error::Error;
 /// # Errors
 /// Returns [`Error::Mermaid`] if parsing, layout, or SVG generation fails.
 pub fn render_mermaid_to_svg(source: &str) -> Result<String, Error> {
-    let trimmed = source.trim();
-    if trimmed.is_empty() {
-        return Ok(String::new());
-    }
-
-    merman::render_svg(trimmed).map_err(|e| Error::Mermaid(e.to_string()))
+    render(source, None)
 }
 
 /// Renders a Mermaid diagram source string with a unique document-level diagram ID.
@@ -23,12 +20,33 @@ pub fn render_mermaid_to_svg(source: &str) -> Result<String, Error> {
 /// # Errors
 /// Returns [`Error::Mermaid`] if rendering fails.
 pub fn render_mermaid_to_svg_with_id(source: &str, diagram_id: &str) -> Result<String, Error> {
+    render(source, Some(diagram_id))
+}
+
+/// The two callers differ only in whether the SVG carries a caller-supplied id.
+fn render(source: &str, diagram_id: Option<&str>) -> Result<String, Error> {
     let trimmed = source.trim();
     if trimmed.is_empty() {
         return Ok(String::new());
     }
 
-    merman::render_svg_with_id(trimmed, diagram_id).map_err(|e| Error::Mermaid(e.to_string()))
+    let mut request = SvgRequest::default();
+    request.options.diagram_id = diagram_id.map(str::to_owned);
+
+    let output = Renderer::new()
+        .render(RenderRequest::svg(
+            trimmed,
+            OperationControl::new(),
+            request,
+        ))
+        .map_err(|error| Error::Mermaid(error.to_string()))?;
+
+    match output {
+        RenderOutput::Svg(Some(svg)) => Ok(svg.svg().to_owned()),
+        _ => Err(Error::Mermaid(
+            "the source did not contain a Mermaid diagram".to_owned(),
+        )),
+    }
 }
 
 #[cfg(test)]
