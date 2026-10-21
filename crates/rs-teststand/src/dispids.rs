@@ -1133,6 +1133,8 @@ pub(crate) mod report {
     pub(crate) const LOAD: i32 = 0x6;
     /// `GetTempFile`, conversion and optional extension.
     pub(crate) const GET_TEMP_FILE: i32 = 0x8;
+    /// `LaunchViewer`, one linefeed-conversion parameter.
+    pub(crate) const LAUNCH_VIEWER: i32 = 0x7;
     /// `NewReportSection`, no parameters.
     pub(crate) const NEW_REPORT_SECTION: i32 = 0x29;
     /// `ReportSection`, read/write object.
