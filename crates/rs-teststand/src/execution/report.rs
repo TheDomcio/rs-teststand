@@ -249,6 +249,16 @@ impl Report {
         ))
     }
 
+    /// Opens the report in its external viewer (`Report.LaunchViewer`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn launch_viewer(&self, linefeed_conversion: i32) -> Result<(), Error> {
+        self.dispatch
+            .call(report::LAUNCH_VIEWER, &[Value::I32(linefeed_conversion)])?;
+        Ok(())
+    }
+
     /// The stylesheet path (`Report.StyleSheetPath`).
     ///
     /// # Errors
@@ -324,5 +334,41 @@ impl Report {
     /// [`Error`] if the COM call fails or returns an unexpected type.
     pub fn latest_append_index(&self) -> Result<i32, Error> {
         Ok(self.dispatch.get(report::LATEST_APPEND_INDEX)?.as_i32()?)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rs_teststand_sys::{ComError, Dispatch, Value};
+
+    use super::Report;
+    use crate::dispids::report;
+
+    #[derive(Debug)]
+    struct Fake;
+
+    impl Dispatch for Fake {
+        fn get(&self, _dispid: i32) -> Result<Value, ComError> {
+            Err(ComError::hresult(0, "fake: unscripted get"))
+        }
+
+        fn put(&self, _dispid: i32, _value: Value) -> Result<(), ComError> {
+            Ok(())
+        }
+
+        fn call(&self, dispid: i32, args: &[Value]) -> Result<Value, ComError> {
+            if dispid == report::LAUNCH_VIEWER {
+                assert!(matches!(args, [Value::I32(1)]));
+                return Ok(Value::Empty);
+            }
+            Err(ComError::hresult(0, "fake: unscripted call"))
+        }
+    }
+
+    #[test]
+    fn launches_the_viewer_with_the_conversion() -> Result<(), crate::Error> {
+        let report = Report::new(Box::new(Fake));
+        report.launch_viewer(1)?;
+        Ok(())
     }
 }
