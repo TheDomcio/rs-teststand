@@ -321,3 +321,21 @@ fn a_subsequence_can_be_added_and_found_by_name() -> Result<(), Error> {
     engine.release_sequence_file_ex(sequence_file, NO_OPTIONS)?;
     Ok(())
 }
+
+#[test]
+#[ignore = "requires a live engine"]
+fn a_sequence_call_step_exposes_its_module_fields() -> Result<(), Error> {
+    let engine = Engine::new()?;
+    let step = engine.new_step(NO_ADAPTER, "SequenceCall")?;
+    assert!(step.is_sequence_call()?);
+    assert!(step.sequence_call_uses_current_file()?);
+    step.set_sequence_call_sequence_name("MainSequence")?;
+    assert_eq!(step.sequence_call_sequence_name()?, "MainSequence");
+    step.set_sequence_call_specifies_by_expression(true)?;
+    step.set_sequence_call_sequence_name_expression("\"MainSequence\"")?;
+    assert_eq!(
+        step.sequence_call_sequence_name_expression()?,
+        "\"MainSequence\""
+    );
+    Ok(())
+}

@@ -538,6 +538,117 @@ impl Step {
         Ok(self.dispatch.get(step::IS_SEQUENCE_CALL)?.as_bool()?)
     }
 
+    /// The Sequence Call sequence name (`Step.Module` field `SeqName`).
+    ///
+    /// The Sequence Call adapter stores this field under `SeqName` in the
+    /// step's module tree.
+    ///
+    /// # Errors
+    /// [`Error`] if the step is not a sequence call or the COM call fails.
+    pub fn sequence_call_sequence_name(&self) -> Result<String, Error> {
+        self.module()?.get_val_string("SeqName", 0)
+    }
+
+    /// Sets the Sequence Call sequence name.
+    ///
+    /// # Errors
+    /// [`Error`] if the step is not a sequence call or the COM call fails.
+    pub fn set_sequence_call_sequence_name(&self, name: &str) -> Result<(), Error> {
+        self.module()?.set_val_string("SeqName", 0, name)
+    }
+
+    /// The Sequence Call sequence-file path (`Step.Module` field `SFPath`).
+    ///
+    /// # Errors
+    /// [`Error`] if the step is not a sequence call or the COM call fails.
+    pub fn sequence_call_file_path(&self) -> Result<String, Error> {
+        self.module()?.get_val_string("SFPath", 0)
+    }
+
+    /// Sets the Sequence Call sequence-file path.
+    ///
+    /// # Errors
+    /// [`Error`] if the step is not a sequence call or the COM call fails.
+    pub fn set_sequence_call_file_path(&self, path: &str) -> Result<(), Error> {
+        self.module()?.set_val_string("SFPath", 0, path)
+    }
+
+    /// Whether the Sequence Call uses the current file
+    /// (`Step.Module` field `UseCurFile`).
+    ///
+    /// # Errors
+    /// [`Error`] if the step is not a sequence call or the COM call fails.
+    pub fn sequence_call_uses_current_file(&self) -> Result<bool, Error> {
+        self.module()?.get_val_boolean("UseCurFile", 0)
+    }
+
+    /// Sets whether the Sequence Call uses the current file.
+    ///
+    /// # Errors
+    /// [`Error`] if the step is not a sequence call or the COM call fails.
+    pub fn set_sequence_call_uses_current_file(&self, uses_current: bool) -> Result<(), Error> {
+        self.module()?
+            .set_val_boolean("UseCurFile", 0, uses_current)
+    }
+
+    /// Whether the Sequence Call names its target with expressions
+    /// (`Step.Module` field `SpecifyByExpr`).
+    ///
+    /// # Errors
+    /// [`Error`] if the step is not a sequence call or the COM call fails.
+    pub fn sequence_call_specifies_by_expression(&self) -> Result<bool, Error> {
+        self.module()?.get_val_boolean("SpecifyByExpr", 0)
+    }
+
+    /// Sets whether the Sequence Call names its target with expressions.
+    ///
+    /// # Errors
+    /// [`Error`] if the step is not a sequence call or the COM call fails.
+    pub fn set_sequence_call_specifies_by_expression(
+        &self,
+        by_expression: bool,
+    ) -> Result<(), Error> {
+        self.module()?
+            .set_val_boolean("SpecifyByExpr", 0, by_expression)
+    }
+
+    /// The Sequence Call file-path expression
+    /// (`Step.Module` field `SFPathExpr`).
+    ///
+    /// # Errors
+    /// [`Error`] if the step is not a sequence call or the COM call fails.
+    pub fn sequence_call_file_path_expression(&self) -> Result<String, Error> {
+        self.module()?.get_val_string("SFPathExpr", 0)
+    }
+
+    /// Sets the Sequence Call file-path expression.
+    ///
+    /// # Errors
+    /// [`Error`] if the step is not a sequence call or the COM call fails.
+    pub fn set_sequence_call_file_path_expression(&self, expression: &str) -> Result<(), Error> {
+        self.module()?.set_val_string("SFPathExpr", 0, expression)
+    }
+
+    /// The Sequence Call sequence-name expression
+    /// (`Step.Module` field `SeqNameExpr`).
+    ///
+    /// # Errors
+    /// [`Error`] if the step is not a sequence call or the COM call fails.
+    pub fn sequence_call_sequence_name_expression(&self) -> Result<String, Error> {
+        self.module()?.get_val_string("SeqNameExpr", 0)
+    }
+
+    /// Sets the Sequence Call sequence-name expression.
+    ///
+    /// # Errors
+    /// [`Error`] if the step is not a sequence call or the COM call fails.
+    pub fn set_sequence_call_sequence_name_expression(
+        &self,
+        expression: &str,
+    ) -> Result<(), Error> {
+        self.module()?.set_val_string("SeqNameExpr", 0, expression)
+    }
+
     /// The step's type definition (`Step.StepType`).
     ///
     /// # Errors
@@ -710,6 +821,63 @@ mod tests {
     fn reads_the_sequence_call_flag() -> Result<(), Error> {
         let (step, _sent) = step_recording(HashMap::from([(dispid::IS_SEQUENCE_CALL, true)]));
         assert!(step.is_sequence_call()?);
+        Ok(())
+    }
+
+    #[test]
+    fn reads_and_writes_sequence_call_module_fields() -> Result<(), Error> {
+        #[derive(Debug)]
+        struct ModuleFake;
+
+        impl Dispatch for ModuleFake {
+            fn get(&self, _dispid: i32) -> Result<Value, ComError> {
+                Err(ComError::hresult(0, "fake: unscripted get"))
+            }
+
+            fn put(&self, _dispid: i32, _value: Value) -> Result<(), ComError> {
+                Ok(())
+            }
+
+            fn call(&self, dispid: i32, _args: &[Value]) -> Result<Value, ComError> {
+                match dispid {
+                    crate::dispids::property_object::GET_VAL_STRING => {
+                        Ok(Value::Str("MainSequence".to_owned()))
+                    }
+                    crate::dispids::property_object::GET_VAL_BOOLEAN => Ok(Value::Bool(true)),
+                    _ => Ok(Value::Empty),
+                }
+            }
+        }
+
+        #[derive(Debug)]
+        struct StepFake;
+
+        impl Dispatch for StepFake {
+            fn get(&self, dispid: i32) -> Result<Value, ComError> {
+                if dispid == dispid::MODULE {
+                    return Ok(Value::Object(Box::new(ModuleFake)));
+                }
+                Err(ComError::hresult(0, "fake: unscripted get"))
+            }
+
+            fn put(&self, _dispid: i32, _value: Value) -> Result<(), ComError> {
+                Ok(())
+            }
+
+            fn call(&self, _dispid: i32, _args: &[Value]) -> Result<Value, ComError> {
+                Ok(Value::Empty)
+            }
+        }
+
+        let step = Step::new(Box::new(StepFake));
+        assert_eq!(step.sequence_call_sequence_name()?, "MainSequence");
+        assert!(step.sequence_call_uses_current_file()?);
+        step.set_sequence_call_sequence_name("Other")?;
+        step.set_sequence_call_file_path("other.seq")?;
+        step.set_sequence_call_uses_current_file(false)?;
+        step.set_sequence_call_specifies_by_expression(true)?;
+        step.set_sequence_call_file_path_expression("\"other.seq\"")?;
+        step.set_sequence_call_sequence_name_expression("\"Other\"")?;
         Ok(())
     }
 
