@@ -508,6 +508,21 @@ impl Engine {
         ))
     }
 
+    /// Creates a custom step type (Engine.NewStepType).
+    ///
+    /// The returned type is empty until it is configured through its property
+    /// tree; Step.ChangeStepType can then apply it to a step.
+    ///
+    /// # Errors
+    /// [Error] if the COM call fails or returns an unexpected type.
+    pub fn new_step_type(&self) -> Result<crate::StepType, Error> {
+        Ok(crate::StepType::new(
+            self.dispatch
+                .call(dispid::NEW_STEP_TYPE, &[])?
+                .into_object()?,
+        ))
+    }
+
     /// Searches the configured directories for a file
     /// (`Engine.FindFile`).
     ///
@@ -2217,6 +2232,12 @@ mod tests {
                 _ => Value::Empty,
             };
             self.written.borrow_mut().push((dispid, first));
+            if dispid == dispid::NEW_STEP_TYPE {
+                return Ok(Value::Object(Box::new(Self::new(
+                    std::iter::empty::<(i32, Scripted)>(),
+                    std::rc::Rc::default(),
+                ))));
+            }
             Ok(Value::Empty)
         }
 
@@ -2540,6 +2561,14 @@ mod tests {
         let (file, description) = engine.get_station_model_sequence_file()?;
         assert_eq!(description, "Sequential model");
         drop(file);
+        Ok(())
+    }
+
+    #[test]
+    fn new_step_type_returns_an_object() -> Result<(), Error> {
+        let engine = engine_with(std::iter::empty());
+        let step_type = engine.new_step_type()?;
+        drop(step_type);
         Ok(())
     }
 

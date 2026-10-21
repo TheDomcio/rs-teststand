@@ -46,6 +46,11 @@ impl SyncManager {
         Ok(self.dispatch.get(sync_manager::PROCESS_ID)?.as_i32()?)
     }
 
+    /// An owned handle to the same manager.
+    pub(crate) fn duplicate_dispatch(&self) -> Option<Box<dyn Dispatch>> {
+        self.dispatch.duplicate()
+    }
+
     /// Whether synchronization logging is on (`SyncManager.LoggingEnabled`).
     ///
     /// # Errors

@@ -367,6 +367,8 @@ enum OutSlot {
     Int(Box<i32>),
     /// A `VT_BYREF | VT_BOOL` slot.
     Bool(Box<windows::Win32::Foundation::VARIANT_BOOL>),
+    /// A `VT_BYREF | VT_DISPATCH` slot.
+    Object(Box<Option<IDispatch>>),
 }
 
 impl OutSlot {
@@ -376,6 +378,7 @@ impl OutSlot {
             OutKind::Text => Self::Text(Box::new(BSTR::new())),
             OutKind::Int => Self::Int(Box::new(0)),
             OutKind::Bool => Self::Bool(Box::new(windows::Win32::Foundation::VARIANT_BOOL(0))),
+            OutKind::Object => Self::Object(Box::new(None)),
         }
     }
 
@@ -393,6 +396,7 @@ impl OutSlot {
                 Self::Text(cell) => OwnedVariant::byref_text(&raw mut **cell),
                 Self::Int(cell) => OwnedVariant::byref_i32(&raw mut **cell),
                 Self::Bool(cell) => OwnedVariant::byref_bool(&raw mut **cell),
+                Self::Object(cell) => OwnedVariant::byref_dispatch(&raw mut **cell),
             }
         }
     }
@@ -405,6 +409,10 @@ impl OutSlot {
             // A VARIANT_BOOL is 0 for false and -1 for true; anything non-zero
             // is true, which is how COM callers are expected to read it.
             Self::Bool(cell) => Value::Bool(cell.0 != 0),
+            Self::Object(cell) => cell.as_ref().as_ref().map_or_else(
+                || Value::Empty,
+                |dispatch| Value::Object(Box::new(ComDispatch::new(dispatch.clone()))),
+            ),
         }
     }
 }

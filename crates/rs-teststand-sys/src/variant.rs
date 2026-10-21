@@ -22,7 +22,7 @@ use windows::Win32::System::Variant::{
     VARIANT, VT_ARRAY, VT_BOOL, VT_BSTR, VT_BYREF, VT_DISPATCH, VT_EMPTY, VT_I4, VT_I8, VT_NULL,
     VT_R8, VT_UI8, VT_UNKNOWN, VariantClear,
 };
-use windows_core::{BSTR, Interface as _};
+use windows_core::{BSTR, IUnknown, Interface as _};
 
 use crate::Dispatch;
 use crate::dispatch::ComDispatch;
@@ -110,6 +110,23 @@ impl OwnedVariant {
             let inner = &mut owned.0.Anonymous.Anonymous;
             inner.vt = windows::Win32::System::Variant::VARENUM(VT_BYREF.0 | VT_BOOL.0);
             inner.Anonymous.pboolVal = cell;
+        }
+        owned
+    }
+
+    /// A `VT_BYREF | VT_DISPATCH` variant pointing at caller-owned storage.
+    ///
+    /// # Safety
+    /// `cell` must be valid and must outlive the call this variant is passed to.
+    #[must_use]
+    pub(crate) unsafe fn byref_dispatch(cell: *mut Option<IDispatch>) -> Self {
+        let mut owned = Self::empty();
+        // SAFETY: writing the discriminant and the matching pointer field of a
+        // freshly zeroed VARIANT, per the caller's guarantee about `cell`.
+        unsafe {
+            let inner = &mut owned.0.Anonymous.Anonymous;
+            inner.vt = windows::Win32::System::Variant::VARENUM(VT_BYREF.0 | VT_DISPATCH.0);
+            inner.Anonymous.ppdispVal = cell;
         }
         owned
     }
@@ -264,6 +281,13 @@ impl OwnedVariant {
                 variant_type if variant_type.0 == VT_ARRAY.0 | VT_DISPATCH.0 => {
                     Value::ObjectArray(read_object_array(slot.parray)?)
                 }
+                // Some members declare an object array as `IUnknown` rather
+                // than `IDispatch`, notably `Mutex.LockMutexGroup`. The
+                // elements are asked for `IDispatch`, since every wrapper above
+                // this layer speaks that interface.
+                variant_type if variant_type.0 == VT_ARRAY.0 | VT_UNKNOWN.0 => {
+                    Value::ObjectArray(read_unknown_object_array(slot.parray)?)
+                }
                 _ => {
                     return Err(ComError::UnexpectedType {
                         expected: "a VARIANT type this layer models",
@@ -323,6 +347,59 @@ fn read_object_array(array: *mut SAFEARRAY) -> Result<Vec<Box<dyn Dispatch>>, Co
                 });
             }
             elements.push(Box::new(ComDispatch::new(IDispatch::from_raw(element))));
+        }
+        Ok(elements)
+    }
+}
+
+/// Copies a one-dimensional `VT_UNKNOWN` SAFEARRAY into owned dispatch handles.
+///
+/// # Errors
+/// [`ComError`] if the array is null, its bounds cannot be read, an element is
+/// null, or an element does not support `IDispatch`.
+fn read_unknown_object_array(array: *mut SAFEARRAY) -> Result<Vec<Box<dyn Dispatch>>, ComError> {
+    if array.is_null() {
+        return Err(ComError::UnexpectedType {
+            expected: "a SAFEARRAY of objects",
+            actual: "a null array pointer",
+        });
+    }
+
+    // SAFETY: `array` is non-null and, because `vt` said
+    // `VT_ARRAY | VT_UNKNOWN`, points to a live one-dimensional SAFEARRAY of
+    // interface pointers owned by the variant. Every index lies within the
+    // bounds just read. `SafeArrayGetElement` add-refs an element, so
+    // `IUnknown::from_raw` takes ownership of exactly one reference.
+    unsafe {
+        let lower = SafeArrayGetLBound(array, 1)
+            .map_err(|error| ComError::hresult(error.code().0, "SafeArray"))?;
+        let upper = SafeArrayGetUBound(array, 1)
+            .map_err(|error| ComError::hresult(error.code().0, "SafeArray"))?;
+
+        if upper < lower {
+            return Ok(Vec::new());
+        }
+
+        let mut elements: Vec<Box<dyn Dispatch>> =
+            Vec::with_capacity((upper - lower + 1).unsigned_abs() as usize);
+        for index in lower..=upper {
+            let mut element: *mut std::ffi::c_void = std::ptr::null_mut();
+            SafeArrayGetElement(array, &raw const index, (&raw mut element).cast())
+                .map_err(|error| ComError::hresult(error.code().0, "SafeArray"))?;
+            if element.is_null() {
+                return Err(ComError::UnexpectedType {
+                    expected: "a SAFEARRAY element holding an object",
+                    actual: "a null object pointer",
+                });
+            }
+            let unknown = IUnknown::from_raw(element);
+            let dispatch = unknown
+                .cast::<IDispatch>()
+                .map_err(|_| ComError::UnexpectedType {
+                    expected: "an array element supporting IDispatch",
+                    actual: "an IUnknown-only object",
+                })?;
+            elements.push(Box::new(ComDispatch::new(dispatch)));
         }
         Ok(elements)
     }

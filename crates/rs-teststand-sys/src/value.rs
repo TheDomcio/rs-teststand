@@ -219,4 +219,6 @@ pub enum OutKind {
     Int,
     /// A boolean, `VT_BYREF | VT_BOOL`.
     Bool,
+    /// An automation object, `VT_BYREF | VT_DISPATCH`.
+    Object,
 }

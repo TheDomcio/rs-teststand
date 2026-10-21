@@ -18,6 +18,11 @@ impl Notification {
         Self { dispatch }
     }
 
+    /// An owned handle to the same notification.
+    pub(crate) fn duplicate_dispatch(&self) -> Option<Box<dyn Dispatch>> {
+        self.dispatch.duplicate()
+    }
+
     /// The name the manager uses for this notification
     /// (`Notification.Name`).
     ///
@@ -114,6 +119,72 @@ impl Notification {
         wait_result(result)
     }
 
+    /// Waits for any of several notifications
+    /// (`Notification.WaitMultiple`).
+    ///
+    /// Returns the wait result, the notification that satisfied it, and that
+    /// notification's index in the array. The notification is absent when the
+    /// wait timed out.
+    ///
+    /// # Errors
+    /// [`Error`] if a notification has no COM identity, the wait fails, or the
+    /// engine returns an unexpected type.
+    pub fn wait_multiple(
+        &self,
+        notifications: &[&Self],
+        destination: Option<&crate::PropertyObject>,
+        timeout_in_seconds: f64,
+        sequence_context: Option<&crate::SequenceContext>,
+        process_messages: bool,
+    ) -> Result<(crate::WaitResult, Option<Self>, i32), Error> {
+        let mut handles = Vec::with_capacity(notifications.len());
+        for notification in notifications {
+            handles.push(
+                notification
+                    .duplicate_dispatch()
+                    .ok_or(Error::UnexpectedType {
+                        expected: "a live notification",
+                        actual: "a test fake with no COM identity",
+                    })?,
+            );
+        }
+        let (_, outputs) = self.dispatch.call_with_outputs(
+            notification::WAIT_MULTIPLE,
+            &[
+                Value::ObjectArray(handles),
+                property_object_argument(destination)?,
+                Value::F64(timeout_in_seconds),
+                sequence_context_argument(sequence_context)?,
+                Value::Bool(process_messages),
+            ],
+            &[OutKind::Int, OutKind::Object, OutKind::Int],
+        )?;
+        let mut outputs = outputs.into_iter();
+        let wait = outputs.next().ok_or(Error::UnexpectedType {
+            expected: "a wait result",
+            actual: "the engine returned none",
+        })?;
+        let which = outputs.next().ok_or(Error::UnexpectedType {
+            expected: "a notification",
+            actual: "the engine returned none",
+        })?;
+        let offset = outputs.next().ok_or(Error::UnexpectedType {
+            expected: "a notification offset",
+            actual: "the engine returned none",
+        })?;
+        let notification = match which {
+            Value::Object(dispatch) => Some(Self::new(dispatch)),
+            Value::Empty => None,
+            other => {
+                return Err(Error::UnexpectedType {
+                    expected: "a notification object",
+                    actual: other.kind(),
+                });
+            }
+        };
+        Ok((wait_result(&wait)?, notification, offset.as_i32()?))
+    }
+
     /// Reads the notification state (`Notification.GetInfo`).
     ///
     /// Returns `(waiting_threads, is_set, is_auto_clear)`.
@@ -204,6 +275,56 @@ impl Notification {
                 Value::Bool(apply_to_all_waiters),
             ],
         )?;
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rs_teststand_sys::{ComError, Dispatch, Value};
+
+    use super::Notification;
+    use crate::dispids::notification;
+
+    #[derive(Debug)]
+    struct Fake;
+
+    impl Dispatch for Fake {
+        fn get(&self, _dispid: i32) -> Result<Value, ComError> {
+            Err(ComError::hresult(0, "fake: unscripted get"))
+        }
+
+        fn put(&self, _dispid: i32, _value: Value) -> Result<(), ComError> {
+            Ok(())
+        }
+
+        fn call(&self, _dispid: i32, _args: &[Value]) -> Result<Value, ComError> {
+            Err(ComError::hresult(0, "fake: unscripted call"))
+        }
+
+        fn call_with_outputs(
+            &self,
+            dispid: i32,
+            _args: &[Value],
+            _outputs: &[rs_teststand_sys::OutKind],
+        ) -> Result<(Value, Vec<Value>), ComError> {
+            if dispid != notification::WAIT_MULTIPLE {
+                return Err(ComError::hresult(0, "fake: unscripted outputs"));
+            }
+            Ok((
+                Value::Empty,
+                vec![Value::I32(0), Value::Object(Box::new(Self)), Value::I32(1)],
+            ))
+        }
+    }
+
+    #[test]
+    fn multiple_wait_reads_the_selected_notification() -> Result<(), crate::Error> {
+        let notification = Notification::new(Box::new(Fake));
+        let (result, selected, offset) = notification.wait_multiple(&[], None, 0.0, None, false)?;
+        assert_eq!(result, crate::WaitResult::Success);
+        assert!(selected.is_some());
+        assert_eq!(offset, 1);
         Ok(())
     }
 }

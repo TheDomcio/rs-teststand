@@ -135,5 +135,61 @@ fn the_primitive_objects_can_be_created_and_used() -> Result<(), Error> {
     assert!(waiting_to_enqueue >= 0 && waiting_to_dequeue >= 0);
     assert_eq!(size_limit, 4);
     assert_eq!(count, 0);
+
+    let (second_mutex, existed) = manager.create_mutex("rs-parity-mutex-2")?;
+    assert!(!existed);
+    let (releasers, wait, message) = mutex.lock_mutex_group(
+        &[&mutex, &second_mutex],
+        "",
+        "",
+        Some(&manager),
+        0.1,
+        None,
+        false,
+    )?;
+    assert_eq!(wait, WaitResult::Success);
+    assert_eq!(message, "");
+    assert_eq!(releasers.len(), 2);
+    drop(releasers);
+
+    let (second_notification, existed) = manager.create_notification("rs-parity-notification-2")?;
+    assert!(!existed);
+    notification.set(None, false, false)?;
+    let (wait, selected, offset) = notification.wait_multiple(
+        &[&notification, &second_notification],
+        None,
+        0.1,
+        None,
+        false,
+    )?;
+    assert_eq!(wait, WaitResult::Success);
+    assert!(selected.is_some());
+    assert!(offset >= 0);
+    notification.clear()?;
+
+    let (second_queue, existed) = manager.create_queue("rs-parity-queue-2", 4)?;
+    assert!(!existed);
+    let (wait, _) = queue.enqueue(
+        false,
+        FullQueueOption::Wait,
+        &element,
+        false,
+        0.1,
+        None,
+        false,
+    )?;
+    assert_eq!(wait, WaitResult::Success);
+    let (wait, selected, offset) = queue.dequeue_multiple(
+        &[&queue, &second_queue],
+        true,
+        false,
+        &destination,
+        0.1,
+        None,
+        false,
+    )?;
+    assert_eq!(wait, WaitResult::Success);
+    assert!(selected.is_some());
+    assert!(offset >= 0);
     Ok(())
 }

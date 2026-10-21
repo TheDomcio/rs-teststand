@@ -101,6 +101,7 @@ define_dispid_group! {
         UNDO_LIMIT = 0x027a;
         FIND_FILE = 0x0104;
         FIND_PATH = 0x0105;
+        NEW_STEP_TYPE = 0x01a6;
         GET_TYPE_DEFINITION = 0x01dc;
         GET_TYPE_NAMES = 0x01dd;
         DIFF_SEQUENCE_FILES = 0x0258;
@@ -1271,6 +1272,8 @@ pub(crate) mod mutex {
     pub(crate) const LOCK_MUTEX: i32 = 0x3;
     /// `Name`, read-only string.
     pub(crate) const NAME: i32 = 0x4;
+    /// `LockMutexGroup`, mutex array and two outputs.
+    pub(crate) const LOCK_MUTEX_GROUP: i32 = 0x5;
     /// `GetSavedOwnerInfo`, three outputs.
     pub(crate) const GET_SAVED_OWNER_INFO: i32 = 0x6;
     /// `EarlyUnlockMutexEx`, context and thread id.
@@ -1291,6 +1294,8 @@ pub(crate) mod notification {
     pub(crate) const GET_INFO: i32 = 0x5;
     /// `Name`, read-only string.
     pub(crate) const NAME: i32 = 0x6;
+    /// `WaitMultiple`, notification array and three outputs.
+    pub(crate) const WAIT_MULTIPLE: i32 = 0x7;
     /// `SetEx`, context plus the three `Set` parameters.
     pub(crate) const SET_EX: i32 = 0xb;
     /// `ClearEx`, context.
@@ -1309,6 +1314,8 @@ pub(crate) mod queue {
     pub(crate) const FLUSH: i32 = 0x3;
     /// `GetInfo`, context, destination, and four outputs.
     pub(crate) const GET_INFO: i32 = 0x4;
+    /// `DequeueMultiple`, queue array and three outputs.
+    pub(crate) const DEQUEUE_MULTIPLE: i32 = 0x5;
     /// `Name`, read-only string.
     pub(crate) const NAME: i32 = 0x9;
 }
