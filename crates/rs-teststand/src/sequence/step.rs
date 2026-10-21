@@ -649,6 +649,191 @@ impl Step {
         self.module()?.set_val_string("SeqNameExpr", 0, expression)
     }
 
+    /// The LabVIEW VI path (`Step.Module` field `ViCall.VIPath`).
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn labview_vi_path(&self) -> Result<String, Error> {
+        self.module()?.get_val_string("ViCall.VIPath", 0)
+    }
+
+    /// Sets the LabVIEW VI path.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn set_labview_vi_path(&self, path: &str) -> Result<(), Error> {
+        self.module()?.set_val_string("ViCall.VIPath", 0, path)
+    }
+
+    /// The LabVIEW remote VI path (`Step.Module` field `ViCall.RemoteVIPath`).
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn labview_remote_vi_path(&self) -> Result<String, Error> {
+        self.module()?.get_val_string("ViCall.RemoteVIPath", 0)
+    }
+
+    /// Sets the LabVIEW remote VI path.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn set_labview_remote_vi_path(&self, path: &str) -> Result<(), Error> {
+        self.module()?
+            .set_val_string("ViCall.RemoteVIPath", 0, path)
+    }
+
+    /// The LabVIEW call name (`Step.Module` field `ViCall.CallName`).
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn labview_call_name(&self) -> Result<String, Error> {
+        self.module()?.get_val_string("ViCall.CallName", 0)
+    }
+
+    /// Sets the LabVIEW call name.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn set_labview_call_name(&self, name: &str) -> Result<(), Error> {
+        self.module()?.set_val_string("ViCall.CallName", 0, name)
+    }
+
+    /// The LabVIEW namespace (`Step.Module` field `ViCall.Namespace`).
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn labview_namespace(&self) -> Result<String, Error> {
+        self.module()?.get_val_string("ViCall.Namespace", 0)
+    }
+
+    /// Sets the LabVIEW namespace.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn set_labview_namespace(&self, namespace: &str) -> Result<(), Error> {
+        self.module()?
+            .set_val_string("ViCall.Namespace", 0, namespace)
+    }
+
+    /// Whether the LabVIEW VI front panel is shown
+    /// (`Step.Module` field `ViCall.ShowFrnPnl`).
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn labview_show_front_panel(&self) -> Result<bool, Error> {
+        self.module()?.get_val_boolean("ViCall.ShowFrnPnl", 0)
+    }
+
+    /// Sets whether the LabVIEW VI front panel is shown.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn set_labview_show_front_panel(&self, show: bool) -> Result<(), Error> {
+        self.module()?.set_val_boolean("ViCall.ShowFrnPnl", 0, show)
+    }
+
+    /// The C/CVI library path (`Step.Module` field `Call.LibPath`).
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no C/CVI module or the COM call fails.
+    pub fn cvi_library_path(&self) -> Result<String, Error> {
+        self.module()?.get_val_string("Call.LibPath", 0)
+    }
+
+    /// Sets the C/CVI library path.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no C/CVI module or the COM call fails.
+    pub fn set_cvi_library_path(&self, path: &str) -> Result<(), Error> {
+        self.module()?.set_val_string("Call.LibPath", 0, path)
+    }
+
+    /// The C/CVI function name (`Step.Module` field `Call.Func`).
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no C/CVI module or the COM call fails.
+    pub fn cvi_function(&self) -> Result<String, Error> {
+        self.module()?.get_val_string("Call.Func", 0)
+    }
+
+    /// Sets the C/CVI function name.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no C/CVI module or the COM call fails.
+    pub fn set_cvi_function(&self, function: &str) -> Result<(), Error> {
+        self.module()?.set_val_string("Call.Func", 0, function)
+    }
+
+    /// The .NET assembly path (`Step.Module` field `AssemblyPath`).
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no .NET module or the COM call fails.
+    pub fn dotnet_assembly_path(&self) -> Result<String, Error> {
+        self.module()?.get_val_string("AssemblyPath", 0)
+    }
+
+    /// Sets the .NET assembly path.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no .NET module or the COM call fails.
+    pub fn set_dotnet_assembly_path(&self, path: &str) -> Result<(), Error> {
+        self.module()?.set_val_string("AssemblyPath", 0, path)
+    }
+
+    /// The first .NET call's class name (`Step.Module` field
+    /// `Calls[0].ClassName`).
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no .NET module or the COM call fails.
+    pub fn dotnet_class_name(&self) -> Result<String, Error> {
+        self.module()?.get_val_string("Calls[0].ClassName", 0)
+    }
+
+    /// Sets the first .NET call's class name.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no .NET module or the COM call fails.
+    pub fn set_dotnet_class_name(&self, class_name: &str) -> Result<(), Error> {
+        self.module()?
+            .set_val_string("Calls[0].ClassName", 0, class_name)
+    }
+
+    /// The first .NET call's member name (`Step.Module` field
+    /// `Calls[0].MemberName`).
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no .NET module or the COM call fails.
+    pub fn dotnet_member_name(&self) -> Result<String, Error> {
+        self.module()?.get_val_string("Calls[0].MemberName", 0)
+    }
+
+    /// Sets the first .NET call's member name.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no .NET module or the COM call fails.
+    pub fn set_dotnet_member_name(&self, member_name: &str) -> Result<(), Error> {
+        self.module()?
+            .set_val_string("Calls[0].MemberName", 0, member_name)
+    }
+
+    /// Whether the first .NET call is static (`Step.Module` field
+    /// `Calls[0].Static`).
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no .NET module or the COM call fails.
+    pub fn dotnet_static(&self) -> Result<bool, Error> {
+        self.module()?.get_val_boolean("Calls[0].Static", 0)
+    }
+
+    /// Sets whether the first .NET call is static.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no .NET module or the COM call fails.
+    pub fn set_dotnet_static(&self, is_static: bool) -> Result<(), Error> {
+        self.module()?
+            .set_val_boolean("Calls[0].Static", 0, is_static)
+    }
+
     /// The step's type definition (`Step.StepType`).
     ///
     /// # Errors
@@ -878,6 +1063,20 @@ mod tests {
         step.set_sequence_call_specifies_by_expression(true)?;
         step.set_sequence_call_file_path_expression("\"other.seq\"")?;
         step.set_sequence_call_sequence_name_expression("\"Other\"")?;
+        assert_eq!(step.labview_vi_path()?, "MainSequence");
+        step.set_labview_vi_path("vi.lvlib:main.vi")?;
+        step.set_labview_remote_vi_path("remote.vi")?;
+        step.set_labview_call_name("Main")?;
+        step.set_labview_namespace("Lib")?;
+        step.set_labview_show_front_panel(true)?;
+        assert_eq!(step.cvi_function()?, "MainSequence");
+        step.set_cvi_library_path("module.dll")?;
+        step.set_cvi_function("main")?;
+        assert_eq!(step.dotnet_class_name()?, "MainSequence");
+        step.set_dotnet_assembly_path("module.dll")?;
+        step.set_dotnet_class_name("Example")?;
+        step.set_dotnet_member_name("Main")?;
+        step.set_dotnet_static(true)?;
         Ok(())
     }
 

@@ -7,7 +7,8 @@
 #![cfg(feature = "live-engine")]
 
 use rs_teststand::{
-    ConflictHandler, Engine, Error, FailureAction, GetSeqFileOptions, SequenceType, StepGroup,
+    AdapterKeyName, ConflictHandler, Engine, Error, FailureAction, GetSeqFileOptions, SequenceType,
+    StepGroup,
 };
 
 const INSERT_IF_MISSING: i32 = 1;
@@ -337,5 +338,32 @@ fn a_sequence_call_step_exposes_its_module_fields() -> Result<(), Error> {
         step.sequence_call_sequence_name_expression()?,
         "\"MainSequence\""
     );
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires a live engine"]
+fn adapter_module_helpers_read_back_their_fields() -> Result<(), Error> {
+    let engine = Engine::new()?;
+
+    let labview = engine.new_step(AdapterKeyName::LabView.as_str(), "Action")?;
+    labview.set_labview_vi_path("main.vi")?;
+    assert_eq!(labview.labview_vi_path()?, "main.vi");
+    labview.set_labview_show_front_panel(true)?;
+    assert!(labview.labview_show_front_panel()?);
+
+    let cvi = engine.new_step(AdapterKeyName::Cvi.as_str(), "Action")?;
+    cvi.set_cvi_library_path("module.dll")?;
+    assert_eq!(cvi.cvi_library_path()?, "module.dll");
+    cvi.set_cvi_function("main")?;
+    assert_eq!(cvi.cvi_function()?, "main");
+
+    let dotnet = engine.new_step(AdapterKeyName::DotNet.as_str(), "Action")?;
+    dotnet.set_dotnet_assembly_path("module.dll")?;
+    assert_eq!(dotnet.dotnet_assembly_path()?, "module.dll");
+    dotnet.set_dotnet_class_name("Example")?;
+    assert_eq!(dotnet.dotnet_class_name()?, "Example");
+    dotnet.set_dotnet_member_name("Main")?;
+    assert_eq!(dotnet.dotnet_member_name()?, "Main");
     Ok(())
 }
