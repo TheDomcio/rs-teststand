@@ -72,7 +72,10 @@ pub use file_differ::{
     SequenceFileDifferenceSections, SequenceFileDifferenceSectionsIter, SequenceFileDifferenceType,
 };
 pub use license::{AcquireLicenseOptions, ApplicationLicense, HeldLicense, LicenseType};
-pub use messaging::{UIMessage, UIMessageCode, pump_thread_messages};
+pub use messaging::{
+    OutputMessage, OutputMessageSeverity, OutputMessages, UIMessage, UIMessageCode,
+    pump_thread_messages,
+};
 pub use property::{
     ArrayDimensions, GetTemplatesFileOptions, PropertyFlags, PropertyObject, PropertyObjectFile,
     PropertyObjectFileType, PropertyObjectType, PropertyOptions, PropertyRepresentation,

@@ -363,6 +363,92 @@ impl Engine {
         ))
     }
 
+    /// Whether the engine records output messages
+    /// (`Engine.OutputMessagesEnabled`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn output_messages_enabled(&self) -> Result<bool, Error> {
+        Ok(self
+            .dispatch
+            .get(dispid::OUTPUT_MESSAGES_ENABLED)?
+            .as_bool()?)
+    }
+
+    /// Sets whether the engine records output messages
+    /// (`Engine.OutputMessagesEnabled`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_output_messages_enabled(&self, enabled: bool) -> Result<(), Error> {
+        self.dispatch
+            .put(dispid::OUTPUT_MESSAGES_ENABLED, Value::Bool(enabled))?;
+        Ok(())
+    }
+
+    /// The engine's output messages (`Engine.GetOutputMessages`).
+    ///
+    /// The engine marks this member obsolete, but it remains the way to read
+    /// the messages already in the output pane.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn get_output_messages(&self) -> Result<crate::OutputMessages, Error> {
+        Ok(crate::OutputMessages::new(
+            self.dispatch
+                .call(dispid::GET_OUTPUT_MESSAGES, &[])?
+                .into_object()?,
+        ))
+    }
+
+    /// Creates an output message (`Engine.NewOutputMessage`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn new_output_message(
+        &self,
+        message_text: &str,
+        category_text: &str,
+        severity: crate::OutputMessageSeverity,
+        sequence_context: Option<&crate::SequenceContext>,
+    ) -> Result<crate::OutputMessage, Error> {
+        let context = match sequence_context {
+            Some(context) => {
+                Value::Object(context.duplicate_dispatch().ok_or(Error::UnexpectedType {
+                    expected: "a live sequence context",
+                    actual: "a test fake with no COM identity",
+                })?)
+            }
+            None => Value::NullObject,
+        };
+        Ok(crate::OutputMessage::new(
+            self.dispatch
+                .call(
+                    dispid::NEW_OUTPUT_MESSAGE,
+                    &[
+                        Value::Str(message_text.to_owned()),
+                        Value::Str(category_text.to_owned()),
+                        Value::I32(severity.as_i32()),
+                        context,
+                    ],
+                )?
+                .into_object()?,
+        ))
+    }
+
+    /// Creates an empty output message collection
+    /// (`Engine.NewOutputMessages`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn new_output_messages(&self) -> Result<crate::OutputMessages, Error> {
+        Ok(crate::OutputMessages::new(
+            self.dispatch
+                .call(dispid::NEW_OUTPUT_MESSAGES, &[])?
+                .into_object()?,
+        ))
+    }
+
     /// The synchronization manager for a named object
     /// (`Engine.GetSyncManager`).
     ///

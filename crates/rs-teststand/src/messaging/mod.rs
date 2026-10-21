@@ -18,10 +18,16 @@
 //! dispatch the *operating system's* messages too, or COM cannot deliver calls
 //! into the apartment and the wait never ends. See [`pump_thread_messages`].
 
+pub mod output_message;
+pub mod output_message_severity;
+pub mod output_messages;
 pub mod pump;
 pub mod ui_message;
 pub mod ui_message_code;
 
+pub use output_message::OutputMessage;
+pub use output_message_severity::OutputMessageSeverity;
+pub use output_messages::OutputMessages;
 pub use pump::pump_thread_messages;
 pub use ui_message::UIMessage;
 pub use ui_message_code::UIMessageCode;

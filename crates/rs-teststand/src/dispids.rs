@@ -92,6 +92,10 @@ define_dispid_group! {
         GET_WATCH_EXPRESSIONS = 0x0227;
         SEARCH_FILES = 0x0225;
         GET_SYNC_MANAGER = 0x0203;
+        GET_OUTPUT_MESSAGES = 0x025b;
+        NEW_OUTPUT_MESSAGE = 0x025c;
+        OUTPUT_MESSAGES_ENABLED = 0x025d;
+        NEW_OUTPUT_MESSAGES = 0x025e;
         GET_TYPE_DEFINITION = 0x01dc;
         GET_TYPE_NAMES = 0x01dd;
         DIFF_SEQUENCE_FILES = 0x0258;
@@ -1476,6 +1480,48 @@ pub(crate) mod rule_configuration {
     pub(crate) const SEVERITY: i32 = 0x5;
     /// `Description`, read/write string.
     pub(crate) const DESCRIPTION: i32 = 0x6;
+}
+
+/// Members of `OutputMessage`.
+pub(crate) mod output_message {
+    /// `Category`, read/write string.
+    pub(crate) const CATEGORY: i32 = 0x1;
+    /// `Severity`, read/write enum.
+    pub(crate) const SEVERITY: i32 = 0x2;
+    /// `Message`, read/write string.
+    pub(crate) const MESSAGE: i32 = 0x3;
+    /// `TextColor`, read/write integer.
+    pub(crate) const TEXT_COLOR: i32 = 0x4;
+    /// `IconName`, read/write string.
+    pub(crate) const ICON_NAME: i32 = 0x6;
+    /// `TimeInSeconds`, read/write double.
+    pub(crate) const TIME_IN_SECONDS: i32 = 0xa;
+    /// `Id`, read-only integer.
+    pub(crate) const ID: i32 = 0xb;
+    /// `Post`, no parameters.
+    pub(crate) const POST: i32 = 0x8;
+    /// `AsPropertyObject`, no parameters.
+    pub(crate) const AS_PROPERTY_OBJECT: i32 = 0xe;
+}
+
+/// Members of `OutputMessages`.
+pub(crate) mod output_messages {
+    /// `Item`, one index.
+    pub(crate) const ITEM: i32 = 0x0;
+    /// `Count`, read-only integer.
+    pub(crate) const COUNT: i32 = 0x2;
+    /// `Add`, one message.
+    pub(crate) const ADD: i32 = 0x3;
+    /// `Remove`, one index.
+    pub(crate) const REMOVE: i32 = 0x4;
+    /// `Clear`, no parameters.
+    pub(crate) const CLEAR: i32 = 0x5;
+    /// `FindIndex`, one message.
+    pub(crate) const FIND_INDEX: i32 = 0x8;
+    /// `ToPropertyObject`, one parameter.
+    pub(crate) const TO_PROPERTY_OBJECT: i32 = 0x9;
+    /// `FromPropertyObject`, one parameter.
+    pub(crate) const FROM_PROPERTY_OBJECT: i32 = 0xa;
 }
 
 /// Members of `WatchExpressions`.
