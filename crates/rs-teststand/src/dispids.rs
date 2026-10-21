@@ -203,6 +203,7 @@ define_dispid_group! {
     /// Members of the `PropertyObject` object (`IPropertyObject`).
     property_object {
         GET_VAL_NUMBER = 0x01f5;
+        GET_VAL_NUMBER_BY_OFFSET = 0x0263;
         SET_VAL_NUMBER = 0x01f6;
         GET_VAL_BOOLEAN = 0x01f7;
         SET_VAL_BOOLEAN = 0x01f8;
@@ -211,6 +212,8 @@ define_dispid_group! {
         GET_PROPERTY_OBJECT = 0x01fb;
         SET_PROPERTY_OBJECT = 0x01fc;
         GET_TYPE = 0x0214;
+        GET_XML = 0x027a;
+        SET_XML = 0x027f;
         NEW_SUB_PROPERTY = 0x0226;
         DELETE_SUB_PROPERTY = 0x0227;
         EXISTS = 0x023a;
@@ -399,6 +402,8 @@ pub(crate) mod property_object_introspect {
     pub(crate) const GET_TYPE_DISPLAY_STRING: i32 = 0x249;
     /// `GetTypeFlags`, 2 params.
     pub(crate) const GET_TYPE_FLAGS: i32 = 0x26c;
+    /// `IsTypeDefinition`, read-only boolean.
+    pub(crate) const IS_TYPE_DEFINITION: i32 = 0x25f;
     /// `GetFlags`, 2 params.
     pub(crate) const GET_FLAGS: i32 = 0x212;
     /// `SetFlags`, 3 params.

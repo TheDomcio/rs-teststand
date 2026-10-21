@@ -86,6 +86,66 @@ impl PropertyObject {
             .as_f64()?)
     }
 
+    /// Reads an array element by flat offset
+    /// (`PropertyObject.GetValNumberByOffset`).
+    ///
+    /// # Errors
+    /// [`Error`] if the offset is out of range or the COM call returns an
+    /// unexpected type.
+    pub fn get_val_number_by_offset(&self, array_offset: i32, options: i32) -> Result<f64, Error> {
+        Ok(self
+            .dispatch
+            .call(
+                property_object::GET_VAL_NUMBER_BY_OFFSET,
+                &[Value::I32(array_offset), Value::I32(options)],
+            )?
+            .as_f64()?)
+    }
+
+    /// Generates XML for the object (`PropertyObject.GetXML`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn get_xml(
+        &self,
+        generation_options: i32,
+        initial_indentation: i32,
+        default_name: &str,
+        format_string: &str,
+    ) -> Result<String, Error> {
+        Ok(self
+            .dispatch
+            .call(
+                property_object::GET_XML,
+                &[
+                    Value::I32(generation_options),
+                    Value::I32(initial_indentation),
+                    Value::Str(default_name.to_owned()),
+                    Value::Str(format_string.to_owned()),
+                ],
+            )?
+            .into_string()?)
+    }
+
+    /// Reads XML into the object (`PropertyObject.SetXML`).
+    ///
+    /// `reserved2` defaults to `1` in the engine when the optional argument is
+    /// omitted; pass `1` for the documented default.
+    ///
+    /// # Errors
+    /// [`Error`] if the XML is invalid or the COM call fails.
+    pub fn set_xml(&self, xml: &str, reserved1: i32, reserved2: i32) -> Result<(), Error> {
+        self.dispatch.call(
+            property_object::SET_XML,
+            &[
+                Value::Str(xml.to_owned()),
+                Value::I32(reserved1),
+                Value::I32(reserved2),
+            ],
+        )?;
+        Ok(())
+    }
+
     /// Writes a numeric property by lookup path (`PropertyObject.SetValNumber`).
     ///
     /// # Errors
@@ -667,6 +727,18 @@ impl PropertyObject {
         Ok(crate::PropertyValueTypeFlags::from_bits_retain(raw))
     }
 
+    /// Whether the object is a type definition
+    /// (`PropertyObject.IsTypeDefinition`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn is_type_definition(&self) -> Result<bool, Error> {
+        Ok(self
+            .dispatch
+            .get(introspect::IS_TYPE_DEFINITION)?
+            .as_bool()?)
+    }
+
     /// A property's flags (`GetFlags`).
     ///
     /// `lookup_string` follows the same rules as the value getters: an empty
@@ -985,6 +1057,7 @@ mod tests {
 
     use super::PropertyObject;
     use crate::PropertyFlags;
+    use crate::dispids::property_object;
     use crate::dispids::property_object_introspect as introspect;
 
     #[derive(Debug, Clone, PartialEq, Eq)]
@@ -1017,6 +1090,7 @@ mod tests {
             match self.properties.get(&dispid) {
                 Some(Value::Str(text)) => Ok(Value::Str(text.clone())),
                 Some(Value::I32(number)) => Ok(Value::I32(*number)),
+                Some(Value::Bool(flag)) => Ok(Value::Bool(*flag)),
                 _ => Err(ComError::hresult(-17000, "fake: unscripted get")),
             }
         }
@@ -1060,7 +1134,10 @@ mod tests {
                 | introspect::GET_INSTANCE_OVERRIDE_FLAGS => Ok(Value::I32(0x9)),
                 introspect::SET_FLAGS
                 | introspect::SET_INSTANCE_DEFAULT_FLAGS
-                | introspect::SET_INSTANCE_OVERRIDE_FLAGS => Ok(Value::Empty),
+                | introspect::SET_INSTANCE_OVERRIDE_FLAGS
+                | property_object::SET_XML => Ok(Value::Empty),
+                property_object::GET_XML => Ok(Value::Str("<xml/>".to_owned())),
+                property_object::GET_VAL_NUMBER_BY_OFFSET => Ok(Value::F64(2.5)),
                 _ => Err(ComError::hresult(-17000, "fake: unscripted call")),
             }
         }
@@ -1082,6 +1159,21 @@ mod tests {
             object.get_flags("", 0)?,
             PropertyFlags::NOT_EDITABLE | PropertyFlags::HIDDEN
         );
+        Ok(())
+    }
+
+    #[test]
+    fn reads_xml_offsets_and_the_type_definition_flag() -> Result<(), crate::Error> {
+        let calls = Arc::new(Mutex::new(Vec::new()));
+        let object = PropertyObject::new(Fake::boxed(
+            HashMap::from([(introspect::IS_TYPE_DEFINITION, Value::Bool(true))]),
+            &calls,
+        ));
+
+        assert_eq!(object.get_val_number_by_offset(1, 0)?, 2.5);
+        assert_eq!(object.get_xml(0, 0, "", "")?, "<xml/>");
+        object.set_xml("<xml/>", 0, 1)?;
+        assert!(object.is_type_definition()?);
         Ok(())
     }
 
