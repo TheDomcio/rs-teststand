@@ -477,6 +477,26 @@ pub(crate) mod property_object_introspect {
     pub(crate) const SEARCH: i32 = 0x27b;
 }
 
+/// Members of `ResultLogger`.
+pub(crate) mod result_logger {
+    /// `Open`, path and two boolean flags.
+    pub(crate) const OPEN: i32 = 0x32;
+    /// `Close`, no parameters.
+    pub(crate) const CLOSE: i32 = 0x33;
+    /// `Path`, read/write string.
+    pub(crate) const PATH: i32 = 0x3f;
+    /// `ContinueInNewFile`, one path.
+    pub(crate) const CONTINUE_IN_NEW_FILE: i32 = 0x40;
+    /// `Flush`, no parameters.
+    pub(crate) const FLUSH: i32 = 0x41;
+    /// `DeferrableRename`, one path.
+    pub(crate) const DEFERRABLE_RENAME: i32 = 0x42;
+    /// `GetFilesWritten`, one clear flag.
+    pub(crate) const GET_FILES_WRITTEN: i32 = 0x43;
+    /// `RecordFilesWritten`, read/write boolean.
+    pub(crate) const RECORD_FILES_WRITTEN: i32 = 0x44;
+}
+
 /// Members of `ExecutionOutputRecordStreams`.
 pub(crate) mod execution_output_record_streams {
     /// `NewStream`, one name.

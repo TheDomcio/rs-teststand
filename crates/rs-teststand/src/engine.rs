@@ -562,6 +562,18 @@ impl Engine {
             .collect())
     }
 
+    /// Creates a results-file writer (`Engine.NewResultLogger`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn new_result_logger(&self) -> Result<crate::ResultLogger, Error> {
+        Ok(crate::ResultLogger::new(
+            self.dispatch
+                .call(dispid::NEW_RESULT_LOGGER, &[])?
+                .into_object()?,
+        ))
+    }
+
     /// Creates a results log for reading a results file
     /// (`Engine.NewResultLog`).
     ///
