@@ -277,6 +277,17 @@ fn a_custom_rule_and_module_can_be_created() -> Result<(), Error> {
 
 #[test]
 #[ignore = "requires a live analyzer"]
+fn a_child_project_can_be_created_and_added() -> Result<(), Error> {
+    let analyzer = Analyzer::new()?;
+    let parent = analyzer.new_project()?;
+    let child = parent.new_child_project()?;
+    parent.add_child_project(&child)?;
+    parent.remove_child_project(&child)?;
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires a live analyzer"]
 fn a_project_round_trips_through_a_file() -> Result<(), Error> {
     let analyzer = Analyzer::new()?;
     let engine = analyzer.engine()?;

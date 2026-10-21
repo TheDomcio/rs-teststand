@@ -857,6 +857,12 @@ pub(crate) mod project {
     pub(crate) const ANALYZE_TEMPLATES_FILE: i32 = 0x9;
     /// `StartFileAnalysis`, one file parameter.
     pub(crate) const START_FILE_ANALYSIS: i32 = 0xf;
+    /// `NewChildProject`, no parameters.
+    pub(crate) const NEW_CHILD_PROJECT: i32 = 0x1b;
+    /// `RemoveChildProject`, one project.
+    pub(crate) const REMOVE_CHILD_PROJECT: i32 = 0x1c;
+    /// `AddChildProject`, one project.
+    pub(crate) const ADD_CHILD_PROJECT: i32 = 0x1d;
     /// `AnalyzeFilesCalledBySequenceCalls`, read/write boolean.
     pub(crate) const ANALYZE_FILES_CALLED_BY_SEQUENCE_CALLS: i32 = 0x13;
     /// `AnalyzeModelFiles`, read/write boolean.

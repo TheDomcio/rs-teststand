@@ -25,6 +25,11 @@ impl Project {
         Self { dispatch }
     }
 
+    /// An owned handle to the same project.
+    pub(crate) fn duplicate_dispatch(&self) -> Option<Box<dyn Dispatch>> {
+        self.dispatch.duplicate()
+    }
+
     /// The project file path (`Project.Path`).
     ///
     /// Empty for a project that has never been saved.
@@ -140,6 +145,46 @@ impl Project {
             .dispatch
             .get(project::NUMBER_OF_STEPS_NOT_ANALYZED)?
             .as_i32()?)
+    }
+
+    /// Creates a child project (`Project.NewChildProject`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn new_child_project(&self) -> Result<Self, Error> {
+        Ok(Self::new(
+            self.dispatch
+                .call(project::NEW_CHILD_PROJECT, &[])?
+                .into_object()?,
+        ))
+    }
+
+    /// Adds an existing child project (`Project.AddChildProject`).
+    ///
+    /// # Errors
+    /// [`Error`] if the child has no COM identity or the COM call fails.
+    pub fn add_child_project(&self, child: &Self) -> Result<(), Error> {
+        let handle = child.duplicate_dispatch().ok_or(Error::UnexpectedType {
+            expected: "a live project",
+            actual: "a test fake with no COM identity",
+        })?;
+        self.dispatch
+            .call(project::ADD_CHILD_PROJECT, &[Value::Object(handle)])?;
+        Ok(())
+    }
+
+    /// Removes a child project (`Project.RemoveChildProject`).
+    ///
+    /// # Errors
+    /// [`Error`] if the child has no COM identity or the COM call fails.
+    pub fn remove_child_project(&self, child: &Self) -> Result<(), Error> {
+        let handle = child.duplicate_dispatch().ok_or(Error::UnexpectedType {
+            expected: "a live project",
+            actual: "a test fake with no COM identity",
+        })?;
+        self.dispatch
+            .call(project::REMOVE_CHILD_PROJECT, &[Value::Object(handle)])?;
+        Ok(())
     }
 
     /// The rule set this project applies (`Project.RuleSet`).
@@ -462,8 +507,22 @@ mod tests {
             Ok(())
         }
 
-        fn call(&self, _dispid: i32, _args: &[Value]) -> Result<Value, ComError> {
+        fn call(&self, dispid: i32, _args: &[Value]) -> Result<Value, ComError> {
+            if dispid == project::NEW_CHILD_PROJECT {
+                return Ok(Value::Object(Box::new(Self {
+                    properties: HashMap::new(),
+                })));
+            }
+            if dispid == project::ADD_CHILD_PROJECT || dispid == project::REMOVE_CHILD_PROJECT {
+                return Ok(Value::Empty);
+            }
             Err(ComError::hresult(-17000, "fake: unscripted"))
+        }
+
+        fn duplicate(&self) -> Option<Box<dyn Dispatch>> {
+            Some(Box::new(Self {
+                properties: HashMap::new(),
+            }))
         }
     }
 
@@ -485,6 +544,17 @@ mod tests {
             properties: HashMap::from([(project::PATH, Value::Str(String::new()))]),
         }));
         assert_eq!(project.path()?, "");
+        Ok(())
+    }
+
+    #[test]
+    fn a_child_project_can_be_created_added_and_removed() -> Result<(), crate::Error> {
+        let project = Project::new(Box::new(Fake {
+            properties: HashMap::new(),
+        }));
+        let child = project.new_child_project()?;
+        project.add_child_project(&child)?;
+        project.remove_child_project(&child)?;
         Ok(())
     }
 }
