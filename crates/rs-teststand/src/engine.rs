@@ -449,6 +449,65 @@ impl Engine {
         ))
     }
 
+    /// The engine's undo limit (`Engine.UndoLimit`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn undo_limit(&self) -> Result<i32, Error> {
+        Ok(self.dispatch.get(dispid::UNDO_LIMIT)?.as_i32()?)
+    }
+
+    /// Sets the engine's undo limit (`Engine.UndoLimit`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_undo_limit(&self, limit: i32) -> Result<(), Error> {
+        self.dispatch.put(dispid::UNDO_LIMIT, Value::I32(limit))?;
+        Ok(())
+    }
+
+    /// Creates an undo stack (`Engine.NewUndoStack`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn new_undo_stack(&self) -> Result<crate::undo::UndoStack, Error> {
+        Ok(crate::undo::UndoStack::new(
+            self.dispatch
+                .call(dispid::NEW_UNDO_STACK, &[])?
+                .into_object()?,
+        ))
+    }
+
+    /// Creates an undo item creator (`Engine.NewUndoItemCreator`).
+    ///
+    /// # Errors
+    /// [`Error`] if the file has no COM identity or the COM call fails.
+    pub fn new_undo_item_creator(
+        &self,
+        kind: crate::undo::EditKind,
+        edited_file: &crate::PropertyObjectFile,
+        edit_description: &str,
+    ) -> Result<crate::undo::UndoItemCreator, Error> {
+        let file = edited_file
+            .duplicate_dispatch()
+            .ok_or(Error::UnexpectedType {
+                expected: "a live property-object file",
+                actual: "a test fake with no COM identity",
+            })?;
+        Ok(crate::undo::UndoItemCreator::new(
+            self.dispatch
+                .call(
+                    dispid::NEW_UNDO_ITEM_CREATOR,
+                    &[
+                        Value::I32(kind.as_i32()),
+                        Value::Object(file),
+                        Value::Str(edit_description.to_owned()),
+                    ],
+                )?
+                .into_object()?,
+        ))
+    }
+
     /// The synchronization manager for a named object
     /// (`Engine.GetSyncManager`).
     ///

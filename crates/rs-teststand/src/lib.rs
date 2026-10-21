@@ -37,6 +37,7 @@ pub mod station;
 pub mod streams;
 pub mod sync;
 pub mod types;
+pub mod undo;
 pub mod users;
 pub mod watch;
 pub mod watchdog;
@@ -97,6 +98,7 @@ pub use sync::{
     Rendezvous, Semaphore, SyncManager, WaitResult,
 };
 pub use types::{TypeCategory, TypeUsageList};
+pub use undo::{CreateUndoItemOption, EditKind, UndoItem, UndoItemCreator, UndoItems, UndoStack};
 pub use users::{User, UserPrivilege, UsersFile};
 pub use watch::{
     WatchExpression, WatchExpressionBreakType, WatchExpressionFilterOptions, WatchExpressions,

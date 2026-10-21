@@ -96,6 +96,9 @@ define_dispid_group! {
         NEW_OUTPUT_MESSAGE = 0x025c;
         OUTPUT_MESSAGES_ENABLED = 0x025d;
         NEW_OUTPUT_MESSAGES = 0x025e;
+        NEW_UNDO_ITEM_CREATOR = 0x025a;
+        NEW_UNDO_STACK = 0x025f;
+        UNDO_LIMIT = 0x027a;
         GET_TYPE_DEFINITION = 0x01dc;
         GET_TYPE_NAMES = 0x01dd;
         DIFF_SEQUENCE_FILES = 0x0258;
@@ -995,6 +998,20 @@ pub(crate) mod locations {
     pub(crate) const ITEM: i32 = 0x0;
     /// `Count`, read-only integer.
     pub(crate) const COUNT: i32 = 0x1;
+    /// `Clear`, no parameters.
+    pub(crate) const CLEAR: i32 = 0xa;
+    /// `GotoLocation`, one index.
+    pub(crate) const GOTO_LOCATION: i32 = 0xb;
+    /// `ApplicationSite`, read/write integer.
+    pub(crate) const APPLICATION_SITE: i32 = 0xd;
+    /// `LocationFound`, read/write boolean.
+    pub(crate) const LOCATION_FOUND: i32 = 0xe;
+    /// `LocationNotFoundMessage`, read/write string.
+    pub(crate) const LOCATION_NOT_FOUND_MESSAGE: i32 = 0xf;
+    /// `CanDisplayDialog`, read/write boolean.
+    pub(crate) const CAN_DISPLAY_DIALOG: i32 = 0x10;
+    /// `ToPropertyObject`, no parameters.
+    pub(crate) const TO_PROPERTY_OBJECT: i32 = 0x11;
 }
 
 /// Members of `WatchExpression`.
@@ -1610,6 +1627,100 @@ pub(crate) mod rule_setting_values {
     pub(crate) const GET_STRING_VALUE: i32 = 0x4;
     /// `GetNumberValue`, one setting name.
     pub(crate) const GET_NUMBER_VALUE: i32 = 0x5;
+}
+
+/// Members of `IUndoItem`.
+pub(crate) mod undo_item {
+    /// `EditedFile`, read-only object.
+    pub(crate) const EDITED_FILE: i32 = 0x1;
+    /// `EditedObjects`, read-only variant array.
+    pub(crate) const EDITED_OBJECTS: i32 = 0x2;
+    /// `UndoDescription`, read-only string.
+    pub(crate) const UNDO_DESCRIPTION: i32 = 0x3;
+    /// `RedoDescription`, read-only string.
+    pub(crate) const REDO_DESCRIPTION: i32 = 0x4;
+    /// `CanUndo`, read-only boolean.
+    pub(crate) const CAN_UNDO: i32 = 0x5;
+    /// `CanRedo`, read-only boolean.
+    pub(crate) const CAN_REDO: i32 = 0x6;
+    /// `UndoEditKind`, read-only integer.
+    pub(crate) const UNDO_EDIT_KIND: i32 = 0x7;
+    /// `RedoEditKind`, read-only integer.
+    pub(crate) const REDO_EDIT_KIND: i32 = 0x8;
+    /// `UndoStack`, read/write object.
+    pub(crate) const UNDO_STACK: i32 = 0x9;
+    /// `RefreshEnabled`, read/write boolean.
+    pub(crate) const REFRESH_ENABLED: i32 = 0xa;
+    /// `PreEditLocations`, read-only object.
+    pub(crate) const PRE_EDIT_LOCATIONS: i32 = 0xb;
+    /// `PostEditLocations`, read-only object.
+    pub(crate) const POST_EDIT_LOCATIONS: i32 = 0xc;
+    /// `PreEditChangeCount`, read-only integer.
+    pub(crate) const PRE_EDIT_CHANGE_COUNT: i32 = 0xd;
+    /// `PostEditChangeCount`, read-only integer.
+    pub(crate) const POST_EDIT_CHANGE_COUNT: i32 = 0xe;
+    /// `Undo`, no parameters.
+    pub(crate) const UNDO: i32 = 0xf;
+    /// `Redo`, no parameters.
+    pub(crate) const REDO: i32 = 0x10;
+    /// `TopObjects`, read-only variant array (`UndoItem2`).
+    pub(crate) const TOP_OBJECTS: i32 = 0x14;
+    /// `LookupStrings`, read-only string array (`UndoItem2`).
+    pub(crate) const LOOKUP_STRINGS: i32 = 0x15;
+}
+
+/// Members of `UndoItemCreator`.
+pub(crate) mod undo_item_creator {
+    /// `HaveEditsBeenMade`, read-only boolean.
+    pub(crate) const HAVE_EDITS_BEEN_MADE: i32 = 0x1;
+    /// `EndEdit`, no parameters.
+    pub(crate) const END_EDIT: i32 = 0x3;
+    /// `BeginBatchEdit`, one object array.
+    pub(crate) const BEGIN_BATCH_EDIT: i32 = 0x4;
+    /// `EndBatchEdit`, no parameters.
+    pub(crate) const END_BATCH_EDIT: i32 = 0x5;
+    /// `CreateAndPostUndoItem`, options and optional locations.
+    pub(crate) const CREATE_AND_POST_UNDO_ITEM: i32 = 0x6;
+    /// `BeginEditEx`, object and lookup string.
+    pub(crate) const BEGIN_EDIT_EX: i32 = 0x7;
+}
+
+/// Members of `UndoItems`.
+pub(crate) mod undo_items {
+    /// `Item`, one index.
+    pub(crate) const ITEM: i32 = 0x0;
+    /// `Remove`, one index.
+    pub(crate) const REMOVE: i32 = 0x1;
+    /// `Count`, read-only integer.
+    pub(crate) const COUNT: i32 = 0x2;
+    /// `TopItem`, read-only object.
+    pub(crate) const TOP_ITEM: i32 = 0x3;
+}
+
+/// Members of `UndoStack`.
+pub(crate) mod undo_stack {
+    /// `GetUndoDescription`, one accelerator prefix.
+    pub(crate) const GET_UNDO_DESCRIPTION: i32 = 0x1;
+    /// `GetRedoDescription`, one accelerator prefix.
+    pub(crate) const GET_REDO_DESCRIPTION: i32 = 0x2;
+    /// `CanUndo`, read-only boolean.
+    pub(crate) const CAN_UNDO: i32 = 0x3;
+    /// `CanRedo`, read-only boolean.
+    pub(crate) const CAN_REDO: i32 = 0x4;
+    /// `Undo`, no parameters.
+    pub(crate) const UNDO: i32 = 0x5;
+    /// `Redo`, no parameters.
+    pub(crate) const REDO: i32 = 0x6;
+    /// `Push`, one undo item.
+    pub(crate) const PUSH: i32 = 0x7;
+    /// `Clear`, no parameters.
+    pub(crate) const CLEAR: i32 = 0x8;
+    /// `AggregateTopUndoItems`, count and optional locations.
+    pub(crate) const AGGREGATE_TOP_UNDO_ITEMS: i32 = 0x9;
+    /// `UndoItems`, read-only collection.
+    pub(crate) const UNDO_ITEMS: i32 = 0xa;
+    /// `RedoItems`, read-only collection.
+    pub(crate) const REDO_ITEMS: i32 = 0xb;
 }
 
 /// Members of `WatchExpressions`.
