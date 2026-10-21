@@ -28,6 +28,7 @@ mod error_codes;
 pub mod execution;
 pub mod expression;
 pub mod file_differ;
+pub mod find;
 pub mod license;
 pub mod messaging;
 pub mod property;
@@ -72,6 +73,9 @@ pub use expression::{
 pub use file_differ::{
     SequenceFileDiffer, SequenceFileDifferOptions, SequenceFileDifferenceSection,
     SequenceFileDifferenceSections, SequenceFileDifferenceSectionsIter, SequenceFileDifferenceType,
+};
+pub use find::{
+    FindFilePromptOption, FindFileResult, FindFileSearchListOption, FindPathResult, FindPathStatus,
 };
 pub use license::{AcquireLicenseOptions, ApplicationLicense, HeldLicense, LicenseType};
 pub use messaging::{

@@ -26,6 +26,19 @@ use crate::variant::OwnedVariant;
 /// (`DISPID_PROPERTYPUT`).
 const DISPID_PROPERTYPUT: i32 = -3;
 
+/// One argument in a call, either a value or a by-reference output slot.
+///
+/// Most members take their outputs after every input. A few, such as
+/// `Engine.FindFile`, place an output between inputs, which is why a call can
+/// describe its whole argument list rather than only a trailing output list.
+#[derive(Debug)]
+pub enum InvokeArgument {
+    /// An input value.
+    Value(Value),
+    /// A by-reference output slot.
+    Output(OutKind),
+}
+
 /// The late-bound call surface a wrapper needs from a COM object.
 ///
 /// Kept deliberately small; it grows a member only when a wrapper first needs
@@ -77,6 +90,27 @@ pub trait Dispatch: fmt::Debug {
         Err(ComError::UnexpectedType {
             expected: "a live COM object",
             actual: "a dispatch with no by-reference support",
+        })
+    }
+
+    /// Calls a member whose by-reference outputs can appear anywhere in the
+    /// argument list.
+    ///
+    /// Returns the member's own result together with the values written into
+    /// the output slots, in the order the slots appear in `arguments`.
+    ///
+    /// # Errors
+    /// [`ComError`] if the call fails, or [`ComError::UnexpectedType`] on a
+    /// dispatch that has no COM identity to call through.
+    fn call_with_arguments(
+        &self,
+        dispid: i32,
+        arguments: &[InvokeArgument],
+    ) -> Result<(Value, Vec<Value>), ComError> {
+        let _ = (dispid, arguments);
+        Err(ComError::UnexpectedType {
+            expected: "a live COM object",
+            actual: "a dispatch with no positional by-reference support",
         })
     }
 
@@ -268,6 +302,53 @@ impl Dispatch for ComDispatch {
         // The by-reference variants stay alive until the engine has written
         // through them, which is why this is dropped only now.
         drop(arguments);
+
+        let written = slots.iter().map(OutSlot::to_value).collect();
+        Ok((result.to_value()?, written))
+    }
+
+    fn call_with_arguments(
+        &self,
+        dispid: i32,
+        arguments: &[InvokeArgument],
+    ) -> Result<(Value, Vec<Value>), ComError> {
+        let mut slots: Vec<OutSlot> = Vec::new();
+        let mut variants = Vec::with_capacity(arguments.len());
+        for argument in arguments {
+            match argument {
+                InvokeArgument::Value(value) => {
+                    variants.push(OwnedVariant::from_value(value)?);
+                }
+                InvokeArgument::Output(kind) => {
+                    let mut slot = OutSlot::new(*kind);
+                    variants.push(slot.as_variant());
+                    // The variant points into the boxed cell, and moving the
+                    // box into `slots` does not move the cell itself.
+                    slots.push(slot);
+                }
+            }
+        }
+        // COM reads rgvarg back to front, so the whole list is reversed once.
+        variants.reverse();
+
+        let count = u32::try_from(variants.len())
+            .map_err(|_| ComError::hresult(-2_147_024_809, "argument count exceeds COM limit"))?;
+        let params = DISPPARAMS {
+            rgvarg: variants.as_mut_ptr().cast::<VARIANT>(),
+            rgdispidNamedArgs: std::ptr::null_mut(),
+            cArgs: count,
+            cNamedArgs: 0,
+        };
+
+        let result = self.invoke(
+            dispid,
+            DISPATCH_METHOD | DISPATCH_PROPERTYGET,
+            &params,
+            "IDispatch::Invoke (call with arguments)",
+        )?;
+        // The by-reference variants stay alive until the engine has written
+        // through them, which is why this is dropped only now.
+        drop(variants);
 
         let written = slots.iter().map(OutSlot::to_value).collect();
         Ok((result.to_value()?, written))

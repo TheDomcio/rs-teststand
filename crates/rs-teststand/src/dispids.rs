@@ -99,6 +99,8 @@ define_dispid_group! {
         NEW_UNDO_ITEM_CREATOR = 0x025a;
         NEW_UNDO_STACK = 0x025f;
         UNDO_LIMIT = 0x027a;
+        FIND_FILE = 0x0104;
+        FIND_PATH = 0x0105;
         GET_TYPE_DEFINITION = 0x01dc;
         GET_TYPE_NAMES = 0x01dd;
         DIFF_SEQUENCE_FILES = 0x0258;

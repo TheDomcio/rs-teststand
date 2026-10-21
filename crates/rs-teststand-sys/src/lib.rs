@@ -17,8 +17,8 @@ mod variant;
 mod window;
 
 pub use dispatch::{
-    ComDispatch, Dispatch, close_apartment, create_dispatch, create_dispatch_from_class_id,
-    init_apartment,
+    ComDispatch, Dispatch, InvokeArgument, close_apartment, create_dispatch,
+    create_dispatch_from_class_id, init_apartment,
 };
 pub use error::ComError;
 pub use value::{OutKind, Value};

@@ -1,6 +1,6 @@
 //! The `Engine`, root of the object model and factory for everything else.
 
-use rs_teststand_sys::{Dispatch, OutKind, Value, create_dispatch};
+use rs_teststand_sys::{Dispatch, InvokeArgument, OutKind, Value, create_dispatch};
 
 #[path = "engine_startup.rs"]
 mod startup;
@@ -506,6 +506,123 @@ impl Engine {
                 )?
                 .into_object()?,
         ))
+    }
+
+    /// Searches the configured directories for a file
+    /// (`Engine.FindFile`).
+    ///
+    /// The reference marks `FindFile` obsolete in favor of `FindFileEx`.
+    /// `FindFileEx` is present in the 2026 type library but absent from 2016,
+    /// and its minimum version is not confirmed, so this wrapper binds the
+    /// compatibility member.
+    ///
+    /// `current_sequence_file` is optional; when supplied, the search begins in
+    /// that file's directory if the station enables the current sequence-file
+    /// directory.
+    ///
+    /// # Errors
+    /// [`Error`] if the sequence file has no COM identity or the COM call
+    /// fails.
+    pub fn find_file(
+        &self,
+        file_to_find: &str,
+        prompt: crate::find::FindFilePromptOption,
+        search_list: crate::find::FindFileSearchListOption,
+        is_command: bool,
+        current_sequence_file: Option<&crate::SequenceFile>,
+    ) -> Result<crate::find::FindFileResult, Error> {
+        let context = match current_sequence_file {
+            Some(file) => {
+                Value::Object(file.duplicate_dispatch().ok_or(Error::UnexpectedType {
+                    expected: "a live sequence file",
+                    actual: "a test fake with no COM identity",
+                })?)
+            }
+            None => Value::Empty,
+        };
+        let (found, outputs) = self.dispatch.call_with_arguments(
+            dispid::FIND_FILE,
+            &[
+                InvokeArgument::Value(Value::Str(file_to_find.to_owned())),
+                InvokeArgument::Output(OutKind::Text),
+                InvokeArgument::Output(OutKind::Bool),
+                InvokeArgument::Value(Value::I32(prompt.as_i32())),
+                InvokeArgument::Value(Value::I32(search_list.as_i32())),
+                InvokeArgument::Value(Value::Bool(is_command)),
+                InvokeArgument::Value(context),
+            ],
+        )?;
+        let mut outputs = outputs.into_iter();
+        let absolute_path = outputs
+            .next()
+            .ok_or(Error::UnexpectedType {
+                expected: "an absolute path",
+                actual: "the engine returned no output",
+            })?
+            .into_string()?;
+        let user_cancelled = outputs
+            .next()
+            .ok_or(Error::UnexpectedType {
+                expected: "a cancellation flag",
+                actual: "the engine returned no output",
+            })?
+            .as_bool()?;
+        Ok(crate::find::FindFileResult {
+            found: found.as_bool()?,
+            absolute_path: (!absolute_path.is_empty()).then_some(absolute_path),
+            user_cancelled,
+        })
+    }
+
+    /// Searches the configured directories for a file or directory
+    /// (`Engine.FindPath`).
+    ///
+    /// # Errors
+    /// [`Error`] if the sequence file has no COM identity or the COM call
+    /// fails.
+    pub fn find_path(
+        &self,
+        path_to_find: &str,
+        current_sequence_file: Option<&crate::SequenceFile>,
+    ) -> Result<crate::find::FindPathResult, Error> {
+        let context = match current_sequence_file {
+            Some(file) => {
+                Value::Object(file.duplicate_dispatch().ok_or(Error::UnexpectedType {
+                    expected: "a live sequence file",
+                    actual: "a test fake with no COM identity",
+                })?)
+            }
+            None => Value::Empty,
+        };
+        let (found, outputs) = self.dispatch.call_with_arguments(
+            dispid::FIND_PATH,
+            &[
+                InvokeArgument::Value(Value::Str(path_to_find.to_owned())),
+                InvokeArgument::Output(OutKind::Text),
+                InvokeArgument::Output(OutKind::Int),
+                InvokeArgument::Value(context),
+            ],
+        )?;
+        let mut outputs = outputs.into_iter();
+        let absolute_path = outputs
+            .next()
+            .ok_or(Error::UnexpectedType {
+                expected: "an absolute path",
+                actual: "the engine returned no output",
+            })?
+            .into_string()?;
+        let status = outputs
+            .next()
+            .ok_or(Error::UnexpectedType {
+                expected: "a status",
+                actual: "the engine returned no output",
+            })?
+            .as_i32()?;
+        Ok(crate::find::FindPathResult {
+            found: found.as_bool()?,
+            absolute_path: (!absolute_path.is_empty()).then_some(absolute_path),
+            status: crate::find::FindPathStatus::from_i32(status),
+        })
     }
 
     /// The synchronization manager for a named object
@@ -2121,6 +2238,78 @@ mod tests {
                 _ => Err(ComError::hresult(0, "fake: unscripted outputs")),
             }
         }
+
+        #[allow(
+            clippy::indexing_slicing,
+            reason = "the test asserts fixed parameter positions"
+        )]
+        fn call_with_arguments(
+            &self,
+            dispid: i32,
+            arguments: &[rs_teststand_sys::InvokeArgument],
+        ) -> Result<(Value, Vec<Value>), ComError> {
+            match dispid {
+                dispid::FIND_FILE => {
+                    assert_eq!(arguments.len(), 7, "FindFile has seven parameters");
+                    assert!(matches!(
+                        arguments[0],
+                        rs_teststand_sys::InvokeArgument::Value(Value::Str(_))
+                    ));
+                    assert!(matches!(
+                        arguments[1],
+                        rs_teststand_sys::InvokeArgument::Output(rs_teststand_sys::OutKind::Text)
+                    ));
+                    assert!(matches!(
+                        arguments[2],
+                        rs_teststand_sys::InvokeArgument::Output(rs_teststand_sys::OutKind::Bool)
+                    ));
+                    assert!(matches!(
+                        arguments[3],
+                        rs_teststand_sys::InvokeArgument::Value(Value::I32(_))
+                    ));
+                    assert!(matches!(
+                        arguments[4],
+                        rs_teststand_sys::InvokeArgument::Value(Value::I32(_))
+                    ));
+                    assert!(matches!(
+                        arguments[5],
+                        rs_teststand_sys::InvokeArgument::Value(Value::Bool(_))
+                    ));
+                    assert!(matches!(
+                        arguments[6],
+                        rs_teststand_sys::InvokeArgument::Value(Value::Empty)
+                    ));
+                    Ok((
+                        Value::Bool(true),
+                        vec![Value::Str("C:\\found.seq".to_owned()), Value::Bool(false)],
+                    ))
+                }
+                dispid::FIND_PATH => {
+                    assert_eq!(arguments.len(), 4, "FindPath has four parameters");
+                    assert!(matches!(
+                        arguments[0],
+                        rs_teststand_sys::InvokeArgument::Value(Value::Str(_))
+                    ));
+                    assert!(matches!(
+                        arguments[1],
+                        rs_teststand_sys::InvokeArgument::Output(rs_teststand_sys::OutKind::Text)
+                    ));
+                    assert!(matches!(
+                        arguments[2],
+                        rs_teststand_sys::InvokeArgument::Output(rs_teststand_sys::OutKind::Int)
+                    ));
+                    assert!(matches!(
+                        arguments[3],
+                        rs_teststand_sys::InvokeArgument::Value(Value::Empty)
+                    ));
+                    Ok((
+                        Value::Bool(true),
+                        vec![Value::Str("C:\\found".to_owned()), Value::I32(2)],
+                    ))
+                }
+                _ => Err(ComError::hresult(0, "fake: unscripted arguments")),
+            }
+        }
     }
 
     fn engine_with(entries: impl IntoIterator<Item = (i32, Scripted)>) -> Engine {
@@ -2351,6 +2540,32 @@ mod tests {
         let (file, description) = engine.get_station_model_sequence_file()?;
         assert_eq!(description, "Sequential model");
         drop(file);
+        Ok(())
+    }
+
+    #[test]
+    fn find_file_reads_its_interleaved_outputs() -> Result<(), Error> {
+        let engine = engine_with(std::iter::empty());
+        let result = engine.find_file(
+            "found.seq",
+            crate::find::FindFilePromptOption::Disable,
+            crate::find::FindFileSearchListOption::No,
+            false,
+            None,
+        )?;
+        assert!(result.found);
+        assert_eq!(result.absolute_path.as_deref(), Some("C:\\found.seq"));
+        assert!(!result.user_cancelled);
+        Ok(())
+    }
+
+    #[test]
+    fn find_path_reads_its_interleaved_outputs() -> Result<(), Error> {
+        let engine = engine_with(std::iter::empty());
+        let result = engine.find_path("found", None)?;
+        assert!(result.found);
+        assert_eq!(result.absolute_path.as_deref(), Some("C:\\found"));
+        assert_eq!(result.status, Some(crate::find::FindPathStatus::Directory));
         Ok(())
     }
 }
