@@ -60,7 +60,7 @@ pub use enums::{
 pub use error::Error;
 pub use execution::{
     Execution, ExecutionStates, Limits, Report, ReportConversion, ReportSection, ReportSections,
-    ReportSectionsIter, Reports, ReportsIter, ResultError, ResultList, ResultValue,
+    ReportSectionsIter, Reports, ReportsIter, ResultError, ResultList, ResultLog, ResultValue,
     SequenceContext, StepResult, Thread, ThreadTerminationOption,
 };
 pub use expression::{

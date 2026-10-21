@@ -103,6 +103,8 @@ define_dispid_group! {
         FIND_PATH = 0x0105;
         NEW_STEP_TYPE = 0x01a6;
         SERIALIZE_OBJECTS = 0x01d0;
+        NEW_RESULT_LOG = 0x02bd;
+        NEW_RESULT_LOGGER = 0x02bc;
         UNSERIALIZE_OBJECTS = 0x01d1;
         GET_TYPE_DEFINITION = 0x01dc;
         GET_TYPE_NAMES = 0x01dd;
@@ -473,6 +475,32 @@ pub(crate) mod property_object_introspect {
     pub(crate) const GET_NUM_ELEMENTS: i32 = 0x24b;
     /// `Search`, 9 parameters.
     pub(crate) const SEARCH: i32 = 0x27b;
+}
+
+/// Members of `ResultLog`.
+pub(crate) mod result_log {
+    /// `Open`, one path.
+    pub(crate) const OPEN: i32 = 0x32;
+    /// `Close`, no parameters.
+    pub(crate) const CLOSE: i32 = 0x33;
+    /// `ReadNextRecord`, four outputs.
+    pub(crate) const READ_NEXT_RECORD: i32 = 0x34;
+    /// `SetReportPaths`, one property object.
+    pub(crate) const SET_REPORT_PATHS: i32 = 0x35;
+    /// `GetReportPaths`, no parameters.
+    pub(crate) const GET_REPORT_PATHS: i32 = 0x36;
+    /// `OnTheFly`, read-only boolean.
+    pub(crate) const ON_THE_FLY: i32 = 0x37;
+    /// `Path`, read-only string.
+    pub(crate) const PATH: i32 = 0x38;
+    /// `ClosedWhenWritten`, read-only boolean.
+    pub(crate) const CLOSED_WHEN_WRITTEN: i32 = 0x39;
+    /// `UniqueId`, read-only string.
+    pub(crate) const UNIQUE_ID: i32 = 0x3a;
+    /// `SecondsAtStartIn1970UniversalCoordinatedTime`, read-only double.
+    pub(crate) const SECONDS_AT_START: i32 = 0x3b;
+    /// `SimulateOnTheFly`, read/write boolean.
+    pub(crate) const SIMULATE_ON_THE_FLY: i32 = 0x3c;
 }
 
 /// `Execution` dispinterface members.

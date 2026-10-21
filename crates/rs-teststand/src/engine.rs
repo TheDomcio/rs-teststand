@@ -562,6 +562,19 @@ impl Engine {
             .collect())
     }
 
+    /// Creates a results log for reading a results file
+    /// (`Engine.NewResultLog`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn new_result_log(&self) -> Result<crate::ResultLog, Error> {
+        Ok(crate::ResultLog::new(
+            self.dispatch
+                .call(dispid::NEW_RESULT_LOG, &[])?
+                .into_object()?,
+        ))
+    }
+
     /// Creates a custom step type (`Engine.NewStepType`).
     ///
     /// The returned type is empty until it is configured through its property
