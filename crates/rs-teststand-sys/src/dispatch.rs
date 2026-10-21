@@ -37,6 +37,8 @@ pub enum InvokeArgument {
     Value(Value),
     /// A by-reference output slot.
     Output(OutKind),
+    /// A by-reference string that starts with a value and is updated in place.
+    InOutText(String),
 }
 
 /// The late-bound call surface a wrapper needs from a COM object.
@@ -327,6 +329,11 @@ impl Dispatch for ComDispatch {
                     variants.push(slot.as_variant());
                     // The variant points into the boxed cell, and moving the
                     // box into `slots` does not move the cell itself.
+                    slots.push(slot);
+                }
+                InvokeArgument::InOutText(text) => {
+                    let mut slot = OutSlot::Text(Box::new(BSTR::from(text.as_str())));
+                    variants.push(slot.as_variant());
                     slots.push(slot);
                 }
             }

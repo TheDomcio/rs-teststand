@@ -4,7 +4,7 @@ use crate::Error;
 use crate::dispids::property_object;
 use crate::dispids::property_object_introspect as introspect;
 use crate::enums::PropValType;
-use rs_teststand_sys::{Dispatch, OutKind, Value};
+use rs_teststand_sys::{Dispatch, InvokeArgument, OutKind, Value};
 
 /// Safe wrapper for TestStand™ `PropertyObject` (`IPropertyObject`).
 #[derive(Debug)]
@@ -316,6 +316,38 @@ impl PropertyObject {
             ],
         )?;
         Ok(())
+    }
+
+    /// Adds the object's contents to a serialized stream
+    /// (`PropertyObject.Serialize`).
+    ///
+    /// The stream is updated in place by the engine; this wrapper takes the
+    /// current text and returns the updated text.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn serialize(
+        &self,
+        stream: &str,
+        object_name: &str,
+        rw_options: i32,
+    ) -> Result<String, Error> {
+        let (_, outputs) = self.dispatch.call_with_arguments(
+            property_object::SERIALIZE,
+            &[
+                InvokeArgument::InOutText(stream.to_owned()),
+                InvokeArgument::Value(Value::Str(object_name.to_owned())),
+                InvokeArgument::Value(Value::I32(rw_options)),
+            ],
+        )?;
+        Ok(outputs
+            .into_iter()
+            .next()
+            .ok_or(Error::UnexpectedType {
+                expected: "the updated serialized stream",
+                actual: "the engine returned none",
+            })?
+            .into_string()?)
     }
 
     /// Reads serialized content into the object
@@ -1278,7 +1310,7 @@ mod tests {
     use std::collections::HashMap;
     use std::sync::{Arc, Mutex};
 
-    use rs_teststand_sys::{ComError, Dispatch, Value};
+    use rs_teststand_sys::{ComError, Dispatch, InvokeArgument, Value};
 
     use super::PropertyObject;
     use crate::PropertyFlags;
@@ -1340,6 +1372,21 @@ mod tests {
                 properties: HashMap::new(),
                 calls: Arc::clone(&self.calls),
             }))
+        }
+
+        fn call_with_arguments(
+            &self,
+            dispid: i32,
+            arguments: &[InvokeArgument],
+        ) -> Result<(Value, Vec<Value>), ComError> {
+            if dispid != property_object::SERIALIZE {
+                return Err(ComError::hresult(0, "fake: unscripted arguments"));
+            }
+            assert!(matches!(
+                arguments.first(),
+                Some(InvokeArgument::InOutText(_))
+            ));
+            Ok((Value::Empty, vec![Value::Str("serialized".to_owned())]))
         }
 
         fn call(&self, dispid: i32, args: &[Value]) -> Result<Value, ComError> {
@@ -1440,6 +1487,14 @@ mod tests {
         object.set_val_unsigned_integer64_by_offset(0, 0, 12)?;
         object.set_property_object_by_offset(0, 0, &replacement)?;
         object.unserialize_ex("stream", "name", 0, 1)?;
+        Ok(())
+    }
+
+    #[test]
+    fn serializes_into_an_in_out_stream() -> Result<(), crate::Error> {
+        let calls = Arc::new(Mutex::new(Vec::new()));
+        let object = PropertyObject::new(Fake::boxed(HashMap::new(), &calls));
+        assert_eq!(object.serialize("existing", "name", 0)?, "serialized");
         Ok(())
     }
 

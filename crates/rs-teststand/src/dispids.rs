@@ -223,6 +223,7 @@ define_dispid_group! {
         GET_VAL_UNSIGNED_INTEGER64_BY_OFFSET = 0x02d6;
         SET_VAL_UNSIGNED_INTEGER64_BY_OFFSET = 0x02d7;
         UNSERIALIZE_EX = 0x026a;
+        SERIALIZE = 0x023f;
         SET_VAL_NUMBER = 0x01f6;
         GET_VAL_BOOLEAN = 0x01f7;
         SET_VAL_BOOLEAN = 0x01f8;
