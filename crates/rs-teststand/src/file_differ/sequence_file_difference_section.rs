@@ -1,6 +1,6 @@
 //! One node in the file-difference tree.
 
-use rs_teststand_sys::Dispatch;
+use rs_teststand_sys::{Dispatch, OutKind, Value};
 
 use crate::Error;
 use crate::dispids::sequence_file_difference_section;
@@ -120,6 +120,39 @@ impl SequenceFileDifferenceSection {
             .collect())
     }
 
+    /// Reads the two difference groups at an index
+    /// (`SequenceFileDifferenceSection.GetDifferenceGroup`).
+    ///
+    /// The engine reports each group as an integer array; this wrapper returns
+    /// them in file order without interpreting the identifiers.
+    ///
+    /// # Errors
+    /// [`Error`] if the index is out of range or the COM call returns an
+    /// unexpected type.
+    pub fn difference_group(&self, index: i32) -> Result<(Vec<i32>, Vec<i32>), Error> {
+        let (_, outputs) = self.dispatch.call_with_outputs(
+            sequence_file_difference_section::GET_DIFFERENCE_GROUP,
+            &[Value::I32(index)],
+            &[OutKind::IntArray, OutKind::IntArray],
+        )?;
+        let mut outputs = outputs.into_iter();
+        let file1 = outputs
+            .next()
+            .ok_or(Error::UnexpectedType {
+                expected: "two difference groups",
+                actual: "the engine returned fewer",
+            })?
+            .into_i32_array()?;
+        let file2 = outputs
+            .next()
+            .ok_or(Error::UnexpectedType {
+                expected: "two difference groups",
+                actual: "the engine returned fewer",
+            })?
+            .into_i32_array()?;
+        Ok((file1, file2))
+    }
+
     /// How many child groups this section has
     /// (`NumberOfDifferenceGroups`).
     ///
@@ -166,5 +199,55 @@ impl SequenceFileDifferenceSection {
                 .get(sequence_file_difference_section::SUB_SECTIONS)?
                 .into_object()?,
         ))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rs_teststand_sys::{ComError, Dispatch, OutKind, Value};
+
+    use super::SequenceFileDifferenceSection;
+    use crate::dispids::sequence_file_difference_section;
+
+    #[derive(Debug)]
+    struct Fake;
+
+    impl Dispatch for Fake {
+        fn get(&self, _dispid: i32) -> Result<Value, ComError> {
+            Err(ComError::hresult(0, "fake: unscripted get"))
+        }
+
+        fn put(&self, _dispid: i32, _value: Value) -> Result<(), ComError> {
+            Ok(())
+        }
+
+        fn call(&self, _dispid: i32, _args: &[Value]) -> Result<Value, ComError> {
+            Err(ComError::hresult(0, "fake: unscripted call"))
+        }
+
+        fn call_with_outputs(
+            &self,
+            dispid: i32,
+            _args: &[Value],
+            outputs: &[OutKind],
+        ) -> Result<(Value, Vec<Value>), ComError> {
+            if dispid != sequence_file_difference_section::GET_DIFFERENCE_GROUP {
+                return Err(ComError::hresult(0, "fake: unscripted outputs"));
+            }
+            assert_eq!(outputs, [OutKind::IntArray, OutKind::IntArray]);
+            Ok((
+                Value::Empty,
+                vec![Value::I32Array(vec![1, 2]), Value::I32Array(vec![3])],
+            ))
+        }
+    }
+
+    #[test]
+    fn reads_both_difference_group_arrays() -> Result<(), crate::Error> {
+        let section = SequenceFileDifferenceSection::new(Box::new(Fake));
+        let (file1, file2) = section.difference_group(0)?;
+        assert_eq!(file1, [1, 2]);
+        assert_eq!(file2, [3]);
+        Ok(())
     }
 }

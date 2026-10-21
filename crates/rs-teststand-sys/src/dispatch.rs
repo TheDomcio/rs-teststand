@@ -303,7 +303,10 @@ impl Dispatch for ComDispatch {
         // through them, which is why this is dropped only now.
         drop(arguments);
 
-        let written = slots.iter().map(OutSlot::to_value).collect();
+        let written = slots
+            .iter()
+            .map(OutSlot::to_value)
+            .collect::<Result<Vec<_>, _>>()?;
         Ok((result.to_value()?, written))
     }
 
@@ -350,7 +353,10 @@ impl Dispatch for ComDispatch {
         // through them, which is why this is dropped only now.
         drop(variants);
 
-        let written = slots.iter().map(OutSlot::to_value).collect();
+        let written = slots
+            .iter()
+            .map(OutSlot::to_value)
+            .collect::<Result<Vec<_>, _>>()?;
         Ok((result.to_value()?, written))
     }
 }
@@ -369,6 +375,8 @@ enum OutSlot {
     Bool(Box<windows::Win32::Foundation::VARIANT_BOOL>),
     /// A `VT_BYREF | VT_DISPATCH` slot.
     Object(Box<Option<IDispatch>>),
+    /// A `VT_BYREF | VT_ARRAY | VT_I4` slot.
+    IntArray(Box<*mut windows::Win32::System::Com::SAFEARRAY>),
 }
 
 impl OutSlot {
@@ -379,6 +387,7 @@ impl OutSlot {
             OutKind::Int => Self::Int(Box::new(0)),
             OutKind::Bool => Self::Bool(Box::new(windows::Win32::Foundation::VARIANT_BOOL(0))),
             OutKind::Object => Self::Object(Box::new(None)),
+            OutKind::IntArray => Self::IntArray(Box::new(std::ptr::null_mut())),
         }
     }
 
@@ -397,22 +406,37 @@ impl OutSlot {
                 Self::Int(cell) => OwnedVariant::byref_i32(&raw mut **cell),
                 Self::Bool(cell) => OwnedVariant::byref_bool(&raw mut **cell),
                 Self::Object(cell) => OwnedVariant::byref_dispatch(&raw mut **cell),
+                Self::IntArray(cell) => OwnedVariant::byref_i32_array(&raw mut **cell),
             }
         }
     }
 
     /// What the engine wrote into this slot.
-    fn to_value(&self) -> Value {
+    fn to_value(&self) -> Result<Value, ComError> {
         match self {
-            Self::Text(cell) => Value::Str(cell.to_string()),
-            Self::Int(cell) => Value::I32(**cell),
+            Self::Text(cell) => Ok(Value::Str(cell.to_string())),
+            Self::Int(cell) => Ok(Value::I32(**cell)),
             // A VARIANT_BOOL is 0 for false and -1 for true; anything non-zero
             // is true, which is how COM callers are expected to read it.
-            Self::Bool(cell) => Value::Bool(cell.0 != 0),
-            Self::Object(cell) => cell.as_ref().as_ref().map_or_else(
+            Self::Bool(cell) => Ok(Value::Bool(cell.0 != 0)),
+            Self::Object(cell) => Ok(cell.as_ref().as_ref().map_or_else(
                 || Value::Empty,
                 |dispatch| Value::Object(Box::new(ComDispatch::new(dispatch.clone()))),
-            ),
+            )),
+            Self::IntArray(cell) => {
+                let array = **cell;
+                if array.is_null() {
+                    return Ok(Value::I32Array(Vec::new()));
+                }
+                let values = crate::variant::read_i32_array(array)?;
+                // SAFETY: the callee allocated this SAFEARRAY for the output
+                // slot and handed ownership to the caller; its elements have
+                // been copied, so the array is destroyed exactly once here.
+                unsafe {
+                    let _ = windows::Win32::System::Ole::SafeArrayDestroy(array);
+                }
+                Ok(Value::I32Array(values))
+            }
         }
     }
 }

@@ -1285,6 +1285,8 @@ pub(crate) mod sequence_file_difference_section {
     pub(crate) const FILE2_DIFFERENCES: i32 = 0x8;
     /// `NumberOfDifferenceGroups`, read-only integer.
     pub(crate) const NUMBER_OF_DIFFERENCE_GROUPS: i32 = 0x9;
+    /// `GetDifferenceGroup`, one index and two integer-array outputs.
+    pub(crate) const GET_DIFFERENCE_GROUP: i32 = 0xa;
     /// `NumberOfDifferences`, read-only integer.
     pub(crate) const NUMBER_OF_DIFFERENCES: i32 = 0xb;
     /// `TotalNumberOfDifferences`, read-only integer.

@@ -235,4 +235,6 @@ pub enum OutKind {
     Bool,
     /// An automation object, `VT_BYREF | VT_DISPATCH`.
     Object,
+    /// A 32-bit integer array, `VT_BYREF | VT_ARRAY | VT_I4`.
+    IntArray,
 }
