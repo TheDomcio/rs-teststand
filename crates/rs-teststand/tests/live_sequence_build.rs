@@ -329,6 +329,7 @@ fn a_sequence_call_step_exposes_its_module_fields() -> Result<(), Error> {
     let engine = Engine::new()?;
     let step = engine.new_step(NO_ADAPTER, "SequenceCall")?;
     assert!(step.is_sequence_call()?);
+    step.set_sequence_call_uses_current_file(true)?;
     assert!(step.sequence_call_uses_current_file()?);
     step.set_sequence_call_sequence_name("MainSequence")?;
     assert_eq!(step.sequence_call_sequence_name()?, "MainSequence");
@@ -349,6 +350,12 @@ fn adapter_module_helpers_read_back_their_fields() -> Result<(), Error> {
     let labview = engine.new_step(AdapterKeyName::LabView.as_str(), "Action")?;
     labview.set_labview_vi_path("main.vi")?;
     assert_eq!(labview.labview_vi_path()?, "main.vi");
+    labview.set_labview_remote_vi_path("remote.vi")?;
+    assert_eq!(labview.labview_remote_vi_path()?, "remote.vi");
+    labview.set_labview_call_name("Main")?;
+    assert_eq!(labview.labview_call_name()?, "Main");
+    labview.set_labview_namespace("Lib")?;
+    assert_eq!(labview.labview_namespace()?, "Lib");
     labview.set_labview_show_front_panel(true)?;
     assert!(labview.labview_show_front_panel()?);
 

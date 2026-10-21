@@ -522,6 +522,11 @@ impl Step {
     /// This is the adapter-specific property object. Its fields differ by
     /// adapter, so this wrapper returns the tree rather than guessing names.
     ///
+    /// The typed helpers that follow (`sequence_call_*`, `labview_*`, `cvi_*`,
+    /// `dotnet_*`) are conveniences over this tree; the method names are this
+    /// crate's, and the property paths they use are the adapter's own field
+    /// names.
+    ///
     /// # Errors
     /// [`Error`] if the COM call fails or returns an unexpected type.
     pub fn module(&self) -> Result<PropertyObject, Error> {
@@ -780,58 +785,39 @@ impl Step {
         self.module()?.set_val_string("AssemblyPath", 0, path)
     }
 
-    /// The first .NET call's class name (`Step.Module` field
-    /// `Calls[0].ClassName`).
+    /// The .NET class name (`Step.Module` field
+    /// `ClassName`).
     ///
     /// # Errors
     /// [`Error`] if the step has no .NET module or the COM call fails.
     pub fn dotnet_class_name(&self) -> Result<String, Error> {
-        self.module()?.get_val_string("Calls[0].ClassName", 0)
+        self.module()?.get_val_string("ClassName", 0)
     }
 
-    /// Sets the first .NET call's class name.
+    /// Sets the .NET class name.
     ///
     /// # Errors
     /// [`Error`] if the step has no .NET module or the COM call fails.
     pub fn set_dotnet_class_name(&self, class_name: &str) -> Result<(), Error> {
-        self.module()?
-            .set_val_string("Calls[0].ClassName", 0, class_name)
+        self.module()?.set_val_string("ClassName", 0, class_name)
     }
 
-    /// The first .NET call's member name (`Step.Module` field
-    /// `Calls[0].MemberName`).
+    /// The .NET function name (`Step.Module` field
+    /// `FunctionName`).
     ///
     /// # Errors
     /// [`Error`] if the step has no .NET module or the COM call fails.
     pub fn dotnet_member_name(&self) -> Result<String, Error> {
-        self.module()?.get_val_string("Calls[0].MemberName", 0)
+        self.module()?.get_val_string("FunctionName", 0)
     }
 
-    /// Sets the first .NET call's member name.
+    /// Sets the .NET function name.
     ///
     /// # Errors
     /// [`Error`] if the step has no .NET module or the COM call fails.
     pub fn set_dotnet_member_name(&self, member_name: &str) -> Result<(), Error> {
         self.module()?
-            .set_val_string("Calls[0].MemberName", 0, member_name)
-    }
-
-    /// Whether the first .NET call is static (`Step.Module` field
-    /// `Calls[0].Static`).
-    ///
-    /// # Errors
-    /// [`Error`] if the step has no .NET module or the COM call fails.
-    pub fn dotnet_static(&self) -> Result<bool, Error> {
-        self.module()?.get_val_boolean("Calls[0].Static", 0)
-    }
-
-    /// Sets whether the first .NET call is static.
-    ///
-    /// # Errors
-    /// [`Error`] if the step has no .NET module or the COM call fails.
-    pub fn set_dotnet_static(&self, is_static: bool) -> Result<(), Error> {
-        self.module()?
-            .set_val_boolean("Calls[0].Static", 0, is_static)
+            .set_val_string("FunctionName", 0, member_name)
     }
 
     /// The step's type definition (`Step.StepType`).
@@ -1076,7 +1062,6 @@ mod tests {
         step.set_dotnet_assembly_path("module.dll")?;
         step.set_dotnet_class_name("Example")?;
         step.set_dotnet_member_name("Main")?;
-        step.set_dotnet_static(true)?;
         Ok(())
     }
 

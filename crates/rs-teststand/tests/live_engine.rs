@@ -98,14 +98,16 @@ fn breakpoint_switches_round_trip_and_are_restored() -> Result<(), Error> {
 #[ignore = "requires a live TestStand engine"]
 fn the_station_model_file_is_available_and_releasable() -> Result<(), Error> {
     let engine = Engine::new()?;
-    let (file, description) = engine.get_station_model_sequence_file()?;
-
-    assert!(!description.is_empty(), "the model description is empty");
-    assert!(
-        file.num_sequences()? >= 1,
-        "the station model file should hold at least one sequence"
-    );
-    engine.release_sequence_file_ex(file, 0)?;
+    // A station with no process model configured reports no file, which is a
+    // legitimate state rather than a failure.
+    if let Some((file, description)) = engine.get_station_model_sequence_file()? {
+        assert!(!description.is_empty(), "the model description is empty");
+        assert!(
+            file.num_sequences()? >= 1,
+            "the station model file should hold at least one sequence"
+        );
+        engine.release_sequence_file_ex(file, 0)?;
+    }
     Ok(())
 }
 

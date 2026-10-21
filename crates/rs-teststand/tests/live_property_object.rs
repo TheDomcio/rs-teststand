@@ -146,7 +146,7 @@ fn objects_round_trip_through_the_engine_serializer() -> Result<(), Error> {
     let root = engine.new_property_object(PropValType::Container, false, "", 0)?;
     let insert = PropertyOptions::INSERT_IF_MISSING.bits();
     let options = PropertyOptions::NONE.bits();
-    root.set_val_number("Value", insert, 42.0)?;
+    root.set_val_string("RSValue", insert, "payload")?;
 
     let stream = engine.serialize_objects(&[&root], 0)?;
     assert!(
@@ -159,7 +159,7 @@ fn objects_round_trip_through_the_engine_serializer() -> Result<(), Error> {
         expected: "one restored object",
         actual: "an empty collection",
     })?;
-    assert_eq!(first.get_val_number("Value", options)?, 42.0);
+    assert_eq!(first.get_val_string("RSValue", options)?, "payload");
     Ok(())
 }
 

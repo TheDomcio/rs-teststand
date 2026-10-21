@@ -122,12 +122,7 @@ impl UndoStack {
     pub fn aggregate_top_undo_items(&self, count: i32, description: &str) -> Result<(), Error> {
         self.dispatch.call(
             undo_stack::AGGREGATE_TOP_UNDO_ITEMS,
-            &[
-                Value::I32(count),
-                Value::Str(description.to_owned()),
-                Value::Empty,
-                Value::Empty,
-            ],
+            &[Value::I32(count), Value::Str(description.to_owned())],
         )?;
         Ok(())
     }

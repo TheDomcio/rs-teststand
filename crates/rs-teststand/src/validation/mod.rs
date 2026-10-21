@@ -3,6 +3,10 @@
 //! These checks read the sequence tree through the public wrappers and never
 //! call the engine to evaluate an expression. They are lexical, so a quoted
 //! string that happens to contain `Locals.` is reported like a real reference.
+//!
+//! Neither function is an engine member. TestStand does not define an
+//! `audit_sequence_references` API; this is a convenience over the documented
+//! object model.
 
 mod reference_issue;
 

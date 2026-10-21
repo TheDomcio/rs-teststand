@@ -44,6 +44,22 @@ impl RuleSet {
         Ok(())
     }
 
+    /// Asks the rule set to conform to its rules
+    /// (`RuleSet.ConformToRules`).
+    ///
+    /// The engine returns a string array. The available reference does not
+    /// describe what the strings mean, so this wrapper returns them unchanged
+    /// rather than interpreting them.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn conform_to_rules(&self) -> Result<Vec<String>, Error> {
+        Ok(self
+            .dispatch
+            .call(rule_set::CONFORM_TO_RULES, &[])?
+            .into_string_array()?)
+    }
+
     /// The configuration of one rule (`RuleSet.GetRuleConfiguration`).
     ///
     /// # Errors
@@ -81,6 +97,41 @@ impl RuleSet {
             rule_set::RENAME_RULE_ID,
             &[Value::Str(old_id.to_owned()), Value::Str(new_id.to_owned())],
         )?;
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rs_teststand_sys::{ComError, Dispatch, Value};
+
+    use super::RuleSet;
+    use crate::dispids::rule_set;
+
+    #[derive(Debug)]
+    struct Fake;
+
+    impl Dispatch for Fake {
+        fn get(&self, _dispid: i32) -> Result<Value, ComError> {
+            Err(ComError::hresult(0, "fake: unscripted get"))
+        }
+
+        fn put(&self, _dispid: i32, _value: Value) -> Result<(), ComError> {
+            Ok(())
+        }
+
+        fn call(&self, dispid: i32, _args: &[Value]) -> Result<Value, ComError> {
+            if dispid == rule_set::CONFORM_TO_RULES {
+                return Ok(Value::StrArray(vec!["rule-a".to_owned()]));
+            }
+            Err(ComError::hresult(0, "fake: unscripted call"))
+        }
+    }
+
+    #[test]
+    fn returns_the_conformance_strings_unchanged() -> Result<(), crate::Error> {
+        let set = RuleSet::new(Box::new(Fake));
+        assert_eq!(set.conform_to_rules()?, ["rule-a".to_owned()]);
         Ok(())
     }
 }

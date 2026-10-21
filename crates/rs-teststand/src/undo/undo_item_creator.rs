@@ -107,7 +107,7 @@ impl UndoItemCreator {
             self.dispatch
                 .call(
                     undo_item_creator::CREATE_AND_POST_UNDO_ITEM,
-                    &[Value::I32(option.as_i32()), Value::I32(0), Value::Empty],
+                    &[Value::I32(option.as_i32()), Value::I32(0)],
                 )?
                 .into_object()?,
         ))

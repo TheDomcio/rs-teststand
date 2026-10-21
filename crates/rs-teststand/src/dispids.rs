@@ -496,6 +496,28 @@ pub(crate) mod result_logger {
     pub(crate) const GET_FILES_WRITTEN: i32 = 0x43;
     /// `RecordFilesWritten`, read/write boolean.
     pub(crate) const RECORD_FILES_WRITTEN: i32 = 0x44;
+    /// `LogBegin`, thread, parent, model type, data, path, socket.
+    pub(crate) const LOG_BEGIN: i32 = 0x34;
+    /// `LogPreBatch`, model entry-point parameters.
+    pub(crate) const LOG_PRE_BATCH: i32 = 0x35;
+    /// `LogBatchStart`, model entry-point parameters.
+    pub(crate) const LOG_BATCH_START: i32 = 0x36;
+    /// `LogPreUUT`, model entry-point parameters.
+    pub(crate) const LOG_PRE_UUT: i32 = 0x37;
+    /// `LogUUTStart`, model entry-point parameters.
+    pub(crate) const LOG_UUT_START: i32 = 0x38;
+    /// `LogOnTheFlyStepResults`, thread, UUT, steps, results, callbacks, parents.
+    pub(crate) const LOG_ON_THE_FLY_STEP_RESULTS: i32 = 0x39;
+    /// `LogUUTDone`, thread, data, UUT, status, result.
+    pub(crate) const LOG_UUT_DONE: i32 = 0x3a;
+    /// `LogPostUUT`, thread, data, UUT, status.
+    pub(crate) const LOG_POST_UUT: i32 = 0x3b;
+    /// `LogBatchDone`, thread, data, UUT, status.
+    pub(crate) const LOG_BATCH_DONE: i32 = 0x3c;
+    /// `LogPostBatch`, thread, data, UUT, status.
+    pub(crate) const LOG_POST_BATCH: i32 = 0x3d;
+    /// `LogEnd`, thread and model data.
+    pub(crate) const LOG_END: i32 = 0x3e;
 }
 
 /// Members of `ExecutionOutputRecordStreams`.
@@ -1693,6 +1715,8 @@ pub(crate) mod rule_set {
     pub(crate) const NAME: i32 = 0x1;
     /// `GetRuleConfiguration`, one rule-id parameter.
     pub(crate) const GET_RULE_CONFIGURATION: i32 = 0x2;
+    /// `ConformToRules`, no parameters, returns a string array.
+    pub(crate) const CONFORM_TO_RULES: i32 = 0x3;
     /// `Clone`, no parameters.
     pub(crate) const CLONE: i32 = 0x4;
     /// `RenameRuleId`, old and new ids.

@@ -2088,7 +2088,7 @@ impl Engine {
     /// call fails.
     pub fn get_station_model_sequence_file(
         &self,
-    ) -> Result<(crate::sequence::SequenceFile, String), Error> {
+    ) -> Result<Option<(crate::sequence::SequenceFile, String)>, Error> {
         let (file, written) = self.dispatch.call_with_outputs(
             dispid::GET_STATION_MODEL_SEQUENCE_FILE,
             &[],
@@ -2102,10 +2102,17 @@ impl Engine {
                 actual: "no output slot",
             })?
             .into_string()?;
-        Ok((
-            crate::sequence::SequenceFile::new(file.into_object()?),
-            description,
-        ))
+        match file {
+            Value::Object(dispatch) => Ok(Some((
+                crate::sequence::SequenceFile::new(dispatch),
+                description,
+            ))),
+            Value::Null | Value::Empty => Ok(None),
+            other => Err(Error::UnexpectedType {
+                expected: "Object or Null",
+                actual: other.kind(),
+            }),
+        }
     }
 
     /// Drops one load reference on a sequence file
@@ -2658,7 +2665,11 @@ mod tests {
             dispid::GET_STATION_MODEL_SEQUENCE_FILE,
             Scripted::Model("Sequential model"),
         )]);
-        let (file, description) = engine.get_station_model_sequence_file()?;
+        let model = engine.get_station_model_sequence_file()?;
+        let (file, description) = model.ok_or(Error::UnexpectedType {
+            expected: "a station model file",
+            actual: "none",
+        })?;
         assert_eq!(description, "Sequential model");
         drop(file);
         Ok(())
