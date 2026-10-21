@@ -59,9 +59,10 @@ pub use enums::{
 };
 pub use error::Error;
 pub use execution::{
-    Execution, ExecutionStates, Limits, Report, ReportConversion, ReportSection, ReportSections,
-    ReportSectionsIter, Reports, ReportsIter, ResultError, ResultList, ResultLog, ResultValue,
-    SequenceContext, StepResult, Thread, ThreadTerminationOption,
+    Execution, ExecutionOutputRecordStream, ExecutionOutputRecordStreams, ExecutionStates, Limits,
+    Report, ReportConversion, ReportSection, ReportSections, ReportSectionsIter, Reports,
+    ReportsIter, ResultError, ResultList, ResultLog, ResultValue, SequenceContext, StepResult,
+    Thread, ThreadTerminationOption,
 };
 pub use expression::{
     ArithmeticOperator, Arity, ArrayFunction, AssignmentOperator, BitwiseOperator, ColorConstant,

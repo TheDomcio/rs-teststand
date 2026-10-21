@@ -5,6 +5,8 @@
     reason = "file is named after the type it holds"
 )]
 pub mod execution;
+mod execution_output_record_stream;
+mod execution_output_record_streams;
 pub mod report;
 pub mod report_section;
 pub mod report_sections;
@@ -17,6 +19,8 @@ pub(crate) mod thread;
 
 pub use execution::Execution;
 pub use execution::ExecutionStates;
+pub use execution_output_record_stream::ExecutionOutputRecordStream;
+pub use execution_output_record_streams::ExecutionOutputRecordStreams;
 pub use report::{Report, ReportConversion};
 pub use report_section::ReportSection;
 pub use report_sections::{ReportSections, ReportSectionsIter};

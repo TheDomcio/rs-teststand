@@ -967,7 +967,8 @@ impl Engine {
             .and_then(crate::SequenceFile::duplicate_dispatch)
             .map_or(Value::NullObject, Value::Object);
 
-        Ok(crate::Execution::new(
+        let major = self.major_version()?;
+        Ok(crate::Execution::with_engine_major(
             self.dispatch
                 .call(
                     dispid::NEW_EXECUTION,
@@ -980,6 +981,7 @@ impl Engine {
                     ],
                 )?
                 .into_object()?,
+            major,
         ))
     }
 
@@ -1677,7 +1679,10 @@ impl Engine {
             .dispatch
             .call(dispid::GET_EXECUTION, &[Value::I32(execution_id)])?
         {
-            Value::Object(dispatch) => Ok(Some(crate::Execution::new(dispatch))),
+            Value::Object(dispatch) => {
+                let major = self.major_version()?;
+                Ok(Some(crate::Execution::with_engine_major(dispatch, major)))
+            }
             Value::Null | Value::Empty => Ok(None),
             other => Err(Error::UnexpectedType {
                 expected: "Object or Null",

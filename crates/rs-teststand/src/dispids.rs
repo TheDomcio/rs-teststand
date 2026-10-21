@@ -477,6 +477,46 @@ pub(crate) mod property_object_introspect {
     pub(crate) const SEARCH: i32 = 0x27b;
 }
 
+/// Members of `ExecutionOutputRecordStreams`.
+pub(crate) mod execution_output_record_streams {
+    /// `NewStream`, one name.
+    pub(crate) const NEW_STREAM: i32 = 0x1;
+    /// `GetStream`, one name.
+    pub(crate) const GET_STREAM: i32 = 0x2;
+    /// `CloseAndRemoveStream`, one name.
+    pub(crate) const CLOSE_AND_REMOVE_STREAM: i32 = 0x3;
+    /// `CloseAll`, no parameters.
+    pub(crate) const CLOSE_ALL: i32 = 0x4;
+    /// `RemoveAll`, no parameters.
+    pub(crate) const REMOVE_ALL: i32 = 0x5;
+    /// `BeginNextUUTOrBatch`, no parameters.
+    pub(crate) const BEGIN_NEXT_UUT_OR_BATCH: i32 = 0x6;
+}
+
+/// Members of `ExecutionOutputRecordStream`.
+pub(crate) mod execution_output_record_stream {
+    /// `Name`, read-only string.
+    pub(crate) const NAME: i32 = 0x1;
+    /// `DefineFields`, an object and an optional mapping string.
+    pub(crate) const DEFINE_FIELDS: i32 = 0x5;
+    /// `WriteRecord`, an object and an optional mapping string.
+    pub(crate) const WRITE_RECORD: i32 = 0x6;
+    /// `Flush`, no parameters.
+    pub(crate) const FLUSH: i32 = 0x8;
+    /// `Close`, no parameters.
+    pub(crate) const CLOSE: i32 = 0x9;
+    /// `NumRecordsToDisplayInReportView`, read/write integer.
+    pub(crate) const NUM_RECORDS_TO_DISPLAY: i32 = 0xa;
+    /// `SetActiveReport`, no parameters.
+    pub(crate) const SET_ACTIVE_REPORT: i32 = 0xb;
+    /// `ClearRecordsFromReportView`, no parameters.
+    pub(crate) const CLEAR_RECORDS_FROM_REPORT_VIEW: i32 = 0xc;
+    /// `CloseAtNextUUTOrBatch`, read/write boolean.
+    pub(crate) const CLOSE_AT_NEXT_UUT_OR_BATCH: i32 = 0xd;
+    /// `Format`, read/write string.
+    pub(crate) const FORMAT: i32 = 0xe;
+}
+
 /// Members of `ResultLog`.
 pub(crate) mod result_log {
     /// `Open`, one path.
@@ -525,6 +565,8 @@ pub(crate) mod execution {
     pub(crate) const GET_THREAD: i32 = 0xd;
     /// `AsPropertyObject`, no params.
     pub(crate) const AS_PROPERTY_OBJECT: i32 = 0x1d;
+    /// `OutputRecordStreams`, read-only collection. Data Streams API, 2017+.
+    pub(crate) const OUTPUT_RECORD_STREAMS: i32 = 0xdc;
     /// `GetSequenceFile`, no params.
     pub(crate) const GET_SEQUENCE_FILE: i32 = 0xe;
     /// `StepOver`, no params.

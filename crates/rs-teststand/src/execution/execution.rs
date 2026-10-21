@@ -24,6 +24,7 @@ pub struct ExecutionStates {
 #[derive(Debug)]
 pub struct Execution {
     dispatch: Box<dyn Dispatch>,
+    engine_major: Option<i32>,
 }
 
 impl Execution {
@@ -39,7 +40,18 @@ impl Execution {
     }
     /// Wraps a dispatch handle returned by the engine.
     pub(crate) fn new(dispatch: Box<dyn Dispatch>) -> Self {
-        Self { dispatch }
+        Self {
+            dispatch,
+            engine_major: None,
+        }
+    }
+
+    /// Wraps a handle together with the engine version that produced it.
+    pub(crate) fn with_engine_major(dispatch: Box<dyn Dispatch>, engine_major: i32) -> Self {
+        Self {
+            dispatch,
+            engine_major: Some(engine_major),
+        }
     }
 
     /// Lends the underlying handle for a call that takes an execution
@@ -347,6 +359,35 @@ impl Execution {
         ))
     }
 
+    /// The output record streams attached to this execution
+    /// (`Execution.OutputRecordStreams`).
+    ///
+    /// The Data Streams API was introduced in TestStand 2017, so an execution
+    /// created by an older engine returns [`Error::Unsupported`] before the
+    /// member is dispatched. An execution obtained from somewhere other than
+    /// [`Engine::new_execution`](crate::Engine::new_execution) carries no
+    /// version and is allowed through.
+    ///
+    /// # Errors
+    /// [`Error::Unsupported`] on an engine older than 2017, or [`Error`] if the
+    /// COM call fails or returns an unexpected type.
+    pub fn output_record_streams(&self) -> Result<crate::ExecutionOutputRecordStreams, Error> {
+        if let Some(actual_major) = self.engine_major {
+            if actual_major < 17 {
+                return Err(Error::Unsupported {
+                    feature: "execution output record streams",
+                    minimum_major: 17,
+                    actual_major,
+                });
+            }
+        }
+        Ok(crate::ExecutionOutputRecordStreams::new(
+            self.dispatch
+                .get(execution::OUTPUT_RECORD_STREAMS)?
+                .into_object()?,
+        ))
+    }
+
     /// The report this run builds (`Execution.Report`).
     ///
     /// The report object stays attached to the execution, so read it before
@@ -422,7 +463,13 @@ mod tests {
     }
 
     impl Dispatch for Fake {
-        fn get(&self, _dispid: i32) -> Result<Value, ComError> {
+        fn get(&self, dispid: i32) -> Result<Value, ComError> {
+            if dispid == crate::dispids::execution::OUTPUT_RECORD_STREAMS {
+                return Ok(Value::Object(Box::new(Self {
+                    run: self.run,
+                    termination: self.termination,
+                })));
+            }
             Err(ComError::hresult(-17000, "fake: unscripted get"))
         }
 
@@ -472,6 +519,38 @@ mod tests {
         let states = execution.get_states()?;
         assert_eq!(states.run_state, None);
         assert_eq!(states.termination_state, None);
+        Ok(())
+    }
+
+    #[test]
+    fn output_streams_are_refused_before_2017() {
+        let execution = Execution::with_engine_major(
+            Box::new(Fake {
+                run: 0,
+                termination: 0,
+            }),
+            16,
+        );
+        assert!(matches!(
+            execution.output_record_streams(),
+            Err(crate::Error::Unsupported {
+                minimum_major: 17,
+                actual_major: 16,
+                ..
+            })
+        ));
+    }
+
+    #[test]
+    fn output_streams_are_available_from_2017() -> Result<(), crate::Error> {
+        let execution = Execution::with_engine_major(
+            Box::new(Fake {
+                run: 0,
+                termination: 0,
+            }),
+            17,
+        );
+        let _streams = execution.output_record_streams()?;
         Ok(())
     }
 }
