@@ -36,6 +36,7 @@ mod rule;
 mod rule_configuration;
 mod rule_set;
 mod rule_sets;
+mod rule_setting_values;
 mod rules;
 
 use rs_teststand_sys::{Dispatch, Value, create_dispatch};
@@ -54,6 +55,7 @@ pub use rule::Rule;
 pub use rule_configuration::RuleConfiguration;
 pub use rule_set::RuleSet;
 pub use rule_sets::RuleSets;
+pub use rule_setting_values::RuleSettingValues;
 pub use rules::Rules;
 
 /// ProgID of the version-independent analyzer coclass.

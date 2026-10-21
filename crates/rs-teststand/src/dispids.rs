@@ -1524,6 +1524,20 @@ pub(crate) mod output_messages {
     pub(crate) const FROM_PROPERTY_OBJECT: i32 = 0xa;
 }
 
+/// Members of `RuleSettingValues`.
+pub(crate) mod rule_setting_values {
+    /// `Item`, one index or name.
+    pub(crate) const ITEM: i32 = 0x0;
+    /// `Count`, read-only integer.
+    pub(crate) const COUNT: i32 = 0x2;
+    /// `GetBooleanValue`, one setting name.
+    pub(crate) const GET_BOOLEAN_VALUE: i32 = 0x3;
+    /// `GetStringValue`, one setting name.
+    pub(crate) const GET_STRING_VALUE: i32 = 0x4;
+    /// `GetNumberValue`, one setting name.
+    pub(crate) const GET_NUMBER_VALUE: i32 = 0x5;
+}
+
 /// Members of `WatchExpressions`.
 pub(crate) mod watch_expressions {
     /// `Item`, one index parameter.

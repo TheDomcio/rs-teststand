@@ -92,6 +92,18 @@ impl RuleConfiguration {
         Ok(())
     }
 
+    /// The typed setting values (RuleConfiguration.RuleSettingValues).
+    ///
+    /// # Errors
+    /// [Error] if the COM call fails or returns an unexpected type.
+    pub fn rule_setting_values(&self) -> Result<crate::analyzer::RuleSettingValues, Error> {
+        Ok(crate::analyzer::RuleSettingValues::new(
+            self.dispatch
+                .get(rule_configuration::RULE_SETTING_VALUES)?
+                .into_object()?,
+        ))
+    }
+
     /// The rule's structured settings
     /// (`RuleConfiguration.ConfigurationData`).
     ///
