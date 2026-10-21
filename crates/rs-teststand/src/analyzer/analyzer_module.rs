@@ -274,18 +274,18 @@ mod tests {
     fn reads_the_module_fields() -> Result<(), crate::Error> {
         let module = AnalyzerModule::new(Box::new(Fake {
             values: HashMap::from([
-                (analyzer_module::PATH, Value::Str("rule.dll".to_owned())),
+                (analyzer_module::PATH, Value::Str("rule-module".to_owned())),
                 (
                     analyzer_module::ABSOLUTE_PATH,
-                    Value::Str("C:\\rules\\rule.dll".to_owned()),
+                    Value::Str("rules/rule-module".to_owned()),
                 ),
                 (analyzer_module::FUNCTION, Value::Str("Analyze".to_owned())),
                 (analyzer_module::ADAPTER, Value::I32(1)),
                 (analyzer_module::TYPE, Value::I32(2)),
             ]),
         }));
-        assert_eq!(module.path()?, "rule.dll");
-        assert_eq!(module.absolute_path()?, "C:\\rules\\rule.dll");
+        assert_eq!(module.path()?, "rule-module");
+        assert_eq!(module.absolute_path()?, "rules/rule-module");
         assert_eq!(module.function()?, "Analyze");
         assert_eq!(module.adapter()?, 1);
         assert_eq!(module.module_type()?, 2);

@@ -360,14 +360,14 @@ fn adapter_module_helpers_read_back_their_fields() -> Result<(), Error> {
     assert!(labview.labview_show_front_panel()?);
 
     let cvi = engine.new_step(AdapterKeyName::Cvi.as_str(), "Action")?;
-    cvi.set_cvi_library_path("module.dll")?;
-    assert_eq!(cvi.cvi_library_path()?, "module.dll");
+    cvi.set_cvi_library_path("example-module")?;
+    assert_eq!(cvi.cvi_library_path()?, "example-module");
     cvi.set_cvi_function("main")?;
     assert_eq!(cvi.cvi_function()?, "main");
 
     let dotnet = engine.new_step(AdapterKeyName::DotNet.as_str(), "Action")?;
-    dotnet.set_dotnet_assembly_path("module.dll")?;
-    assert_eq!(dotnet.dotnet_assembly_path()?, "module.dll");
+    dotnet.set_dotnet_assembly_path("example-assembly")?;
+    assert_eq!(dotnet.dotnet_assembly_path()?, "example-assembly");
     dotnet.set_dotnet_class_name("Example")?;
     assert_eq!(dotnet.dotnet_class_name()?, "Example");
     dotnet.set_dotnet_member_name("Main")?;

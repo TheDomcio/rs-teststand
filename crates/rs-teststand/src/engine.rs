@@ -12,7 +12,7 @@ use crate::error::Error;
 use crate::expression::{EvaluationOptions, ExpressionError};
 
 /// ProgID of the version-independent engine coclass. Resolves to the active
-/// installation's `teapi.dll` via the registry.
+/// installation's engine library via the registry.
 const ENGINE_PROG_ID: &str = "TestStand.Engine";
 
 /// The TestStand™ Engine.

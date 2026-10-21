@@ -1056,10 +1056,10 @@ mod tests {
         step.set_labview_namespace("Lib")?;
         step.set_labview_show_front_panel(true)?;
         assert_eq!(step.cvi_function()?, "MainSequence");
-        step.set_cvi_library_path("module.dll")?;
+        step.set_cvi_library_path("example-module")?;
         step.set_cvi_function("main")?;
         assert_eq!(step.dotnet_class_name()?, "MainSequence");
-        step.set_dotnet_assembly_path("module.dll")?;
+        step.set_dotnet_assembly_path("example-assembly")?;
         step.set_dotnet_class_name("Example")?;
         step.set_dotnet_member_name("Main")?;
         Ok(())

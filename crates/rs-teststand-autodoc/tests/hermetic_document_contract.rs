@@ -483,9 +483,9 @@ fn a_document_can_be_narrowed_to_named_sequences() {
 fn document_with_plumbing(profile: Profile) -> String {
     let mut main_steps = BTreeMap::new();
     let mut calls_a_module = step("ID__m1", "Measure Voltage", "NumericLimitTest");
-    r"lab\drivers\meter.dll".clone_into(&mut calls_a_module.module_path);
+    r"lab\drivers\meter-module".clone_into(&mut calls_a_module.module_path);
     calls_a_module.module_info = Some(rs_teststand_autodoc::data::ModuleInfo {
-        path: r"lab\drivers\meter.dll".to_owned(),
+        path: r"lab\drivers\meter-module".to_owned(),
         adapter_type: "C/CVI Standard Prototype Adapter".to_owned(),
         occurrences: 1,
         entry_point: Some("ReadVoltage".to_owned()),
@@ -530,7 +530,7 @@ fn the_business_document_shows_logic_and_no_plumbing() {
         // The code module tables. The rule existed and nothing read it.
         "Code Modules",
         "Technology usage",
-        "meter.dll",
+        "meter-module",
         "ReadVoltage",
         // Model configuration reads as a test step to a client.
         "ModelOptions",
@@ -553,13 +553,13 @@ fn the_business_document_shows_logic_and_no_plumbing() {
 
 /// The engineer document names the callable, not only the file it lives in.
 ///
-/// Twelve rows all reading `meter.dll` say nothing about which step calls what.
+/// Twelve rows all reading `meter-module` say nothing about which step calls what.
 #[test]
 fn the_engineer_document_names_the_callable() {
     let document = document_with_plumbing(Profile::Engineer);
 
     assert!(
-        document.contains("meter.dll -> ReadVoltage"),
+        document.contains("meter-module -> ReadVoltage"),
         "the step row should name the function:
 {document}"
     );

@@ -318,8 +318,8 @@ mod container_tests {
     /// A DLL is not a LabVIEW container and nests nothing.
     #[test]
     fn a_dll_is_not_a_container() {
-        let (containers, name) = containers_of(r"lab\drivers\meter.dll");
+        let (containers, name) = containers_of(r"lab\drivers\meter-module");
         assert_eq!(containers, Vec::<String>::new());
-        assert_eq!(name, "meter.dll");
+        assert_eq!(name, "meter-module");
     }
 }
