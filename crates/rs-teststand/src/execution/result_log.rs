@@ -1,6 +1,6 @@
 //! A TestStand results file opened for reading.
 
-use rs_teststand_sys::{Dispatch, Value};
+use rs_teststand_sys::{Dispatch, OutKind, Value};
 
 use crate::Error;
 use crate::dispids::result_log;
@@ -107,6 +107,67 @@ impl ResultLog {
         Ok(())
     }
 
+    /// Reads the next results record (`ResultLog.ReadNextRecord`).
+    ///
+    /// Returns whether a record was read, its type, the execution and thread
+    /// ids, and the record objects.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn read_next_record(&self) -> Result<(bool, crate::ResultLogRecord), Error> {
+        let (more, outputs) = self.dispatch.call_with_outputs(
+            result_log::READ_NEXT_RECORD,
+            &[],
+            &[
+                OutKind::Int,
+                OutKind::Int,
+                OutKind::Int,
+                OutKind::ObjectArray,
+            ],
+        )?;
+        let mut outputs = outputs.into_iter();
+        let record_type = outputs
+            .next()
+            .ok_or(Error::UnexpectedType {
+                expected: "a record type",
+                actual: "the engine returned none",
+            })?
+            .as_i32()?;
+        let execution_id = outputs
+            .next()
+            .ok_or(Error::UnexpectedType {
+                expected: "an execution id",
+                actual: "the engine returned none",
+            })?
+            .as_i32()?;
+        let thread_id = outputs
+            .next()
+            .ok_or(Error::UnexpectedType {
+                expected: "a thread id",
+                actual: "the engine returned none",
+            })?
+            .as_i32()?;
+        let objects = outputs
+            .next()
+            .ok_or(Error::UnexpectedType {
+                expected: "record objects",
+                actual: "the engine returned none",
+            })?
+            .into_object_array()?
+            .into_iter()
+            .map(crate::PropertyObject::new)
+            .collect();
+        Ok((
+            more.as_bool()?,
+            crate::ResultLogRecord {
+                record_type: crate::ResultLogRecordType::from_i32(record_type),
+                execution_id,
+                thread_id,
+                objects,
+            },
+        ))
+    }
+
     /// The report paths stored with the log (`ResultLog.GetReportPaths`).
     ///
     /// # Errors
@@ -170,6 +231,26 @@ mod tests {
         fn duplicate(&self) -> Option<Box<dyn Dispatch>> {
             Some(Box::new(Self))
         }
+
+        fn call_with_outputs(
+            &self,
+            dispid: i32,
+            _args: &[Value],
+            _outputs: &[rs_teststand_sys::OutKind],
+        ) -> Result<(Value, Vec<Value>), ComError> {
+            if dispid != result_log::READ_NEXT_RECORD {
+                return Err(ComError::hresult(0, "fake: unscripted outputs"));
+            }
+            Ok((
+                Value::Bool(true),
+                vec![
+                    Value::I32(5),
+                    Value::I32(7),
+                    Value::I32(8),
+                    Value::ObjectArray(vec![Box::new(Self)]),
+                ],
+            ))
+        }
     }
 
     #[test]
@@ -180,6 +261,21 @@ mod tests {
         let paths = log.report_paths()?;
         log.set_report_paths(&paths)?;
         log.close()?;
+        Ok(())
+    }
+
+    #[test]
+    fn reads_a_record_with_its_objects() -> Result<(), crate::Error> {
+        let log = ResultLog::new(Box::new(Fake));
+        let (more, record) = log.read_next_record()?;
+        assert!(more);
+        assert_eq!(
+            record.record_type,
+            Some(crate::ResultLogRecordType::UutStart)
+        );
+        assert_eq!(record.execution_id, 7);
+        assert_eq!(record.thread_id, 8);
+        assert_eq!(record.objects.len(), 1);
         Ok(())
     }
 }

@@ -61,8 +61,8 @@ pub use error::Error;
 pub use execution::{
     Execution, ExecutionOutputRecordStream, ExecutionOutputRecordStreams, ExecutionStates, Limits,
     Report, ReportConversion, ReportSection, ReportSections, ReportSectionsIter, Reports,
-    ReportsIter, ResultError, ResultList, ResultLog, ResultLogger, ResultValue, SequenceContext,
-    StepResult, Thread, ThreadTerminationOption,
+    ReportsIter, ResultError, ResultList, ResultLog, ResultLogRecord, ResultLogRecordType,
+    ResultLogger, ResultValue, SequenceContext, StepResult, Thread, ThreadTerminationOption,
 };
 pub use expression::{
     ArithmeticOperator, Arity, ArrayFunction, AssignmentOperator, BitwiseOperator, ColorConstant,

@@ -237,4 +237,6 @@ pub enum OutKind {
     Object,
     /// A 32-bit integer array, `VT_BYREF | VT_ARRAY | VT_I4`.
     IntArray,
+    /// An object array, `VT_BYREF | VT_ARRAY | VT_DISPATCH`.
+    ObjectArray,
 }

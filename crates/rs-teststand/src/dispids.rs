@@ -817,6 +817,10 @@ pub(crate) mod step {
     pub(crate) const CREATE_NEW_UNIQUE_STEP_ID: i32 = 0x9c;
     /// `StepType`, read-only.
     pub(crate) const STEP_TYPE: i32 = 0x22;
+    /// `Module`, read-only property object.
+    pub(crate) const MODULE: i32 = 0x9e;
+    /// `IsSequenceCall`, read-only boolean.
+    pub(crate) const IS_SEQUENCE_CALL: i32 = 0x14;
     /// `RecordResult`, read/write.
     pub(crate) const RECORD_RESULT: i32 = 0x54;
     /// `Name`, read/write.

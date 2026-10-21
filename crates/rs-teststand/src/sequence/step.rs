@@ -517,6 +517,27 @@ impl Step {
         ))
     }
 
+    /// The step's module configuration tree (`Step.Module`).
+    ///
+    /// This is the adapter-specific property object. Its fields differ by
+    /// adapter, so this wrapper returns the tree rather than guessing names.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn module(&self) -> Result<PropertyObject, Error> {
+        Ok(PropertyObject::new(
+            self.dispatch.get(step::MODULE)?.into_object()?,
+        ))
+    }
+
+    /// Whether the step is a sequence call (`Step.IsSequenceCall`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn is_sequence_call(&self) -> Result<bool, Error> {
+        Ok(self.dispatch.get(step::IS_SEQUENCE_CALL)?.as_bool()?)
+    }
+
     /// The step's type definition (`Step.StepType`).
     ///
     /// # Errors
@@ -683,6 +704,13 @@ mod tests {
             sent: Rc::clone(&sent),
         };
         (Step::new(Box::new(dispatch)), sent)
+    }
+
+    #[test]
+    fn reads_the_sequence_call_flag() -> Result<(), Error> {
+        let (step, _sent) = step_recording(HashMap::from([(dispid::IS_SEQUENCE_CALL, true)]));
+        assert!(step.is_sequence_call()?);
+        Ok(())
     }
 
     #[test]

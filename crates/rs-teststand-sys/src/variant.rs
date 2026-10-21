@@ -148,6 +148,25 @@ impl OwnedVariant {
         owned
     }
 
+    /// A `VT_BYREF | VT_ARRAY | VT_DISPATCH` variant pointing at caller-owned
+    /// storage.
+    ///
+    /// # Safety
+    /// `cell` must be valid and must outlive the call this variant is passed to.
+    #[must_use]
+    pub(crate) unsafe fn byref_object_array(cell: *mut *mut SAFEARRAY) -> Self {
+        let mut owned = Self::empty();
+        // SAFETY: writing the discriminant and the matching pointer field of a
+        // freshly zeroed VARIANT, per the caller's guarantee about `cell`.
+        unsafe {
+            let inner = &mut owned.0.Anonymous.Anonymous;
+            inner.vt =
+                windows::Win32::System::Variant::VARENUM(VT_BYREF.0 | VT_ARRAY.0 | VT_DISPATCH.0);
+            inner.Anonymous.pparray = cell;
+        }
+        owned
+    }
+
     /// Builds a variant carrying `value`.
     ///
     /// # Errors
@@ -328,7 +347,7 @@ impl OwnedVariant {
 /// # Errors
 /// [`ComError`] if the array is null, its bounds cannot be read, an element is
 /// null, or an element cannot be copied.
-fn read_object_array(array: *mut SAFEARRAY) -> Result<Vec<Box<dyn Dispatch>>, ComError> {
+pub(crate) fn read_object_array(array: *mut SAFEARRAY) -> Result<Vec<Box<dyn Dispatch>>, ComError> {
     if array.is_null() {
         return Err(ComError::UnexpectedType {
             expected: "a SAFEARRAY of objects",

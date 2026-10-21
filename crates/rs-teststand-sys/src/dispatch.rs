@@ -377,6 +377,8 @@ enum OutSlot {
     Object(Box<Option<IDispatch>>),
     /// A `VT_BYREF | VT_ARRAY | VT_I4` slot.
     IntArray(Box<*mut windows::Win32::System::Com::SAFEARRAY>),
+    /// A `VT_BYREF | VT_ARRAY | VT_DISPATCH` slot.
+    ObjectArray(Box<*mut windows::Win32::System::Com::SAFEARRAY>),
 }
 
 impl OutSlot {
@@ -388,6 +390,7 @@ impl OutSlot {
             OutKind::Bool => Self::Bool(Box::new(windows::Win32::Foundation::VARIANT_BOOL(0))),
             OutKind::Object => Self::Object(Box::new(None)),
             OutKind::IntArray => Self::IntArray(Box::new(std::ptr::null_mut())),
+            OutKind::ObjectArray => Self::ObjectArray(Box::new(std::ptr::null_mut())),
         }
     }
 
@@ -407,6 +410,7 @@ impl OutSlot {
                 Self::Bool(cell) => OwnedVariant::byref_bool(&raw mut **cell),
                 Self::Object(cell) => OwnedVariant::byref_dispatch(&raw mut **cell),
                 Self::IntArray(cell) => OwnedVariant::byref_i32_array(&raw mut **cell),
+                Self::ObjectArray(cell) => OwnedVariant::byref_object_array(&raw mut **cell),
             }
         }
     }
@@ -423,6 +427,21 @@ impl OutSlot {
                 || Value::Empty,
                 |dispatch| Value::Object(Box::new(ComDispatch::new(dispatch.clone()))),
             )),
+            Self::ObjectArray(cell) => {
+                let array = **cell;
+                if array.is_null() {
+                    return Ok(Value::ObjectArray(Vec::new()));
+                }
+                let values = crate::variant::read_object_array(array)?;
+                // SAFETY: the callee allocated this SAFEARRAY for the output
+                // slot and handed ownership to the caller; its elements have
+                // been add-refed into owned handles, so the array is destroyed
+                // exactly once here.
+                unsafe {
+                    let _ = windows::Win32::System::Ole::SafeArrayDestroy(array);
+                }
+                Ok(Value::ObjectArray(values))
+            }
             Self::IntArray(cell) => {
                 let array = **cell;
                 if array.is_null() {
