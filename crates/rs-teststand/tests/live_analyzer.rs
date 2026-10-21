@@ -257,6 +257,26 @@ fn a_single_open_file_can_be_analyzed() -> Result<(), Error> {
 
 #[test]
 #[ignore = "requires a live analyzer"]
+fn a_custom_rule_and_module_can_be_created() -> Result<(), Error> {
+    let analyzer = Analyzer::new()?;
+
+    let rule = analyzer.new_rule("rs-teststand-rule")?;
+    assert_eq!(rule.id()?, "rs-teststand-rule");
+
+    let module = analyzer.new_rule_module()?;
+    assert!(!module.is_builtin()?);
+    let scope = module.scope()?;
+    scope.set_named_types(&["Container".to_owned()])?;
+    assert_eq!(scope.named_types()?, ["Container".to_owned()]);
+
+    let code_module = module.module()?;
+    let _ = code_module.path()?;
+    let _ = code_module.function()?;
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires a live analyzer"]
 fn a_project_round_trips_through_a_file() -> Result<(), Error> {
     let analyzer = Analyzer::new()?;
     let engine = analyzer.engine()?;

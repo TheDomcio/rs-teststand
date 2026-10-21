@@ -815,8 +815,12 @@ pub(crate) mod analyzer {
     pub(crate) const LOAD_RULES_FILES: i32 = 0x17;
     /// `CacheSequenceFiles`, read/write boolean.
     pub(crate) const CACHE_SEQUENCE_FILES: i32 = 0x18;
-    /// `NewRule`, one module parameter.
+    /// `NewRuleModule`, no parameters.
+    pub(crate) const NEW_RULE_MODULE: i32 = 0xb;
+    /// `NewRule`, one rule-id parameter.
     pub(crate) const NEW_RULE: i32 = 0xc;
+    /// `RuleModules`, read-only collection.
+    pub(crate) const RULE_MODULES: i32 = 0x3;
     /// `NewRuleSet`, one name parameter.
     pub(crate) const NEW_RULE_SET: i32 = 0x13;
     /// `Rules`, read-only collection.
@@ -1398,6 +1402,76 @@ pub(crate) mod csv_file_output_record_stream {
     pub(crate) const AUTO_FLUSH: i32 = 0xce;
     /// `WriteRecordPrototype`, prototype and mapping.
     pub(crate) const WRITE_RECORD_PROTOTYPE: i32 = 0xd2;
+}
+
+/// Members of `RuleModule`.
+pub(crate) mod rule_module {
+    /// `Scope`, read-only object.
+    pub(crate) const SCOPE: i32 = 0x1;
+    /// `Module`, read-only object.
+    pub(crate) const MODULE: i32 = 0x2;
+    /// `IsBuiltin`, read/write boolean.
+    pub(crate) const IS_BUILTIN: i32 = 0x3;
+    /// `Clone`, no parameters.
+    pub(crate) const CLONE: i32 = 0x4;
+}
+
+/// Members of `AnalyzerModule`.
+pub(crate) mod analyzer_module {
+    /// `Adapter`, read/write integer.
+    pub(crate) const ADAPTER: i32 = 0x1;
+    /// `Path`, read/write string.
+    pub(crate) const PATH: i32 = 0x2;
+    /// `Function`, read/write string.
+    pub(crate) const FUNCTION: i32 = 0x3;
+    /// `VerifyPrototype`, one optional string output.
+    pub(crate) const VERIFY_PROTOTYPE: i32 = 0x4;
+    /// `Call`, one object argument.
+    pub(crate) const CALL: i32 = 0x5;
+    /// `Description`, read-only string.
+    pub(crate) const DESCRIPTION: i32 = 0x6;
+    /// `AbsolutePath`, read-only string.
+    pub(crate) const ABSOLUTE_PATH: i32 = 0x7;
+    /// `Type`, read/write integer.
+    pub(crate) const TYPE: i32 = 0x8;
+    /// `RunInLabVIEWRunTimeEngine`, read/write boolean.
+    pub(crate) const RUN_IN_LABVIEW_RUN_TIME_ENGINE: i32 = 0x9;
+    /// `ClassName`, read/write string.
+    pub(crate) const CLASS_NAME: i32 = 0xa;
+    /// `ModuleName`, read/write string.
+    pub(crate) const MODULE_NAME: i32 = 0xb;
+    /// `AllowDotNetModuleUnload`, read/write boolean (2026).
+    pub(crate) const ALLOW_DOTNET_MODULE_UNLOAD: i32 = 0xd;
+}
+
+/// Members of `RuleModuleScope`.
+pub(crate) mod rule_module_scope {
+    /// `NamedTypes`, string array.
+    pub(crate) const NAMED_TYPES: i32 = 0x1;
+    /// `ArrayOfNamedTypes`, string array.
+    pub(crate) const ARRAY_OF_NAMED_TYPES: i32 = 0x2;
+    /// `ObjectKinds`, integer flags.
+    pub(crate) const OBJECT_KINDS: i32 = 0x3;
+    /// `Transitions`, integer array.
+    pub(crate) const TRANSITIONS: i32 = 0x4;
+    /// `Adapters`, string array.
+    pub(crate) const ADAPTERS: i32 = 0x5;
+    /// `PropertyValueTypeFlags`, integer flags.
+    pub(crate) const PROPERTY_VALUE_TYPE_FLAGS: i32 = 0x6;
+}
+
+/// Members of `RuleModules`.
+pub(crate) mod rule_modules {
+    /// `Item`, one index.
+    pub(crate) const ITEM: i32 = 0x0;
+    /// `Count`, read-only integer.
+    pub(crate) const COUNT: i32 = 0x2;
+    /// `Insert`, index and module.
+    pub(crate) const INSERT: i32 = 0x3;
+    /// `Remove`, one index.
+    pub(crate) const REMOVE: i32 = 0x4;
+    /// `Clear`, no parameters.
+    pub(crate) const CLEAR: i32 = 0x5;
 }
 
 /// Members of `Rule`.
