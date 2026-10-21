@@ -520,8 +520,14 @@ pub(crate) mod execution_output_record_stream {
     pub(crate) const NAME: i32 = 0x1;
     /// `DefineFields`, an object and an optional mapping string.
     pub(crate) const DEFINE_FIELDS: i32 = 0x5;
+    /// `Insert`, one output record stream.
+    pub(crate) const INSERT: i32 = 0x2;
+    /// `Remove`, one output record stream.
+    pub(crate) const REMOVE: i32 = 0x3;
     /// `WriteRecord`, an object and an optional mapping string.
     pub(crate) const WRITE_RECORD: i32 = 0x6;
+    /// `WriteRecordFrom`, a context object and a string array.
+    pub(crate) const WRITE_RECORD_FROM: i32 = 0x7;
     /// `Flush`, no parameters.
     pub(crate) const FLUSH: i32 = 0x8;
     /// `Close`, no parameters.
@@ -1521,6 +1527,20 @@ pub(crate) mod report_sections {
     pub(crate) const CLEAR: i32 = 0xc;
     /// `InsertExisting`, section and index.
     pub(crate) const INSERT_EXISTING: i32 = 0xd;
+}
+
+/// Members of `OutputRecordStream` (the base Data Streams interface).
+pub(crate) mod output_record_stream {
+    /// `WriteRecord`, an object and an optional mapping string.
+    pub(crate) const WRITE_RECORD: i32 = 0x1;
+    /// `WriteRecordFrom`, a context object and a string array.
+    pub(crate) const WRITE_RECORD_FROM: i32 = 0x2;
+    /// `Flush`, no parameters.
+    pub(crate) const FLUSH: i32 = 0x3;
+    /// `Close`, no parameters.
+    pub(crate) const CLOSE: i32 = 0x4;
+    /// `GetStreamInfo`, one optional string output.
+    pub(crate) const GET_STREAM_INFO: i32 = 0x5;
 }
 
 /// Members of `CsvFileInputRecordStream`.

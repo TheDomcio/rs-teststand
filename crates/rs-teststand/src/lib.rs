@@ -97,7 +97,9 @@ pub use station::{
     DebugOptions, ExecutionMask, RunTimeErrorOption, SearchDirectories, SearchDirectory,
     StationOptions,
 };
-pub use streams::{CsvFileInputRecordStream, CsvFileOutputRecordStream, FileOpenMode};
+pub use streams::{
+    CsvFileInputRecordStream, CsvFileOutputRecordStream, FileOpenMode, OutputRecordStream,
+};
 pub use sync::{
     AutoReleaser, Batch, BatchSyncType, EnqueueResult, FullQueueOption, Mutex, Notification, Queue,
     Rendezvous, Semaphore, SyncManager, WaitResult,

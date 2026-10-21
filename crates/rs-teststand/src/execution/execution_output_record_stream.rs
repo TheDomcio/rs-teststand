@@ -102,6 +102,40 @@ impl ExecutionOutputRecordStream {
         Ok(())
     }
 
+    /// Adds an underlying stream to this stream
+    /// (`ExecutionOutputRecordStream.Insert`).
+    ///
+    /// # Errors
+    /// [`Error`] if the stream has no COM identity or the COM call fails.
+    pub fn insert(&self, stream: &crate::OutputRecordStream) -> Result<(), Error> {
+        let handle = stream.duplicate_dispatch().ok_or(Error::UnexpectedType {
+            expected: "a live output record stream",
+            actual: "a test fake with no COM identity",
+        })?;
+        self.dispatch.call(
+            execution_output_record_stream::INSERT,
+            &[Value::Object(handle)],
+        )?;
+        Ok(())
+    }
+
+    /// Removes an underlying stream from this stream
+    /// (`ExecutionOutputRecordStream.Remove`).
+    ///
+    /// # Errors
+    /// [`Error`] if the stream has no COM identity or the COM call fails.
+    pub fn remove(&self, stream: &crate::OutputRecordStream) -> Result<(), Error> {
+        let handle = stream.duplicate_dispatch().ok_or(Error::UnexpectedType {
+            expected: "a live output record stream",
+            actual: "a test fake with no COM identity",
+        })?;
+        self.dispatch.call(
+            execution_output_record_stream::REMOVE,
+            &[Value::Object(handle)],
+        )?;
+        Ok(())
+    }
+
     /// Writes a record to the stream
     /// (`ExecutionOutputRecordStream.WriteRecord`).
     ///
@@ -115,6 +149,27 @@ impl ExecutionOutputRecordStream {
         self.dispatch.call(
             execution_output_record_stream::WRITE_RECORD,
             &[Value::Object(handle), Value::Str(mapping.to_owned())],
+        )?;
+        Ok(())
+    }
+
+    /// Writes a record from a context and a string array
+    /// (`ExecutionOutputRecordStream.WriteRecordFrom`).
+    ///
+    /// # Errors
+    /// [`Error`] if the context has no COM identity or the COM call fails.
+    pub fn write_record_from(
+        &self,
+        context: &crate::PropertyObject,
+        record: &[String],
+    ) -> Result<(), Error> {
+        let handle = context.duplicate_dispatch().ok_or(Error::UnexpectedType {
+            expected: "a live property object",
+            actual: "a test fake with no COM identity",
+        })?;
+        self.dispatch.call(
+            execution_output_record_stream::WRITE_RECORD_FROM,
+            &[Value::Object(handle), Value::StrArray(record.to_vec())],
         )?;
         Ok(())
     }
@@ -184,6 +239,43 @@ impl ExecutionOutputRecordStream {
             execution_output_record_stream::CLEAR_RECORDS_FROM_REPORT_VIEW,
             &[],
         )?;
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use rs_teststand_sys::{ComError, Dispatch, Value};
+
+    use super::ExecutionOutputRecordStream;
+
+    #[derive(Debug)]
+    struct Fake;
+
+    impl Dispatch for Fake {
+        fn get(&self, _dispid: i32) -> Result<Value, ComError> {
+            Err(ComError::hresult(0, "fake: unscripted get"))
+        }
+
+        fn put(&self, _dispid: i32, _value: Value) -> Result<(), ComError> {
+            Ok(())
+        }
+
+        fn call(&self, _dispid: i32, _args: &[Value]) -> Result<Value, ComError> {
+            Ok(Value::Empty)
+        }
+
+        fn duplicate(&self) -> Option<Box<dyn Dispatch>> {
+            Some(Box::new(Self))
+        }
+    }
+
+    #[test]
+    fn inserts_and_removes_an_underlying_stream() -> Result<(), crate::Error> {
+        let execution_stream = ExecutionOutputRecordStream::new(Box::new(Fake));
+        let underlying = crate::OutputRecordStream::new(Box::new(Fake));
+        execution_stream.insert(&underlying)?;
+        execution_stream.remove(&underlying)?;
         Ok(())
     }
 }

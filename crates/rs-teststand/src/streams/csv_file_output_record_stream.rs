@@ -17,6 +17,19 @@ impl CsvFileOutputRecordStream {
         Self { dispatch }
     }
 
+    /// The base output-record-stream view of this CSV stream.
+    ///
+    /// # Errors
+    /// [`Error`] if the stream has no COM identity.
+    pub fn as_output_record_stream(&self) -> Result<crate::OutputRecordStream, Error> {
+        Ok(crate::OutputRecordStream::new(
+            self.dispatch.duplicate().ok_or(Error::UnexpectedType {
+                expected: "a live output record stream",
+                actual: "a test fake with no COM identity",
+            })?,
+        ))
+    }
+
     /// Opens a file with a mode (`CsvFileOutputRecordStream.Open`).
     ///
     /// # Errors
