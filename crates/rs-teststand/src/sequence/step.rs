@@ -171,6 +171,46 @@ impl Step {
         Ok(())
     }
 
+    /// Whether the step allows a change to `step_type`
+    /// (`Step.CanChangeStepType`).
+    ///
+    /// Passing `None` asks whether the step permits any type change; passing a
+    /// type asks whether that specific change is allowed.
+    ///
+    /// # Errors
+    /// [`Error`] if the type has no COM identity or the COM call fails.
+    pub fn can_change_step_type(&self, step_type: Option<&crate::StepType>) -> Result<bool, Error> {
+        let argument = match step_type {
+            Some(step_type) => Value::Object(step_type.duplicate_dispatch().ok_or(
+                Error::UnexpectedType {
+                    expected: "a live step type",
+                    actual: "a test fake with no COM identity",
+                },
+            )?),
+            None => Value::NullObject,
+        };
+        Ok(self
+            .dispatch
+            .call(step::CAN_CHANGE_STEP_TYPE, &[argument])?
+            .as_bool()?)
+    }
+
+    /// Changes the step to another type (`Step.ChangeStepType`).
+    ///
+    /// # Errors
+    /// [`Error`] if the type has no COM identity or the COM call fails.
+    pub fn change_step_type(&self, step_type: &crate::StepType) -> Result<(), Error> {
+        let handle = step_type
+            .duplicate_dispatch()
+            .ok_or(Error::UnexpectedType {
+                expected: "a live step type",
+                actual: "a test fake with no COM identity",
+            })?;
+        self.dispatch
+            .call(step::CHANGE_STEP_TYPE, &[Value::Object(handle)])?;
+        Ok(())
+    }
+
     /// The expression evaluated after the step runs (`Step.PostExpression`).
     ///
     /// An empty expression means nothing runs afterwards.
@@ -481,8 +521,8 @@ impl Step {
     ///
     /// # Errors
     /// [`Error`] if the COM call fails or returns an unexpected type.
-    pub fn step_type(&self) -> Result<PropertyObject, Error> {
-        Ok(PropertyObject::new(
+    pub fn step_type(&self) -> Result<crate::StepType, Error> {
+        Ok(crate::StepType::new(
             self.dispatch.get(step::STEP_TYPE)?.into_object()?,
         ))
     }

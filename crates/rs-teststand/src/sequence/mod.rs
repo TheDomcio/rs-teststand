@@ -15,6 +15,7 @@ pub mod sequence;
 pub mod sequence_file;
 pub mod settings;
 pub mod step;
+pub mod step_type;
 
 pub use breakpoint::BreakpointScope;
 pub use options::{ConflictHandler, GetSeqFileOptions};
@@ -24,3 +25,4 @@ pub use sequence::Sequence;
 pub use sequence_file::SequenceFile;
 pub use settings::{FailureAction, SequenceType};
 pub use step::Step;
+pub use step_type::StepType;

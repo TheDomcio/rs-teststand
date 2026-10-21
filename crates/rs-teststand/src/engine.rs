@@ -36,6 +36,11 @@ pub struct Engine {
 }
 
 impl Engine {
+    /// An owned handle to the same engine, for passing it back to a member.
+    pub(crate) fn duplicate_dispatch(&self) -> Option<Box<dyn Dispatch>> {
+        self.dispatch.duplicate()
+    }
+
     /// Creates the engine (STA COM apartment plus the `TestStand.Engine` object).
     ///
     /// # Errors

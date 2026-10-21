@@ -60,6 +60,149 @@ impl Batch {
         Ok(())
     }
 
+    /// Adds a thread to the batch (`Batch.AddThread`).
+    ///
+    /// `order_number` controls the position used by serial batch
+    /// synchronization.
+    ///
+    /// # Errors
+    /// [`Error`] if an object has no COM identity or the COM call fails.
+    pub fn add_thread(
+        &self,
+        engine: &crate::Engine,
+        thread: &crate::Thread,
+        order_number: i32,
+    ) -> Result<(), Error> {
+        let engine_handle = engine.duplicate_dispatch().ok_or(Error::UnexpectedType {
+            expected: "a live engine",
+            actual: "a test fake with no COM identity",
+        })?;
+        let thread_handle = thread.duplicate_dispatch().ok_or(Error::UnexpectedType {
+            expected: "a live thread",
+            actual: "a test fake with no COM identity",
+        })?;
+        self.dispatch.call(
+            batch::ADD_THREAD,
+            &[
+                Value::Object(engine_handle),
+                Value::Object(thread_handle),
+                Value::I32(order_number),
+            ],
+        )?;
+        Ok(())
+    }
+
+    /// Removes a thread from the batch (`Batch.RemoveThread`).
+    ///
+    /// # Errors
+    /// [`Error`] if an object has no COM identity or the COM call fails.
+    pub fn remove_thread(
+        &self,
+        engine: &crate::Engine,
+        thread: &crate::Thread,
+    ) -> Result<(), Error> {
+        let engine_handle = engine.duplicate_dispatch().ok_or(Error::UnexpectedType {
+            expected: "a live engine",
+            actual: "a test fake with no COM identity",
+        })?;
+        let thread_handle = thread.duplicate_dispatch().ok_or(Error::UnexpectedType {
+            expected: "a live thread",
+            actual: "a test fake with no COM identity",
+        })?;
+        self.dispatch.call(
+            batch::REMOVE_THREAD,
+            &[Value::Object(engine_handle), Value::Object(thread_handle)],
+        )?;
+        Ok(())
+    }
+
+    /// Enters a synchronized section (`Batch.EnterSynchronizedSection`).
+    ///
+    /// Returns `(wait_result, jumped_to_exit)`.
+    ///
+    /// # Errors
+    /// [`Error`] if the context has no COM identity, the wait fails, or the
+    /// engine returns an unexpected type.
+    pub fn enter_synchronized_section(
+        &self,
+        section_name: &str,
+        sync_type: crate::BatchSyncType,
+        timeout_in_seconds: f64,
+        sequence_context: &crate::SequenceContext,
+        process_messages: bool,
+    ) -> Result<(crate::WaitResult, bool), Error> {
+        let (_, outputs) = self.dispatch.call_with_outputs(
+            batch::ENTER_SYNCHRONIZED_SECTION,
+            &[
+                Value::Str(section_name.to_owned()),
+                Value::I32(sync_type.as_i32()),
+                Value::F64(timeout_in_seconds),
+                crate::sync::argument::sequence_context_argument(Some(sequence_context))?,
+                Value::Bool(process_messages),
+            ],
+            &[OutKind::Int, OutKind::Bool],
+        )?;
+        let mut values = outputs.iter();
+        let wait = values.next().ok_or(Error::UnexpectedType {
+            expected: "a wait result and a jumped flag",
+            actual: "the engine returned fewer",
+        })?;
+        let jumped = values.next().ok_or(Error::UnexpectedType {
+            expected: "a wait result and a jumped flag",
+            actual: "the engine returned fewer",
+        })?;
+        Ok((crate::sync::argument::wait_result(wait)?, jumped.as_bool()?))
+    }
+
+    /// Exits a synchronized section (`Batch.ExitSynchronizedSection`).
+    ///
+    /// # Errors
+    /// [`Error`] if the context has no COM identity, the wait fails, or the
+    /// engine returns an unexpected type.
+    pub fn exit_synchronized_section(
+        &self,
+        section_name: &str,
+        timeout_in_seconds: f64,
+        sequence_context: &crate::SequenceContext,
+        process_messages: bool,
+        runtime_error_occurred: bool,
+    ) -> Result<crate::WaitResult, Error> {
+        let (_, outputs) = self.dispatch.call_with_outputs(
+            batch::EXIT_SYNCHRONIZED_SECTION,
+            &[
+                Value::Str(section_name.to_owned()),
+                Value::F64(timeout_in_seconds),
+                crate::sync::argument::sequence_context_argument(Some(sequence_context))?,
+                Value::Bool(process_messages),
+                Value::Bool(runtime_error_occurred),
+            ],
+            &[OutKind::Int],
+        )?;
+        let wait = outputs.first().ok_or(Error::UnexpectedType {
+            expected: "one wait result",
+            actual: "the engine returned none",
+        })?;
+        crate::sync::argument::wait_result(wait)
+    }
+
+    /// Reports a runtime error in a batch section
+    /// (`Batch.ReportRTEOccurred`).
+    ///
+    /// # Errors
+    /// [`Error`] if the context has no COM identity or the COM call fails.
+    pub fn report_rte_occurred(
+        &self,
+        sequence_context: &crate::SequenceContext,
+    ) -> Result<(), Error> {
+        self.dispatch.call(
+            batch::REPORT_RTE_OCCURRED,
+            &[crate::sync::argument::sequence_context_argument(Some(
+                sequence_context,
+            ))?],
+        )?;
+        Ok(())
+    }
+
     /// Reads `(waiting_threads, threads_in_batch)` (`Batch.GetInfo`).
     ///
     /// # Errors

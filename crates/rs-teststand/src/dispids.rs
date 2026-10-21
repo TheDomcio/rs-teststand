@@ -621,6 +621,18 @@ pub(crate) mod ui_message {
     pub(crate) const ACKNOWLEDGE: i32 = 0x3c;
 }
 
+/// `StepType` dispinterface members.
+pub(crate) mod step_type {
+    /// `AsPropertyObject`, no parameters.
+    pub(crate) const AS_PROPERTY_OBJECT: i32 = 0x1;
+    /// `Name`, read-only string.
+    pub(crate) const NAME: i32 = 0x2;
+    /// `NumSubsteps`, read-only integer.
+    pub(crate) const NUM_SUBSTEPS: i32 = 0x9;
+    /// `GetSubstep`, one index parameter.
+    pub(crate) const GET_SUBSTEP: i32 = 0xa;
+}
+
 /// `Step` dispinterface members.
 pub(crate) mod step {
     /// `AsPropertyObject`, no params.
@@ -647,6 +659,10 @@ pub(crate) mod step {
     pub(crate) const ADAPTER_KEY_NAME: i32 = 0x15;
     /// `ChangeAdapter`, one key-name parameter.
     pub(crate) const CHANGE_ADAPTER: i32 = 0x98;
+    /// `ChangeStepType`, one step-type object.
+    pub(crate) const CHANGE_STEP_TYPE: i32 = 0x99;
+    /// `CanChangeStepType`, one optional step-type object.
+    pub(crate) const CAN_CHANGE_STEP_TYPE: i32 = 0x9b;
     /// `RunMode`, read/write, a string, not a number.
     pub(crate) const RUN_MODE: i32 = 0x17;
     /// `Precondition`, read/write.
@@ -1105,8 +1121,10 @@ pub(crate) mod batch {
     pub(crate) const DEFAULT_BATCH_SYNCHRONIZATION: i32 = 0x7;
     /// `GetInfo`, two integer outputs.
     pub(crate) const GET_INFO: i32 = 0x8;
-    /// `GetBatchThreads`, no parameters, returns an integer array.
+    /// `GetBatchThreads`, no parameters, returns an object array.
     pub(crate) const GET_BATCH_THREADS: i32 = 0x9;
+    /// `ReportRTEOccurred`, one context.
+    pub(crate) const REPORT_RTE_OCCURRED: i32 = 0xa;
 }
 
 /// Members of `SequenceFileDiffer`.
