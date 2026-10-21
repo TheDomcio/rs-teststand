@@ -135,6 +135,52 @@ impl SyncManager {
         ))
     }
 
+    /// Gets a synchronization object of any kind by name
+    /// (`SyncManager.GetSyncObject`).
+    ///
+    /// # Errors
+    /// [`Error`] if no object has that name or the COM call returns an
+    /// unexpected type.
+    pub fn get_sync_object(
+        &self,
+        name: &str,
+        kind: crate::sync::SyncObjectType,
+    ) -> Result<crate::sync::SyncObject, Error> {
+        let dispatch = self
+            .dispatch
+            .call(
+                sync_manager::GET_SYNC_OBJECT,
+                &[Value::Str(name.to_owned()), Value::I32(kind.as_i32())],
+            )?
+            .into_object()?;
+        Ok(match kind {
+            crate::sync::SyncObjectType::Semaphore => {
+                crate::sync::SyncObject::Semaphore(crate::Semaphore::new(dispatch))
+            }
+            crate::sync::SyncObjectType::Mutex => {
+                crate::sync::SyncObject::Mutex(crate::Mutex::new(dispatch))
+            }
+            crate::sync::SyncObjectType::Rendezvous => {
+                crate::sync::SyncObject::Rendezvous(crate::Rendezvous::new(dispatch))
+            }
+            crate::sync::SyncObjectType::Queue => {
+                crate::sync::SyncObject::Queue(crate::Queue::new(dispatch))
+            }
+            crate::sync::SyncObjectType::Notification => {
+                crate::sync::SyncObject::Notification(crate::Notification::new(dispatch))
+            }
+            crate::sync::SyncObjectType::Batch => {
+                crate::sync::SyncObject::Batch(crate::Batch::new(dispatch))
+            }
+            crate::sync::SyncObjectType::NotASyncObject => {
+                return Err(Error::UnexpectedType {
+                    expected: "a synchronization object kind",
+                    actual: "NotASyncObject",
+                });
+            }
+        })
+    }
+
     /// Creates or opens a semaphore (`SyncManager.CreateSemaphore`).
     ///
     /// Returns the semaphore and whether it already existed.

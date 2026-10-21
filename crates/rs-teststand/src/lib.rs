@@ -91,8 +91,8 @@ pub use property::{
 };
 pub use search::{SearchElements, SearchFilterOptions, SearchMatch, SearchOptions, SearchResults};
 pub use sequence::{
-    BreakpointScope, ConflictHandler, FailureAction, GetSeqFileOptions, ResultRecordingOption,
-    RunMode, Sequence, SequenceFile, SequenceType, Step, StepType,
+    BreakpointScope, ConflictHandler, FailureAction, GetSeqFileOptions, InteractiveArgs, Module,
+    ResultRecordingOption, RunMode, Sequence, SequenceFile, SequenceType, Step, StepType,
 };
 pub use station::{
     DebugOptions, ExecutionMask, RunTimeErrorOption, SearchDirectories, SearchDirectory,
@@ -103,7 +103,7 @@ pub use streams::{
 };
 pub use sync::{
     AutoReleaser, Batch, BatchSyncType, EnqueueResult, FullQueueOption, Mutex, Notification, Queue,
-    Rendezvous, Semaphore, SyncManager, WaitResult,
+    Rendezvous, Semaphore, SyncManager, SyncObject, SyncObjectType, WaitResult,
 };
 pub use types::{TypeCategory, TypeUsageList};
 pub use undo::{CreateUndoItemOption, EditKind, UndoItem, UndoItemCreator, UndoItems, UndoStack};

@@ -14,6 +14,7 @@ mod queue;
 mod rendezvous;
 mod semaphore;
 mod sync_manager;
+mod sync_object;
 
 pub use auto_releaser::AutoReleaser;
 pub use batch::Batch;
@@ -24,3 +25,4 @@ pub use queue::Queue;
 pub use rendezvous::Rendezvous;
 pub use semaphore::Semaphore;
 pub use sync_manager::SyncManager;
+pub use sync_object::{SyncObject, SyncObjectType};

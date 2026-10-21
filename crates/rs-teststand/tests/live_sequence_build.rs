@@ -360,6 +360,10 @@ fn adapter_module_helpers_read_back_their_fields() -> Result<(), Error> {
     assert!(labview.labview_show_front_panel()?);
 
     let cvi = engine.new_step(AdapterKeyName::Cvi.as_str(), "Action")?;
+    let cvi_module = cvi.module()?;
+    let _tree = cvi_module.as_property_object()?;
+    assert!(!cvi_module.is_prototype_incompatible()?);
+    let _can_specify = cvi_module.can_specify()?;
     cvi.set_cvi_library_path("example-module")?;
     assert_eq!(cvi.cvi_library_path()?, "example-module");
     cvi.set_cvi_function("main")?;
@@ -372,5 +376,30 @@ fn adapter_module_helpers_read_back_their_fields() -> Result<(), Error> {
     assert_eq!(dotnet.dotnet_class_name()?, "Example");
     dotnet.set_dotnet_member_name("Main")?;
     assert_eq!(dotnet.dotnet_member_name()?, "Main");
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires a live engine"]
+fn interactive_args_scope_a_step_list() -> Result<(), Error> {
+    let engine = Engine::new()?;
+    let file = engine.new_sequence_file()?;
+    let sequence = file.get_sequence_by_name("MainSequence")?;
+
+    let args = engine.new_interactive_args()?;
+    args.set_sequence(&sequence)?;
+    assert_eq!(args.sequence()?.name()?, "MainSequence");
+    args.add_step_index(0)?;
+    assert!(args.contains_step(0)?);
+    assert_eq!(args.get_step_index(0)?, 0);
+    assert_eq!(args.num_steps()?, 1);
+    args.set_loop_count(2)?;
+    assert_eq!(args.loop_count()?, 2);
+    args.set_stop_expression("True")?;
+    assert_eq!(args.stop_expression()?, "True");
+    args.set_step_group(StepGroup::Main)?;
+    assert_eq!(args.step_group()?, Some(StepGroup::Main));
+    args.clear_step_list()?;
+    assert_eq!(args.num_steps()?, 0);
     Ok(())
 }

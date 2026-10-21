@@ -517,20 +517,20 @@ impl Step {
         ))
     }
 
-    /// The step's module configuration tree (`Step.Module`).
+    /// The step's module (`Step.Module`).
     ///
-    /// This is the adapter-specific property object. Its fields differ by
-    /// adapter, so this wrapper returns the tree rather than guessing names.
+    /// Returns the generic `Module` interface. The adapter-specific property
+    /// tree is `module().as_property_object()`.
     ///
     /// The typed helpers that follow (`sequence_call_*`, `labview_*`, `cvi_*`,
-    /// `dotnet_*`) are conveniences over this tree; the method names are this
+    /// `dotnet_*`) are conveniences over that tree; the method names are this
     /// crate's, and the property paths they use are the adapter's own field
     /// names.
     ///
     /// # Errors
     /// [`Error`] if the COM call fails or returns an unexpected type.
-    pub fn module(&self) -> Result<PropertyObject, Error> {
-        Ok(PropertyObject::new(
+    pub fn module(&self) -> Result<crate::Module, Error> {
+        Ok(crate::Module::new(
             self.dispatch.get(step::MODULE)?.into_object()?,
         ))
     }
@@ -551,7 +551,9 @@ impl Step {
     /// # Errors
     /// [`Error`] if the step is not a sequence call or the COM call fails.
     pub fn sequence_call_sequence_name(&self) -> Result<String, Error> {
-        self.module()?.get_val_string("SeqName", 0)
+        self.module()?
+            .as_property_object()?
+            .get_val_string("SeqName", 0)
     }
 
     /// Sets the Sequence Call sequence name.
@@ -559,7 +561,9 @@ impl Step {
     /// # Errors
     /// [`Error`] if the step is not a sequence call or the COM call fails.
     pub fn set_sequence_call_sequence_name(&self, name: &str) -> Result<(), Error> {
-        self.module()?.set_val_string("SeqName", 0, name)
+        self.module()?
+            .as_property_object()?
+            .set_val_string("SeqName", 0, name)
     }
 
     /// The Sequence Call sequence-file path (`Step.Module` field `SFPath`).
@@ -567,7 +571,9 @@ impl Step {
     /// # Errors
     /// [`Error`] if the step is not a sequence call or the COM call fails.
     pub fn sequence_call_file_path(&self) -> Result<String, Error> {
-        self.module()?.get_val_string("SFPath", 0)
+        self.module()?
+            .as_property_object()?
+            .get_val_string("SFPath", 0)
     }
 
     /// Sets the Sequence Call sequence-file path.
@@ -575,7 +581,9 @@ impl Step {
     /// # Errors
     /// [`Error`] if the step is not a sequence call or the COM call fails.
     pub fn set_sequence_call_file_path(&self, path: &str) -> Result<(), Error> {
-        self.module()?.set_val_string("SFPath", 0, path)
+        self.module()?
+            .as_property_object()?
+            .set_val_string("SFPath", 0, path)
     }
 
     /// Whether the Sequence Call uses the current file
@@ -584,7 +592,9 @@ impl Step {
     /// # Errors
     /// [`Error`] if the step is not a sequence call or the COM call fails.
     pub fn sequence_call_uses_current_file(&self) -> Result<bool, Error> {
-        self.module()?.get_val_boolean("UseCurFile", 0)
+        self.module()?
+            .as_property_object()?
+            .get_val_boolean("UseCurFile", 0)
     }
 
     /// Sets whether the Sequence Call uses the current file.
@@ -593,6 +603,7 @@ impl Step {
     /// [`Error`] if the step is not a sequence call or the COM call fails.
     pub fn set_sequence_call_uses_current_file(&self, uses_current: bool) -> Result<(), Error> {
         self.module()?
+            .as_property_object()?
             .set_val_boolean("UseCurFile", 0, uses_current)
     }
 
@@ -602,7 +613,9 @@ impl Step {
     /// # Errors
     /// [`Error`] if the step is not a sequence call or the COM call fails.
     pub fn sequence_call_specifies_by_expression(&self) -> Result<bool, Error> {
-        self.module()?.get_val_boolean("SpecifyByExpr", 0)
+        self.module()?
+            .as_property_object()?
+            .get_val_boolean("SpecifyByExpr", 0)
     }
 
     /// Sets whether the Sequence Call names its target with expressions.
@@ -614,6 +627,7 @@ impl Step {
         by_expression: bool,
     ) -> Result<(), Error> {
         self.module()?
+            .as_property_object()?
             .set_val_boolean("SpecifyByExpr", 0, by_expression)
     }
 
@@ -623,7 +637,9 @@ impl Step {
     /// # Errors
     /// [`Error`] if the step is not a sequence call or the COM call fails.
     pub fn sequence_call_file_path_expression(&self) -> Result<String, Error> {
-        self.module()?.get_val_string("SFPathExpr", 0)
+        self.module()?
+            .as_property_object()?
+            .get_val_string("SFPathExpr", 0)
     }
 
     /// Sets the Sequence Call file-path expression.
@@ -631,7 +647,9 @@ impl Step {
     /// # Errors
     /// [`Error`] if the step is not a sequence call or the COM call fails.
     pub fn set_sequence_call_file_path_expression(&self, expression: &str) -> Result<(), Error> {
-        self.module()?.set_val_string("SFPathExpr", 0, expression)
+        self.module()?
+            .as_property_object()?
+            .set_val_string("SFPathExpr", 0, expression)
     }
 
     /// The Sequence Call sequence-name expression
@@ -640,7 +658,9 @@ impl Step {
     /// # Errors
     /// [`Error`] if the step is not a sequence call or the COM call fails.
     pub fn sequence_call_sequence_name_expression(&self) -> Result<String, Error> {
-        self.module()?.get_val_string("SeqNameExpr", 0)
+        self.module()?
+            .as_property_object()?
+            .get_val_string("SeqNameExpr", 0)
     }
 
     /// Sets the Sequence Call sequence-name expression.
@@ -651,7 +671,9 @@ impl Step {
         &self,
         expression: &str,
     ) -> Result<(), Error> {
-        self.module()?.set_val_string("SeqNameExpr", 0, expression)
+        self.module()?
+            .as_property_object()?
+            .set_val_string("SeqNameExpr", 0, expression)
     }
 
     /// The LabVIEW VI path (`Step.Module` field `ViCall.VIPath`).
@@ -659,7 +681,9 @@ impl Step {
     /// # Errors
     /// [`Error`] if the step has no LabVIEW module or the COM call fails.
     pub fn labview_vi_path(&self) -> Result<String, Error> {
-        self.module()?.get_val_string("ViCall.VIPath", 0)
+        self.module()?
+            .as_property_object()?
+            .get_val_string("ViCall.VIPath", 0)
     }
 
     /// Sets the LabVIEW VI path.
@@ -667,7 +691,9 @@ impl Step {
     /// # Errors
     /// [`Error`] if the step has no LabVIEW module or the COM call fails.
     pub fn set_labview_vi_path(&self, path: &str) -> Result<(), Error> {
-        self.module()?.set_val_string("ViCall.VIPath", 0, path)
+        self.module()?
+            .as_property_object()?
+            .set_val_string("ViCall.VIPath", 0, path)
     }
 
     /// The LabVIEW remote VI path (`Step.Module` field `ViCall.RemoteVIPath`).
@@ -675,7 +701,9 @@ impl Step {
     /// # Errors
     /// [`Error`] if the step has no LabVIEW module or the COM call fails.
     pub fn labview_remote_vi_path(&self) -> Result<String, Error> {
-        self.module()?.get_val_string("ViCall.RemoteVIPath", 0)
+        self.module()?
+            .as_property_object()?
+            .get_val_string("ViCall.RemoteVIPath", 0)
     }
 
     /// Sets the LabVIEW remote VI path.
@@ -684,6 +712,7 @@ impl Step {
     /// [`Error`] if the step has no LabVIEW module or the COM call fails.
     pub fn set_labview_remote_vi_path(&self, path: &str) -> Result<(), Error> {
         self.module()?
+            .as_property_object()?
             .set_val_string("ViCall.RemoteVIPath", 0, path)
     }
 
@@ -692,7 +721,9 @@ impl Step {
     /// # Errors
     /// [`Error`] if the step has no LabVIEW module or the COM call fails.
     pub fn labview_call_name(&self) -> Result<String, Error> {
-        self.module()?.get_val_string("ViCall.CallName", 0)
+        self.module()?
+            .as_property_object()?
+            .get_val_string("ViCall.CallName", 0)
     }
 
     /// Sets the LabVIEW call name.
@@ -700,7 +731,9 @@ impl Step {
     /// # Errors
     /// [`Error`] if the step has no LabVIEW module or the COM call fails.
     pub fn set_labview_call_name(&self, name: &str) -> Result<(), Error> {
-        self.module()?.set_val_string("ViCall.CallName", 0, name)
+        self.module()?
+            .as_property_object()?
+            .set_val_string("ViCall.CallName", 0, name)
     }
 
     /// The LabVIEW namespace (`Step.Module` field `ViCall.Namespace`).
@@ -708,7 +741,9 @@ impl Step {
     /// # Errors
     /// [`Error`] if the step has no LabVIEW module or the COM call fails.
     pub fn labview_namespace(&self) -> Result<String, Error> {
-        self.module()?.get_val_string("ViCall.Namespace", 0)
+        self.module()?
+            .as_property_object()?
+            .get_val_string("ViCall.Namespace", 0)
     }
 
     /// Sets the LabVIEW namespace.
@@ -717,6 +752,7 @@ impl Step {
     /// [`Error`] if the step has no LabVIEW module or the COM call fails.
     pub fn set_labview_namespace(&self, namespace: &str) -> Result<(), Error> {
         self.module()?
+            .as_property_object()?
             .set_val_string("ViCall.Namespace", 0, namespace)
     }
 
@@ -726,7 +762,9 @@ impl Step {
     /// # Errors
     /// [`Error`] if the step has no LabVIEW module or the COM call fails.
     pub fn labview_show_front_panel(&self) -> Result<bool, Error> {
-        self.module()?.get_val_boolean("ViCall.ShowFrnPnl", 0)
+        self.module()?
+            .as_property_object()?
+            .get_val_boolean("ViCall.ShowFrnPnl", 0)
     }
 
     /// Sets whether the LabVIEW VI front panel is shown.
@@ -734,7 +772,9 @@ impl Step {
     /// # Errors
     /// [`Error`] if the step has no LabVIEW module or the COM call fails.
     pub fn set_labview_show_front_panel(&self, show: bool) -> Result<(), Error> {
-        self.module()?.set_val_boolean("ViCall.ShowFrnPnl", 0, show)
+        self.module()?
+            .as_property_object()?
+            .set_val_boolean("ViCall.ShowFrnPnl", 0, show)
     }
 
     /// The C/CVI library path (`Step.Module` field `Call.LibPath`).
@@ -742,7 +782,9 @@ impl Step {
     /// # Errors
     /// [`Error`] if the step has no C/CVI module or the COM call fails.
     pub fn cvi_library_path(&self) -> Result<String, Error> {
-        self.module()?.get_val_string("Call.LibPath", 0)
+        self.module()?
+            .as_property_object()?
+            .get_val_string("Call.LibPath", 0)
     }
 
     /// Sets the C/CVI library path.
@@ -750,7 +792,9 @@ impl Step {
     /// # Errors
     /// [`Error`] if the step has no C/CVI module or the COM call fails.
     pub fn set_cvi_library_path(&self, path: &str) -> Result<(), Error> {
-        self.module()?.set_val_string("Call.LibPath", 0, path)
+        self.module()?
+            .as_property_object()?
+            .set_val_string("Call.LibPath", 0, path)
     }
 
     /// The C/CVI function name (`Step.Module` field `Call.Func`).
@@ -758,7 +802,9 @@ impl Step {
     /// # Errors
     /// [`Error`] if the step has no C/CVI module or the COM call fails.
     pub fn cvi_function(&self) -> Result<String, Error> {
-        self.module()?.get_val_string("Call.Func", 0)
+        self.module()?
+            .as_property_object()?
+            .get_val_string("Call.Func", 0)
     }
 
     /// Sets the C/CVI function name.
@@ -766,7 +812,9 @@ impl Step {
     /// # Errors
     /// [`Error`] if the step has no C/CVI module or the COM call fails.
     pub fn set_cvi_function(&self, function: &str) -> Result<(), Error> {
-        self.module()?.set_val_string("Call.Func", 0, function)
+        self.module()?
+            .as_property_object()?
+            .set_val_string("Call.Func", 0, function)
     }
 
     /// The .NET assembly path (`Step.Module` field `AssemblyPath`).
@@ -774,7 +822,9 @@ impl Step {
     /// # Errors
     /// [`Error`] if the step has no .NET module or the COM call fails.
     pub fn dotnet_assembly_path(&self) -> Result<String, Error> {
-        self.module()?.get_val_string("AssemblyPath", 0)
+        self.module()?
+            .as_property_object()?
+            .get_val_string("AssemblyPath", 0)
     }
 
     /// Sets the .NET assembly path.
@@ -782,7 +832,9 @@ impl Step {
     /// # Errors
     /// [`Error`] if the step has no .NET module or the COM call fails.
     pub fn set_dotnet_assembly_path(&self, path: &str) -> Result<(), Error> {
-        self.module()?.set_val_string("AssemblyPath", 0, path)
+        self.module()?
+            .as_property_object()?
+            .set_val_string("AssemblyPath", 0, path)
     }
 
     /// The .NET class name (`Step.Module` field
@@ -791,7 +843,9 @@ impl Step {
     /// # Errors
     /// [`Error`] if the step has no .NET module or the COM call fails.
     pub fn dotnet_class_name(&self) -> Result<String, Error> {
-        self.module()?.get_val_string("ClassName", 0)
+        self.module()?
+            .as_property_object()?
+            .get_val_string("ClassName", 0)
     }
 
     /// Sets the .NET class name.
@@ -799,7 +853,9 @@ impl Step {
     /// # Errors
     /// [`Error`] if the step has no .NET module or the COM call fails.
     pub fn set_dotnet_class_name(&self, class_name: &str) -> Result<(), Error> {
-        self.module()?.set_val_string("ClassName", 0, class_name)
+        self.module()?
+            .as_property_object()?
+            .set_val_string("ClassName", 0, class_name)
     }
 
     /// The .NET function name (`Step.Module` field
@@ -808,7 +864,9 @@ impl Step {
     /// # Errors
     /// [`Error`] if the step has no .NET module or the COM call fails.
     pub fn dotnet_member_name(&self) -> Result<String, Error> {
-        self.module()?.get_val_string("FunctionName", 0)
+        self.module()?
+            .as_property_object()?
+            .get_val_string("FunctionName", 0)
     }
 
     /// Sets the .NET function name.
@@ -817,6 +875,7 @@ impl Step {
     /// [`Error`] if the step has no .NET module or the COM call fails.
     pub fn set_dotnet_member_name(&self, member_name: &str) -> Result<(), Error> {
         self.module()?
+            .as_property_object()?
             .set_val_string("FunctionName", 0, member_name)
     }
 
@@ -998,9 +1057,9 @@ mod tests {
     #[test]
     fn reads_and_writes_sequence_call_module_fields() -> Result<(), Error> {
         #[derive(Debug)]
-        struct ModuleFake;
+        struct PropertyFake;
 
-        impl Dispatch for ModuleFake {
+        impl Dispatch for PropertyFake {
             fn get(&self, _dispid: i32) -> Result<Value, ComError> {
                 Err(ComError::hresult(0, "fake: unscripted get"))
             }
@@ -1017,6 +1076,26 @@ mod tests {
                     crate::dispids::property_object::GET_VAL_BOOLEAN => Ok(Value::Bool(true)),
                     _ => Ok(Value::Empty),
                 }
+            }
+        }
+
+        #[derive(Debug)]
+        struct ModuleFake;
+
+        impl Dispatch for ModuleFake {
+            fn get(&self, _dispid: i32) -> Result<Value, ComError> {
+                Err(ComError::hresult(0, "fake: unscripted get"))
+            }
+
+            fn put(&self, _dispid: i32, _value: Value) -> Result<(), ComError> {
+                Ok(())
+            }
+
+            fn call(&self, dispid: i32, _args: &[Value]) -> Result<Value, ComError> {
+                if dispid == crate::dispids::module::AS_PROPERTY_OBJECT {
+                    return Ok(Value::Object(Box::new(PropertyFake)));
+                }
+                Ok(Value::Empty)
             }
         }
 

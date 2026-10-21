@@ -5,7 +5,10 @@
 use std::ops::Deref;
 use std::time::Duration;
 
-use rs_teststand::{Engine, EnqueueResult, Error, FullQueueOption, PropValType, WaitResult};
+use rs_teststand::{
+    Engine, EnqueueResult, Error, FullQueueOption, PropValType, SyncObject, SyncObjectType,
+    WaitResult,
+};
 
 /// Shuts the engine down on every exit path, including a failed assertion.
 struct EngineGuard(Engine);
@@ -191,5 +194,14 @@ fn the_primitive_objects_can_be_created_and_used() -> Result<(), Error> {
     assert_eq!(wait, WaitResult::Success);
     assert!(selected.is_some());
     assert!(offset >= 0);
+
+    let found = manager.get_sync_object("rs-parity-mutex", SyncObjectType::Mutex)?;
+    let SyncObject::Mutex(found) = found else {
+        return Err(Error::UnexpectedType {
+            expected: "a mutex",
+            actual: "another synchronization object",
+        });
+    };
+    assert_eq!(found.name()?, "rs-parity-mutex");
     Ok(())
 }

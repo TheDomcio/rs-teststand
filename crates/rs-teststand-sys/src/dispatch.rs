@@ -13,7 +13,7 @@ use windows::Win32::Globalization::LOCALE_USER_DEFAULT;
 use windows::Win32::System::Com::{
     CLSCTX_ALL, CLSIDFromProgID, CLSIDFromString, COINIT_APARTMENTTHREADED, CoCreateInstance,
     CoInitializeEx, CoUninitialize, DISPATCH_FLAGS, DISPATCH_METHOD, DISPATCH_PROPERTYGET,
-    DISPATCH_PROPERTYPUT, DISPPARAMS, EXCEPINFO, IDispatch,
+    DISPATCH_PROPERTYPUT, DISPATCH_PROPERTYPUTREF, DISPPARAMS, EXCEPINFO, IDispatch,
 };
 use windows::Win32::System::Variant::VARIANT;
 use windows_core::{BSTR, GUID, HSTRING};
@@ -62,6 +62,22 @@ pub trait Dispatch: fmt::Debug {
     /// # Errors
     /// [`ComError::Hresult`] if the COM call fails.
     fn put(&self, dispid: i32, value: Value) -> Result<(), ComError>;
+
+    /// Sets an object property by dispatch id (`DISPATCH_PROPERTYPUTREF`).
+    ///
+    /// Distinct from [`Dispatch::put`]: a member declared `PROPPUTREF` takes a
+    /// reference, not a copy, and refuses `DISPATCH_PROPERTYPUT`.
+    ///
+    /// # Errors
+    /// [`ComError::Hresult`] if the COM call fails, or
+    /// [`ComError::UnexpectedType`] on a dispatch with no by-reference support.
+    fn put_ref(&self, dispid: i32, value: Value) -> Result<(), ComError> {
+        let _ = (dispid, value);
+        Err(ComError::UnexpectedType {
+            expected: "a live COM object",
+            actual: "a dispatch with no by-reference put support",
+        })
+    }
 
     /// Invokes a method by dispatch id (`DISPATCH_METHOD`) with arguments.
     ///
@@ -233,6 +249,26 @@ impl Dispatch for ComDispatch {
             DISPATCH_PROPERTYPUT,
             &params,
             "IDispatch::Invoke (put)",
+        )?;
+        Ok(())
+    }
+
+    fn put_ref(&self, dispid: i32, value: Value) -> Result<(), ComError> {
+        let mut argument = OwnedVariant::from_value(&value)?;
+        let mut put_dispid = DISPID_PROPERTYPUT;
+        // A property-put-ref passes its value as the single named argument
+        // DISPID_PROPERTYPUT; `argument` outlives the call.
+        let params = DISPPARAMS {
+            rgvarg: argument.as_mut_ptr(),
+            rgdispidNamedArgs: &raw mut put_dispid,
+            cArgs: 1,
+            cNamedArgs: 1,
+        };
+        self.invoke(
+            dispid,
+            DISPATCH_PROPERTYPUTREF,
+            &params,
+            "IDispatch::Invoke (put ref)",
         )?;
         Ok(())
     }

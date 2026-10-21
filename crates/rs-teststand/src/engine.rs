@@ -997,6 +997,65 @@ impl Engine {
         ))
     }
 
+    /// Creates interactive-execution arguments
+    /// (`Engine.NewInteractiveArgs`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn new_interactive_args(&self) -> Result<crate::InteractiveArgs, Error> {
+        Ok(crate::InteractiveArgs::new(
+            self.dispatch
+                .call(dispid::NEW_INTERACTIVE_ARGS, &[])?
+                .into_object()?,
+        ))
+    }
+
+    /// Starts an interactive execution scoped to a step list
+    /// (`Engine.NewExecution` with interactive arguments).
+    ///
+    /// The run uses no process model and does not break at the first step.
+    ///
+    /// # Errors
+    /// [`Error`] if an object has no COM identity or the COM call fails.
+    pub fn new_interactive_execution(
+        &self,
+        sequence_file: &crate::SequenceFile,
+        sequence_name: &str,
+        interactive_args: &crate::InteractiveArgs,
+    ) -> Result<crate::Execution, Error> {
+        let file = sequence_file
+            .duplicate_dispatch()
+            .ok_or(Error::UnexpectedType {
+                expected: "a live sequence file",
+                actual: "a test fake with no COM identity",
+            })?;
+        let args = interactive_args
+            .duplicate_dispatch()
+            .ok_or(Error::UnexpectedType {
+                expected: "live interactive args",
+                actual: "a test fake with no COM identity",
+            })?;
+        let major = self.major_version()?;
+        Ok(crate::Execution::with_engine_major(
+            self.dispatch
+                .call(
+                    dispid::NEW_EXECUTION,
+                    &[
+                        Value::Object(file),
+                        Value::Str(sequence_name.to_owned()),
+                        Value::NullObject,
+                        Value::Bool(false),
+                        Value::I32(0),
+                        Value::Empty,
+                        Value::Empty,
+                        Value::Object(args),
+                    ],
+                )?
+                .into_object()?,
+            major,
+        ))
+    }
+
     /// Posts a message on behalf of an execution (`Engine.PostUIMessage`).
     ///
     /// The counterpart to

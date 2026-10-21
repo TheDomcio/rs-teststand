@@ -97,6 +97,7 @@ define_dispid_group! {
         OUTPUT_MESSAGES_ENABLED = 0x025d;
         NEW_OUTPUT_MESSAGES = 0x025e;
         NEW_UNDO_ITEM_CREATOR = 0x025a;
+        NEW_INTERACTIVE_ARGS = 0x0082;
         NEW_UNDO_STACK = 0x025f;
         UNDO_LIMIT = 0x027a;
         FIND_FILE = 0x0104;
@@ -772,6 +773,68 @@ pub(crate) mod ui_message {
     pub(crate) const ACKNOWLEDGE: i32 = 0x3c;
 }
 
+/// Members of `InteractiveArgs`.
+pub(crate) mod interactive_args {
+    /// `GetStepIndex`, one index.
+    pub(crate) const GET_STEP_INDEX: i32 = 0x1;
+    /// `AddStepIndex`, one index.
+    pub(crate) const ADD_STEP_INDEX: i32 = 0x2;
+    /// `ContainsStep`, one index.
+    pub(crate) const CONTAINS_STEP: i32 = 0x3;
+    /// `ClearStepList`, no parameters.
+    pub(crate) const CLEAR_STEP_LIST: i32 = 0x4;
+    /// `AsPropertyObject`, no parameters.
+    pub(crate) const AS_PROPERTY_OBJECT: i32 = 0x1d;
+    /// `StepGroup`, read/write enum.
+    pub(crate) const STEP_GROUP: i32 = 0x1e;
+    /// `NumSteps`, read-only integer.
+    pub(crate) const NUM_STEPS: i32 = 0x1f;
+    /// `LoopCount`, read/write integer.
+    pub(crate) const LOOP_COUNT: i32 = 0x20;
+    /// `StopExpression`, read/write string.
+    pub(crate) const STOP_EXPRESSION: i32 = 0x21;
+    /// `Sequence`, read/write object reference.
+    pub(crate) const SEQUENCE: i32 = 0x22;
+}
+
+/// Members of `Module`.
+pub(crate) mod module {
+    /// `AsPropertyObject`, no parameters.
+    pub(crate) const AS_PROPERTY_OBJECT: i32 = 0x1;
+    /// `Adapter`, read-only object.
+    pub(crate) const ADAPTER: i32 = 0x2;
+    /// `Step`, read-only object.
+    pub(crate) const STEP: i32 = 0x3;
+    /// `Load`, options and an optional context.
+    pub(crate) const LOAD: i32 = 0x4;
+    /// `Unload`, no parameters.
+    pub(crate) const UNLOAD: i32 = 0x5;
+    /// `CanSpecify`, read-only boolean.
+    pub(crate) const CAN_SPECIFY: i32 = 0x6;
+    /// `Specify`, options.
+    pub(crate) const SPECIFY: i32 = 0x7;
+    /// `CanCreateCode`, read-only boolean.
+    pub(crate) const CAN_CREATE_CODE: i32 = 0x8;
+    /// `CreateCode`, no parameters.
+    pub(crate) const CREATE_CODE: i32 = 0x9;
+    /// `CanEditCode`, read-only boolean.
+    pub(crate) const CAN_EDIT_CODE: i32 = 0xa;
+    /// `EditCode`, no parameters.
+    pub(crate) const EDIT_CODE: i32 = 0xb;
+    /// `GetDescription`, options.
+    pub(crate) const GET_DESCRIPTION: i32 = 0xc;
+    /// `UnmappedArgumentValues`, read-only object.
+    pub(crate) const UNMAPPED_ARGUMENT_VALUES: i32 = 0xc9;
+    /// `LoadPrototype`, options.
+    pub(crate) const LOAD_PROTOTYPE: i32 = 0xca;
+    /// `IsPrototypeIncompatible`, read-only boolean.
+    pub(crate) const IS_PROTOTYPE_INCOMPATIBLE: i32 = 0xcb;
+    /// `ClearUnmappedArgumentValues`, no parameters (obsolete).
+    pub(crate) const CLEAR_UNMAPPED_ARGUMENT_VALUES: i32 = 0xcc;
+    /// `GetLastLoadWarnings`, no parameters, string array.
+    pub(crate) const GET_LAST_LOAD_WARNINGS: i32 = 0x12d;
+}
+
 /// `StepType` dispinterface members.
 pub(crate) mod step_type {
     /// `AsPropertyObject`, no parameters.
@@ -1382,6 +1445,8 @@ pub(crate) mod sync_manager {
     pub(crate) const CREATE_BATCH: i32 = 0xc;
     /// `GetBatch`, one name.
     pub(crate) const GET_BATCH: i32 = 0xd;
+    /// `GetSyncObject`, name and kind.
+    pub(crate) const GET_SYNC_OBJECT: i32 = 0xe;
     /// `IsAlive`, no parameters.
     pub(crate) const IS_ALIVE: i32 = 0xf;
     /// `MachineID`, read-only string.
