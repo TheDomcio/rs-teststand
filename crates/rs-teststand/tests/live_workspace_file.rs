@@ -7,7 +7,7 @@
 
 #![cfg(feature = "live-engine")]
 
-use rs_teststand::{Engine, Error};
+use rs_teststand::{AdapterKeyName, Engine, Error, StepGroup};
 
 /// Creates a workspace in memory for the test to inspect.
 ///
@@ -67,6 +67,87 @@ fn saving_a_workspace_is_interactive_and_stays_untested() -> Result<(), Error> {
     // is a property of this fixture rather than of the method. Assert only that
     // the workspace is usable; do not call the interactive member.
     assert!(workspace.root_workspace_object().is_ok());
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires a live engine"]
+fn a_workspace_object_accepts_an_inserted_folder() -> Result<(), Error> {
+    // `NewFolder` builds an object without placing it, so the count staying put
+    // before `InsertObject` is what proves the insert is what moved it rather
+    // than the creation. The folder is removed again, so the workspace is left
+    // as it was found.
+    let engine = Engine::new()?;
+    let workspace = new_workspace(&engine)?;
+    let root = workspace.root_workspace_object()?;
+    let before = root.num_contained_objects()?;
+
+    let folder = root.new_folder("rs_teststand_folder")?;
+    assert_eq!(
+        root.num_contained_objects()?,
+        before,
+        "a newly created folder should not be in the tree yet"
+    );
+
+    root.insert_object(&folder, 0)?;
+    assert_eq!(root.num_contained_objects()?, before + 1);
+    assert_eq!(
+        root.get_contained_object(0)?.display_name()?,
+        "rs_teststand_folder",
+        "the object should be at the index it was inserted at"
+    );
+
+    root.remove_object(0)?;
+    assert_eq!(root.num_contained_objects()?, before);
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires a live engine"]
+fn code_module_objects_are_inserted_for_the_files_in_the_workspace() -> Result<(), Error> {
+    // The member is documented as returning the objects it added, so a
+    // workspace with nothing in it has to answer with an empty list rather than
+    // a failure, and one holding a sequence file with a .NET step has to answer
+    // with an object for that module. Both directions are checked because an
+    // empty answer alone would also come back from a member that did nothing.
+    let engine = Engine::new()?;
+    let workspace = new_workspace(&engine)?;
+    let root = workspace.root_workspace_object()?;
+
+    let with_nothing = root.insert_code_modules(None)?;
+    assert!(
+        with_nothing.is_empty(),
+        "an empty workspace has no code modules: {}",
+        with_nothing.len()
+    );
+
+    let sequence_file = engine.new_sequence_file()?;
+    let main_sequence = sequence_file.get_sequence_by_name("MainSequence")?;
+    let step = engine.new_step(AdapterKeyName::DotNet.as_str(), "Action")?;
+    step.set_name("Assembly Call")?;
+    main_sequence.insert_step(&step, 0, StepGroup::Main)?;
+    let path = std::env::temp_dir().join("rs_teststand_code_modules.seq");
+    let path = path.to_string_lossy().into_owned();
+    sequence_file.save(&path)?;
+
+    let file_object = root.new_file(&path)?;
+    let before = root.num_contained_objects()?;
+    root.insert_object(&file_object, 0)?;
+    assert_eq!(root.num_contained_objects()?, before + 1);
+
+    // The list form names the file rather than the whole tree, which is how a
+    // host asks for one file's modules.
+    let added = root.insert_code_modules(Some(&[root.get_contained_object(0)?]))?;
+    for object in &added {
+        println!("  code module: {}", object.display_name()?);
+    }
+    assert!(
+        !added.is_empty(),
+        "a .NET step should contribute a code module object"
+    );
+
+    root.remove_object(0)?;
+    let _ = std::fs::remove_file(&path);
     Ok(())
 }
 

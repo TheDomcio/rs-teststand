@@ -1219,6 +1219,33 @@ impl PropertyObject {
         Ok(())
     }
 
+    /// Inserts elements into a one-dimensional array
+    /// (`PropertyObject.InsertElements`).
+    ///
+    /// `array_offset` is the zero-based offset of the first new element and
+    /// `num_elements` how many to insert; the elements after the offset move
+    /// up. Valid only for one-dimensional arrays, so a multi-dimensional one
+    /// is resized through its type instead.
+    ///
+    /// # Errors
+    /// [`Error`] if the offset is out of range or the COM call fails.
+    pub fn insert_elements(
+        &self,
+        array_offset: i32,
+        num_elements: i32,
+        options: i32,
+    ) -> Result<(), Error> {
+        self.dispatch.call(
+            introspect::INSERT_ELEMENTS,
+            &[
+                Value::I32(array_offset),
+                Value::I32(num_elements),
+                Value::I32(options),
+            ],
+        )?;
+        Ok(())
+    }
+
     /// Retrieves a nested `PropertyObject` by lookup path (`PropertyObject.GetPropertyObject`).
     ///
     /// # Errors
@@ -1297,6 +1324,77 @@ impl PropertyObject {
         self.dispatch.call(
             property_object::DELETE_SUB_PROPERTY,
             &[Value::Str(lookup_string.to_string()), Value::I32(options)],
+        )?;
+        Ok(())
+    }
+
+    /// Deletes the sub-property at a position
+    /// (`PropertyObject.DeleteNthSubProperty`).
+    ///
+    /// `lookup_string` names the container, as it does elsewhere; pass an empty
+    /// string for the object itself. `index` is zero-based, and `-1` deletes
+    /// every sub-property while skipping, without an error, the ones that
+    /// cannot be deleted.
+    ///
+    /// Use [`delete_sub_property`](Self::delete_sub_property) when the name is
+    /// known, and [`delete_elements`](Self::delete_elements) for array
+    /// elements.
+    ///
+    /// # Errors
+    /// [`Error`] if the index is out of range or the COM call fails.
+    pub fn delete_nth_sub_property(
+        &self,
+        lookup_string: &str,
+        index: i32,
+        options: i32,
+    ) -> Result<(), Error> {
+        self.dispatch.call(
+            property_object::DELETE_NTH_SUB_PROPERTY,
+            &[
+                Value::Str(lookup_string.to_string()),
+                Value::I32(index),
+                Value::I32(options),
+            ],
+        )?;
+        Ok(())
+    }
+
+    /// Inserts an existing object as a sub-property
+    /// (`PropertyObject.InsertSubProperty`).
+    ///
+    /// `index` must be at least zero and at most the current number of
+    /// sub-properties, so the object can be placed after the last one. The
+    /// object must not already be a sub-property of another object; an object
+    /// created by [`Engine::new_property_object`](crate::Engine::new_property_object)
+    /// or detached by [`clone_property`](Self::clone_property) qualifies.
+    ///
+    /// The arguments follow the member's own order, which is not the order the
+    /// other lookup members use: the options come before the index.
+    ///
+    /// # Errors
+    /// [`Error`] if the object has no COM identity, the index is out of range,
+    /// or the COM call fails.
+    pub fn insert_sub_property(
+        &self,
+        lookup_string: &str,
+        options: i32,
+        index: i32,
+        sub_property: &Self,
+    ) -> Result<(), Error> {
+        let handle = sub_property
+            .duplicate_dispatch()
+            .ok_or(Error::UnexpectedType {
+                expected: "a live property object",
+                actual: "a test fake with no COM identity",
+            })?;
+        self.dispatch.call(
+            property_object::INSERT_SUB_PROPERTY,
+            &[
+                Value::Str(lookup_string.to_string()),
+                Value::I32(options),
+                Value::I32(index),
+                Value::Object(handle),
+            ],
         )?;
         Ok(())
     }
@@ -1441,6 +1539,9 @@ mod tests {
                 | introspect::SET_INSTANCE_DEFAULT_FLAGS
                 | introspect::SET_INSTANCE_OVERRIDE_FLAGS
                 | introspect::DELETE_ELEMENTS
+                | introspect::INSERT_ELEMENTS
+                | property_object::DELETE_NTH_SUB_PROPERTY
+                | property_object::INSERT_SUB_PROPERTY
                 | property_object::SET_XML
                 | property_object::SET_VAL_BOOLEAN_BY_OFFSET
                 | property_object::SET_VAL_STRING_BY_OFFSET
@@ -1583,6 +1684,99 @@ mod tests {
             numbers
         };
         assert_eq!(numbers, vec![2, 3, 0]);
+        Ok(())
+    }
+
+    #[test]
+    fn deletes_a_sub_property_by_position() -> Result<(), crate::Error> {
+        // Three arguments in the member's order: the path, then the index, then
+        // the options. Swapping the two numbers would delete a different
+        // sub-property, so the order is what this pins.
+        let calls = Arc::new(Mutex::new(Vec::new()));
+        let object = PropertyObject::new(Fake::boxed(HashMap::new(), &calls));
+
+        object.delete_nth_sub_property("Container", 2, 0)?;
+
+        let (dispid, text, numbers) = {
+            let calls = calls.lock().map_err(|_| crate::Error::UnexpectedType {
+                expected: "an unpoisoned call log",
+                actual: "a poisoned call log",
+            })?;
+            let call = calls
+                .iter()
+                .find(|call| call.dispid == property_object::DELETE_NTH_SUB_PROPERTY)
+                .ok_or(crate::Error::UnexpectedType {
+                    expected: "a DeleteNthSubProperty call",
+                    actual: "no DeleteNthSubProperty call",
+                })?;
+            let recorded = (call.dispid, call.text.clone(), call.numbers.clone());
+            drop(calls);
+            recorded
+        };
+        assert_eq!(dispid, 0x283);
+        assert_eq!(text.as_deref(), Some("Container"));
+        assert_eq!(numbers, vec![2, 0]);
+        Ok(())
+    }
+
+    #[test]
+    fn inserts_a_sub_property_with_the_options_before_the_index() -> Result<(), crate::Error> {
+        // The member declares (lookupString, options, index, subProperty), so
+        // the two numbers arrive options-first. A caller cannot tell from the
+        // wrapper signature which is which at the call site, which is exactly
+        // why the argument list is pinned here.
+        let calls = Arc::new(Mutex::new(Vec::new()));
+        let object = PropertyObject::new(Fake::boxed(HashMap::new(), &calls));
+        let child = PropertyObject::new(Fake::boxed(HashMap::new(), &calls));
+
+        object.insert_sub_property("Container", 0, 1, &child)?;
+
+        let (text, numbers) = {
+            let calls = calls.lock().map_err(|_| crate::Error::UnexpectedType {
+                expected: "an unpoisoned call log",
+                actual: "a poisoned call log",
+            })?;
+            let call = calls
+                .iter()
+                .find(|call| call.dispid == property_object::INSERT_SUB_PROPERTY)
+                .ok_or(crate::Error::UnexpectedType {
+                    expected: "an InsertSubProperty call",
+                    actual: "no InsertSubProperty call",
+                })?;
+            let recorded = (call.text.clone(), call.numbers.clone());
+            drop(calls);
+            recorded
+        };
+        assert_eq!(text.as_deref(), Some("Container"));
+        assert_eq!(numbers, vec![0, 1], "options 0 must precede index 1");
+        Ok(())
+    }
+
+    #[test]
+    fn inserts_array_elements_by_offset_and_count() -> Result<(), crate::Error> {
+        let calls = Arc::new(Mutex::new(Vec::new()));
+        let object = PropertyObject::new(Fake::boxed(HashMap::new(), &calls));
+
+        object.insert_elements(3, 2, 0)?;
+
+        let (dispid, numbers) = {
+            let calls = calls.lock().map_err(|_| crate::Error::UnexpectedType {
+                expected: "an unpoisoned call log",
+                actual: "a poisoned call log",
+            })?;
+            let call = calls
+                .iter()
+                .find(|call| call.dispid == introspect::INSERT_ELEMENTS)
+                .ok_or(crate::Error::UnexpectedType {
+                    expected: "an InsertElements call",
+                    actual: "no InsertElements call",
+                })?;
+            let recorded = (call.dispid, call.numbers.clone());
+            drop(calls);
+            recorded
+        };
+        assert_eq!(dispid, 0x2e4);
+        assert_eq!(numbers, vec![3, 2, 0]);
         Ok(())
     }
 }

@@ -237,6 +237,8 @@ define_dispid_group! {
         SET_XML = 0x027f;
         NEW_SUB_PROPERTY = 0x0226;
         DELETE_SUB_PROPERTY = 0x0227;
+        DELETE_NTH_SUB_PROPERTY = 0x0283;
+        INSERT_SUB_PROPERTY = 0x0248;
         EXISTS = 0x023a;
         CLONE = 0x023b;
     }
@@ -270,6 +272,7 @@ define_dispid_group! {
         AS_PROPERTY_OBJECT = 0x000f;
         GET_ABSOLUTE_PATH = 0x0010;
         PROJECT_FILE = 0x0011;
+        INSERT_CODE_MODULES = 0x0012;
         FILE_EXISTS = 0x0014;
         GET_PARENT_CONTAINER = 0x0017;
         NUM_CONTAINED_OBJECTS = 0x0018;
@@ -475,6 +478,8 @@ pub(crate) mod property_object_introspect {
     pub(crate) const SET_NUM_ELEMENTS: i32 = 0x24c;
     /// `DeleteElements`, array offset, count, and options.
     pub(crate) const DELETE_ELEMENTS: i32 = 0x24d;
+    /// `InsertElements`, array offset, count, and options.
+    pub(crate) const INSERT_ELEMENTS: i32 = 0x2e4;
     /// `GetNumElements`, no params.
     pub(crate) const GET_NUM_ELEMENTS: i32 = 0x24b;
     /// `Search`, 9 parameters.
@@ -613,6 +618,8 @@ pub(crate) mod execution {
     pub(crate) const ABORT: i32 = 0x7;
     /// `CancelTermination`, no params.
     pub(crate) const CANCEL_TERMINATION: i32 = 0xa;
+    /// `DeleteExtraResult`, one property name.
+    pub(crate) const DELETE_EXTRA_RESULT: i32 = 0x11;
     /// `GetThread`, 1 param.
     pub(crate) const GET_THREAD: i32 = 0xd;
     /// `AsPropertyObject`, no params.

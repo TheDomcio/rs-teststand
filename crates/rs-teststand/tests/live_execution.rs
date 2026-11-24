@@ -896,10 +896,39 @@ fn a_running_thread_hands_over_its_sequence_context(engine: &Engine) -> Result<(
     Ok(())
 }
 
-type Step = (&'static str, fn(&Engine) -> Result<(), Error>);
-
-/// Names each check by its own function name.
+/// Removing an entry from the list of properties copied into the results.
 ///
+/// The list holds no entry on a fresh execution, and this crate binds no member
+/// that adds one, so what a live run can establish is what the member reports
+/// when the name it is given is not in the list: measured, it is accepted, and
+/// accepted again on a second call. That is worth pinning, because the
+/// neighbours on this interface could not answer the same way —
+/// `AddExtraResult` takes two arguments and `ClearExtraResultList` takes none,
+/// so a dispatch that landed on either would fail on the argument count rather
+/// than return success.
+fn deleting_an_extra_result_is_accepted_even_when_the_list_is_empty(
+    engine: &Engine,
+) -> Result<(), Error> {
+    engine.set_ui_message_polling_enabled(true)?;
+    let sequence_file = runnable_file(engine)?;
+    let execution = engine.new_execution(&sequence_file, "MainSequence", None, false, 0)?;
+
+    execution.delete_extra_result("Step.Limits.High")?;
+    execution.delete_extra_result("Step.Limits.High")?;
+
+    assert!(run_to_end(engine, Duration::from_secs(20))?);
+
+    // The list belongs to the execution rather than to the run, so it is still
+    // reachable once the run is over.
+    execution.delete_extra_result("Step.Limits.High")?;
+
+    drop(execution);
+    engine.release_sequence_file_ex(sequence_file, NO_OPTIONS)?;
+    Ok(())
+}
+
+type Step = (&'static str, fn(&Engine) -> Result<(), Error>);
+/// Names each check by its own function name.
 /// The label and the function were written out separately before, which is one
 /// more thing to keep in step and four lines per entry, enough that adding a
 /// check pushed the table past the workspace line ceiling.
@@ -910,7 +939,7 @@ macro_rules! steps {
 }
 
 /// The checks this file runs, in order, against one engine.
-fn steps() -> [Step; 22] {
+fn steps() -> [Step; 23] {
     steps![
         an_execution_lists_its_thread_ids,
         a_context_exposes_the_run_state_tree,
@@ -934,6 +963,7 @@ fn steps() -> [Step; 22] {
         suspending_takes_effect_before_a_resume_is_safe,
         results_parse_from_a_sequence_file_authored_in_the_editor,
         a_running_thread_hands_over_its_sequence_context,
+        deleting_an_extra_result_is_accepted_even_when_the_list_is_empty,
     ]
 }
 

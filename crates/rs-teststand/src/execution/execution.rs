@@ -447,6 +447,24 @@ impl Execution {
             self.dispatch.get(execution::ERROR_OBJECT)?.into_object()?,
         ))
     }
+
+    /// Removes one property from the list the run copies into its results
+    /// (`Execution.DeleteExtraResult`).
+    ///
+    /// `property_name` is the name that was registered to be copied, such as
+    /// `Step.Limits.High`. The list belongs to the execution, so removing an
+    /// entry changes what later results contain and leaves the results already
+    /// recorded alone.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn delete_extra_result(&self, property_name: &str) -> Result<(), Error> {
+        self.dispatch.call(
+            execution::DELETE_EXTRA_RESULT,
+            &[Value::Str(property_name.to_owned())],
+        )?;
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -551,6 +569,77 @@ mod tests {
             17,
         );
         let _streams = execution.output_record_streams()?;
+        Ok(())
+    }
+
+    /// One call it was asked to make, kept as text so an assertion can read it
+    /// back without owning a `Value`.
+    #[derive(Debug)]
+    struct Recording {
+        dispid: i32,
+        text: Option<String>,
+        argument_count: usize,
+    }
+
+    #[derive(Debug)]
+    struct Recorder {
+        calls: std::sync::Arc<std::sync::Mutex<Vec<Recording>>>,
+    }
+
+    impl Dispatch for Recorder {
+        fn get(&self, _dispid: i32) -> Result<Value, ComError> {
+            Err(ComError::hresult(-17000, "fake: unscripted get"))
+        }
+
+        fn put(&self, _dispid: i32, _value: Value) -> Result<(), ComError> {
+            Ok(())
+        }
+
+        fn call(&self, dispid: i32, args: &[Value]) -> Result<Value, ComError> {
+            self.calls
+                .lock()
+                .map_err(|_| ComError::hresult(-17000, "fake: call log was poisoned"))?
+                .push(Recording {
+                    dispid,
+                    text: args.iter().find_map(|value| match value {
+                        Value::Str(text) => Some(text.clone()),
+                        _ => None,
+                    }),
+                    argument_count: args.len(),
+                });
+            Ok(Value::Empty)
+        }
+    }
+
+    #[test]
+    fn deleting_an_extra_result_sends_one_property_name() -> Result<(), crate::Error> {
+        // A single string argument, and the member is `DeleteExtraResult`
+        // rather than its neighbour `AddExtraResult` (0x10) or
+        // `ClearExtraResultList` (0x12). A wrong DISPID here would silently add
+        // to the list instead of removing from it.
+        let calls = std::sync::Arc::new(std::sync::Mutex::new(Vec::new()));
+        let execution = Execution::new(Box::new(Recorder {
+            calls: std::sync::Arc::clone(&calls),
+        }));
+
+        execution.delete_extra_result("Step.Limits.High")?;
+
+        let (dispid, text, argument_count) = {
+            let calls = calls.lock().map_err(|_| crate::Error::UnexpectedType {
+                expected: "an unpoisoned call log",
+                actual: "a poisoned call log",
+            })?;
+            let call = calls.first().ok_or(crate::Error::UnexpectedType {
+                expected: "a DeleteExtraResult call",
+                actual: "no call",
+            })?;
+            let recorded = (call.dispid, call.text.clone(), call.argument_count);
+            drop(calls);
+            recorded
+        };
+        assert_eq!(dispid, 0x11);
+        assert_eq!(text.as_deref(), Some("Step.Limits.High"));
+        assert_eq!(argument_count, 1);
         Ok(())
     }
 }

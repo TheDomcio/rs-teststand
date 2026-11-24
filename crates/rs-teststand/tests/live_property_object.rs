@@ -54,6 +54,84 @@ fn property_object_deletes_array_elements() -> Result<(), Error> {
     Ok(())
 }
 
+/// The three sub-property and array mutators a builder reaches for before it
+/// has names for everything.
+///
+/// Deleting by position is the only way to remove a sequence's step or a
+/// variable when the position is what the caller knows. Inserting an object
+/// puts a detached tree into a container without copying it. Inserting array
+/// elements grows a one-dimensional array in the middle, which the
+/// `Set*ByOffset` members cannot do: they replace, they do not shift.
+#[test]
+#[ignore = "requires a live engine"]
+fn sub_properties_and_array_elements_can_be_inserted_and_deleted_by_position() -> Result<(), Error>
+{
+    let engine = Engine::new()?;
+    let root = engine.new_property_object(PropValType::Container, false, "", 0)?;
+    let insert = PropertyOptions::INSERT_IF_MISSING.bits();
+    let options = PropertyOptions::NONE.bits();
+
+    root.set_val_string("First", insert, "a")?;
+    root.set_val_string("Second", insert, "b")?;
+    root.set_val_string("Third", insert, "c")?;
+    assert_eq!(root.get_num_sub_properties("")?, 3);
+
+    // Position 1 in this container is `Second`; deleting it leaves the two
+    // neighbours in place and closes the gap.
+    root.delete_nth_sub_property("", 1, options)?;
+    assert_eq!(root.get_num_sub_properties("")?, 2);
+    assert!(
+        !root.exists("Second", options)?,
+        "the deleted sub-property should be gone"
+    );
+    assert!(root.exists("First", options)? && root.exists("Third", options)?);
+
+    // A freshly created object belongs to no container, which is what
+    // InsertSubProperty requires of the object it is handed. Naming it makes
+    // the position it landed in checkable.
+    let detached = engine.new_property_object(PropValType::Container, false, "", 0)?;
+    detached.set_name("Inserted")?;
+    root.insert_sub_property("", options, 1, &detached)?;
+
+    assert_eq!(root.get_num_sub_properties("")?, 3);
+    assert_eq!(
+        root.get_nth_sub_property_name("", 1, options)?,
+        "Inserted",
+        "the object should occupy the index it was given"
+    );
+    // The inserted object is the same object, not a copy: writing through the
+    // container is visible on the handle the caller still holds.
+    root.get_property_object("Inserted", options)?
+        .set_val_string("Inside", insert, "value")?;
+    assert_eq!(detached.get_num_sub_properties("")?, 1);
+
+    // Inserting elements in the middle shifts what follows. The inserted
+    // elements take the array's default, so what is asserted is the count and
+    // the shift rather than their contents.
+    root.new_sub_property("Flags", PropValType::Boolean, true, "", options)?;
+    let flags = root.get_property_object("Flags", options)?;
+    flags.set_num_elements(3, options)?;
+    flags.set_val_boolean_by_offset(0, options, true)?;
+    flags.set_val_boolean_by_offset(1, options, false)?;
+    flags.set_val_boolean_by_offset(2, options, true)?;
+
+    flags.insert_elements(1, 2, options)?;
+    assert_eq!(flags.get_num_elements()?, 5);
+    assert!(
+        flags.get_val_boolean_by_offset(0, options)?,
+        "the element before the insert should not move"
+    );
+    assert!(
+        !flags.get_val_boolean_by_offset(3, options)?,
+        "the element that was at 1 should have moved to 3"
+    );
+    assert!(
+        flags.get_val_boolean_by_offset(4, options)?,
+        "the element that was at 2 should have moved to 4"
+    );
+    Ok(())
+}
+
 #[test]
 #[ignore = "requires a live engine"]
 fn property_object_file_state_is_self_contained() -> Result<(), Error> {
