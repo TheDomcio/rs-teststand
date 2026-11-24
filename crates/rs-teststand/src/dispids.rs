@@ -473,6 +473,8 @@ pub(crate) mod property_object_introspect {
     pub(crate) const GET_PROPERTY_OBJECT_BY_OFFSET: i32 = 0x254;
     /// `SetNumElements`, 2 params.
     pub(crate) const SET_NUM_ELEMENTS: i32 = 0x24c;
+    /// `DeleteElements`, array offset, count, and options.
+    pub(crate) const DELETE_ELEMENTS: i32 = 0x24d;
     /// `GetNumElements`, no params.
     pub(crate) const GET_NUM_ELEMENTS: i32 = 0x24b;
     /// `Search`, 9 parameters.
@@ -977,6 +979,12 @@ pub(crate) mod sequence_file {
     pub(crate) const GET_SEQUENCE: i32 = 0x1;
     /// `GetSequenceByName`, 1 parameter.
     pub(crate) const GET_SEQUENCE_BY_NAME: i32 = 0x2;
+    /// `SequenceNameExists`, one name parameter.
+    pub(crate) const SEQUENCE_NAME_EXISTS: i32 = 0x3;
+    /// `RemoveSequence`, one index, returns a sequence.
+    pub(crate) const REMOVE_SEQUENCE: i32 = 0x5;
+    /// `DeleteSequence`, one index.
+    pub(crate) const DELETE_SEQUENCE: i32 = 0x6;
     /// `AsPropertyObjectFile`, no params.
     pub(crate) const AS_PROPERTY_OBJECT_FILE: i32 = 0xe;
     /// `Save`, 1 parameter.
@@ -989,6 +997,18 @@ pub(crate) mod sequence_file {
     pub(crate) const IS_EXECUTING: i32 = 0x39;
     /// `InsertSequence`, 1 param.
     pub(crate) const INSERT_SEQUENCE: i32 = 0x4;
+    /// `InsertSequenceEx`, index and sequence.
+    pub(crate) const INSERT_SEQUENCE_EX: i32 = 0x10;
+    /// `SequenceFileType`, read/write enum.
+    pub(crate) const SEQUENCE_FILE_TYPE: i32 = 0x11;
+    /// `ModelPath`, read/write string.
+    pub(crate) const MODEL_PATH: i32 = 0x17;
+    /// `GetReservedCallbackNames`, no parameters.
+    pub(crate) const GET_RESERVED_CALLBACK_NAMES: i32 = 0x18;
+    /// `GetModelCallbackNames`, no parameters.
+    pub(crate) const GET_MODEL_CALLBACK_NAMES: i32 = 0x19;
+    /// `HasModel`, read-only boolean.
+    pub(crate) const HAS_MODEL: i32 = 0x37;
     /// `FileGlobalsDefaultValues`, read-only.
     pub(crate) const FILE_GLOBALS_DEFAULT_VALUES: i32 = 0x33;
     /// `GetSequenceIndex`, 1 parameter.

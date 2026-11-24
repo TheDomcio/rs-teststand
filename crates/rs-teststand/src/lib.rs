@@ -92,7 +92,8 @@ pub use property::{
 pub use search::{SearchElements, SearchFilterOptions, SearchMatch, SearchOptions, SearchResults};
 pub use sequence::{
     BreakpointScope, ConflictHandler, FailureAction, GetSeqFileOptions, InteractiveArgs, Module,
-    ResultRecordingOption, RunMode, Sequence, SequenceFile, SequenceType, Step, StepType,
+    ResultRecordingOption, RunMode, Sequence, SequenceFile, SequenceFileType, SequenceType, Step,
+    StepType,
 };
 pub use station::{
     DebugOptions, ExecutionMask, RunTimeErrorOption, SearchDirectories, SearchDirectory,

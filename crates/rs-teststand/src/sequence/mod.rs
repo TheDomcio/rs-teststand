@@ -26,7 +26,7 @@ pub use options::{ConflictHandler, GetSeqFileOptions};
 pub use result_recording_option::ResultRecordingOption;
 pub use run_mode::RunMode;
 pub use sequence::Sequence;
-pub use sequence_file::SequenceFile;
+pub use sequence_file::{SequenceFile, SequenceFileType};
 pub use settings::{FailureAction, SequenceType};
 pub use step::Step;
 pub use step_type::StepType;

@@ -1193,6 +1193,32 @@ impl PropertyObject {
             .as_i32()?)
     }
 
+    /// Deletes elements from an array property
+    /// (`PropertyObject.DeleteElements`).
+    ///
+    /// `array_offset` is the zero-based offset of the first element to delete,
+    /// `num_elements` how many to delete, and `options` the usual property
+    /// options (pass `0` for none).
+    ///
+    /// # Errors
+    /// [`Error`] if the range is out of bounds or the COM call fails.
+    pub fn delete_elements(
+        &self,
+        array_offset: i32,
+        num_elements: i32,
+        options: i32,
+    ) -> Result<(), Error> {
+        self.dispatch.call(
+            introspect::DELETE_ELEMENTS,
+            &[
+                Value::I32(array_offset),
+                Value::I32(num_elements),
+                Value::I32(options),
+            ],
+        )?;
+        Ok(())
+    }
+
     /// Retrieves a nested `PropertyObject` by lookup path (`PropertyObject.GetPropertyObject`).
     ///
     /// # Errors
@@ -1414,6 +1440,7 @@ mod tests {
                 introspect::SET_FLAGS
                 | introspect::SET_INSTANCE_DEFAULT_FLAGS
                 | introspect::SET_INSTANCE_OVERRIDE_FLAGS
+                | introspect::DELETE_ELEMENTS
                 | property_object::SET_XML
                 | property_object::SET_VAL_BOOLEAN_BY_OFFSET
                 | property_object::SET_VAL_STRING_BY_OFFSET
@@ -1529,6 +1556,33 @@ mod tests {
         assert_eq!(setter.text.as_deref(), Some(""));
         assert_eq!(setter.numbers, vec![0, 0x9]);
         assert!(comment_set);
+        Ok(())
+    }
+
+    #[test]
+    fn deletes_array_elements_by_offset_and_count() -> Result<(), crate::Error> {
+        let calls = Arc::new(Mutex::new(Vec::new()));
+        let object = PropertyObject::new(Fake::boxed(HashMap::new(), &calls));
+
+        object.delete_elements(2, 3, 0)?;
+
+        let numbers = {
+            let calls = calls.lock().map_err(|_| crate::Error::UnexpectedType {
+                expected: "an unpoisoned call log",
+                actual: "a poisoned call log",
+            })?;
+            let call = calls
+                .iter()
+                .find(|call| call.dispid == introspect::DELETE_ELEMENTS)
+                .ok_or(crate::Error::UnexpectedType {
+                    expected: "a DeleteElements call",
+                    actual: "no DeleteElements call",
+                })?;
+            let numbers = call.numbers.clone();
+            drop(calls);
+            numbers
+        };
+        assert_eq!(numbers, vec![2, 3, 0]);
         Ok(())
     }
 }

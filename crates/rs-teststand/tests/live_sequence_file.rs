@@ -65,3 +65,64 @@ fn sequence_file_opens_reads_and_releases() -> Result<(), Error> {
     );
     Ok(())
 }
+
+#[test]
+#[ignore = "requires a live engine"]
+fn sequence_file_reports_metadata_and_callback_names() -> Result<(), Error> {
+    let engine = Engine::new()?;
+    let file = engine.new_sequence_file()?;
+
+    assert_eq!(
+        file.sequence_file_type()?,
+        Some(rs_teststand::SequenceFileType::Normal)
+    );
+    assert!(!file.has_model()?);
+    assert_eq!(file.model_path()?, "");
+    assert!(
+        file.get_reserved_callback_names()?
+            .iter()
+            .any(|name| name == "SequenceFileLoad")
+    );
+    assert_eq!(file.get_model_callback_names()?, Vec::<String>::new());
+
+    if let Some((station_model, _description)) = engine.get_station_model_sequence_file()? {
+        let model_path = station_model.path()?;
+        file.set_model_path(&model_path)?;
+        assert!(file.has_model()?);
+        assert_ne!(file.get_model_callback_names()?.len(), 0);
+    }
+    assert_eq!(file.get_sequence_index("MainSequence")?, 0);
+
+    let extra = engine.new_sequence()?;
+    extra.set_name("Inserted Sequence")?;
+    file.insert_sequence_ex(1, &extra)?;
+    assert_eq!(file.get_sequence_index("Inserted Sequence")?, 1);
+    assert_eq!(file.num_sequences()?, 2);
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires a live engine"]
+fn sequence_file_deletes_removes_and_checks_names() -> Result<(), Error> {
+    let engine = Engine::new()?;
+    let file = engine.new_sequence_file()?;
+
+    assert!(file.sequence_name_exists("MainSequence")?);
+    assert!(!file.sequence_name_exists("Detached Sequence")?);
+
+    let extra = engine.new_sequence()?;
+    extra.set_name("Detached Sequence")?;
+    file.insert_sequence(&extra)?;
+    assert!(file.sequence_name_exists("Detached Sequence")?);
+
+    let index = file.num_sequences()? - 1;
+    let removed = file.remove_sequence(index)?;
+    assert_eq!(removed.name()?, "Detached Sequence");
+    assert!(!file.sequence_name_exists("Detached Sequence")?);
+
+    file.insert_sequence(&removed)?;
+    let index = file.num_sequences()? - 1;
+    file.delete_sequence(index)?;
+    assert!(!file.sequence_name_exists("Detached Sequence")?);
+    Ok(())
+}

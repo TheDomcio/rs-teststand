@@ -34,6 +34,28 @@ fn property_object_builds_and_reads_a_typed_tree() -> Result<(), Error> {
 
 #[test]
 #[ignore = "requires a live engine"]
+fn property_object_deletes_array_elements() -> Result<(), Error> {
+    let engine = Engine::new()?;
+    let root = engine.new_property_object(PropValType::Container, false, "", 0)?;
+    root.new_sub_property("Flags", PropValType::Boolean, true, "", 0)?;
+    let flags = root.get_property_object("Flags", 0)?;
+    flags.set_num_elements(4, 0)?;
+    assert_eq!(flags.get_num_elements()?, 4);
+
+    flags.set_val_boolean_by_offset(0, 0, true)?;
+    flags.set_val_boolean_by_offset(1, 0, false)?;
+    flags.set_val_boolean_by_offset(2, 0, true)?;
+    flags.set_val_boolean_by_offset(3, 0, false)?;
+
+    flags.delete_elements(1, 2, 0)?;
+    assert_eq!(flags.get_num_elements()?, 2);
+    assert!(flags.get_val_boolean_by_offset(0, 0)?);
+    assert!(!flags.get_val_boolean_by_offset(1, 0)?);
+    Ok(())
+}
+
+#[test]
+#[ignore = "requires a live engine"]
 fn property_object_file_state_is_self_contained() -> Result<(), Error> {
     let engine = Engine::new()?;
     let workspace = engine.new_workspace_file()?;
