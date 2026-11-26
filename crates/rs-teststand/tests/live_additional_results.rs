@@ -38,5 +38,19 @@ fn a_step_exposes_and_edits_custom_additional_results() -> Result<(), Error> {
 
     let parameters = results.parameter_results()?;
     assert_eq!(parameters.count()?, 0);
+
+    let hints = step.additional_results_hints()?;
+    assert_eq!(hints.count()?, 0);
+    let hint = hints.insert("Hint", "1.0", "", PropertyFlags::INCLUDE_IN_REPORT, -1)?;
+    assert_eq!(hint.name()?, "Hint");
+    assert_eq!(hints.count()?, 1);
+    hints.clear()?;
+    assert_eq!(hints.count()?, 0);
+
+    let type_hints = step.step_type()?.additional_results_hints()?;
+    assert!(
+        type_hints.count()? > 0,
+        "the step type should publish at least one hint"
+    );
     Ok(())
 }

@@ -902,6 +902,22 @@ impl Step {
         ))
     }
 
+    /// The additional-result hints configured on the step
+    /// (`Step.AdditionalResultsHints`).
+    ///
+    /// A step type combines these with its own hints to offer preconfigured
+    /// custom results in an editor.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn additional_results_hints(&self) -> Result<crate::AdditionalResults, Error> {
+        Ok(crate::AdditionalResults::new(
+            self.dispatch
+                .get(step::ADDITIONAL_RESULTS_HINTS)?
+                .into_object()?,
+        ))
+    }
+
     /// An owned handle to the same step, for passing it back to the engine.
     pub(crate) fn duplicate_dispatch(&self) -> Option<Box<dyn Dispatch>> {
         self.dispatch.duplicate()
@@ -1267,10 +1283,14 @@ mod tests {
 
         impl Dispatch for StepFake {
             fn get(&self, dispid: i32) -> Result<Value, ComError> {
-                if dispid == crate::dispids::step::ADDITIONAL_RESULTS {
-                    Ok(Value::Object(Box::new(Results)))
-                } else {
-                    Err(ComError::hresult(0, "fake: unscripted get"))
+                match dispid {
+                    crate::dispids::step::ADDITIONAL_RESULTS => {
+                        Ok(Value::Object(Box::new(Results)))
+                    }
+                    crate::dispids::step::ADDITIONAL_RESULTS_HINTS => {
+                        Ok(Value::Object(Box::new(Collection)))
+                    }
+                    _ => Err(ComError::hresult(0, "fake: unscripted get")),
                 }
             }
 
@@ -1286,6 +1306,7 @@ mod tests {
         let step = Step::new(Box::new(StepFake));
         let custom = step.additional_results()?.custom_results()?;
         assert_eq!(custom.count()?, 0);
+        assert_eq!(step.additional_results_hints()?.count()?, 0);
         Ok(())
     }
 }

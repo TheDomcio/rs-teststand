@@ -80,6 +80,19 @@ impl StepType {
                 .into_object()?,
         ))
     }
+
+    /// The additional-result hints the type offers
+    /// (`StepType.AdditionalResultsHints`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn additional_results_hints(&self) -> Result<crate::AdditionalResults, Error> {
+        Ok(crate::AdditionalResults::new(
+            self.dispatch
+                .get(step_type::ADDITIONAL_RESULTS_HINTS)?
+                .into_object()?,
+        ))
+    }
 }
 
 #[cfg(test)]
@@ -200,6 +213,55 @@ mod tests {
         let templates = step_type.code_templates()?;
         assert_eq!(templates.count()?, 1);
         assert_eq!(templates.item(0)?.name()?, "template");
+        Ok(())
+    }
+
+    #[test]
+    fn exposes_the_additional_result_hints() -> Result<(), crate::Error> {
+        #[derive(Debug)]
+        struct Collection;
+
+        impl Dispatch for Collection {
+            fn get(&self, dispid: i32) -> Result<Value, ComError> {
+                if dispid == crate::dispids::additional_results::COUNT {
+                    Ok(Value::I32(0))
+                } else {
+                    Err(ComError::hresult(0, "fake: unscripted get"))
+                }
+            }
+
+            fn put(&self, _dispid: i32, _value: Value) -> Result<(), ComError> {
+                Err(ComError::hresult(0, "fake: put not scripted"))
+            }
+
+            fn call(&self, _dispid: i32, _args: &[Value]) -> Result<Value, ComError> {
+                Err(ComError::hresult(0, "fake: call not scripted"))
+            }
+        }
+
+        #[derive(Debug)]
+        struct TypeFake;
+
+        impl Dispatch for TypeFake {
+            fn get(&self, dispid: i32) -> Result<Value, ComError> {
+                if dispid == step_type::ADDITIONAL_RESULTS_HINTS {
+                    Ok(Value::Object(Box::new(Collection)))
+                } else {
+                    Err(ComError::hresult(0, "fake: unscripted get"))
+                }
+            }
+
+            fn put(&self, _dispid: i32, _value: Value) -> Result<(), ComError> {
+                Err(ComError::hresult(0, "fake: put not scripted"))
+            }
+
+            fn call(&self, _dispid: i32, _args: &[Value]) -> Result<Value, ComError> {
+                Err(ComError::hresult(0, "fake: call not scripted"))
+            }
+        }
+
+        let step_type = StepType::new(Box::new(TypeFake));
+        assert_eq!(step_type.additional_results_hints()?.count()?, 0);
         Ok(())
     }
 }
