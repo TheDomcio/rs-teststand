@@ -73,14 +73,80 @@ bitflags::bitflags! {
     }
 }
 
+bitflags::bitflags! {
+    /// Flags a type definition carries (`PropTypeFlags_*`).
+    ///
+    /// A separate set from [`PropertyFlags`]: these describe the type itself
+    /// rather than a property's place in an editor. The engine reads and writes
+    /// them on the root object of a type definition only.
+    ///
+    /// ```
+    /// use rs_teststand::PropertyTypeFlags;
+    ///
+    /// let flags = PropertyTypeFlags::NO_AUTO_CONVERT_VERSIONS
+    ///     | PropertyTypeFlags::DISABLE_EDITING_INSTANCE_FLAGS;
+    /// assert!(flags.contains(PropertyTypeFlags::NO_AUTO_CONVERT_VERSIONS));
+    /// assert!(PropertyTypeFlags::NONE.is_empty());
+    /// ```
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+    pub struct PropertyTypeFlags: i32 {
+        /// No flags set (`PropTypeFlags_NoFlags`).
+        const NONE = 0;
+        /// Do not convert an older loaded version of the type automatically
+        /// (`PropTypeFlags_NoAutoConvertVersions`).
+        const NO_AUTO_CONVERT_VERSIONS = 0x1;
+        /// The editor does not allow editing the type
+        /// (`PropTypeFlags_PreventEditingType`).
+        const PREVENT_EDITING_TYPE = 0x4;
+        /// Instances may not change their own property flags
+        /// (`PropTypeFlags_DisableEditingInstanceFlags`).
+        const DISABLE_EDITING_INSTANCE_FLAGS = 0x10;
+        /// The engine ships this type (`PropTypeFlags_NIInstalledType`).
+        ///
+        /// Read it rather than setting it; the reference tells callers not to
+        /// set this flag.
+        const NI_INSTALLED_TYPE = 0x0200_0000;
+        /// The type has changed since it was registered
+        /// (`PropTypeFlags_IsModifiedType`).
+        ///
+        /// Writing the flag set through
+        /// [`PropertyObject::set_type_flags`](crate::PropertyObject::set_type_flags)
+        /// turns this on, which is why clearing it is
+        /// [`PropertyObject::set_is_modified_type`](crate::PropertyObject::set_is_modified_type)'s
+        /// job.
+        const IS_MODIFIED_TYPE = 0x0400_0000;
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::PropertyFlags;
+    use super::{PropertyFlags, PropertyTypeFlags};
 
     #[test]
     fn no_flags_is_empty() {
         assert!(PropertyFlags::NONE.is_empty());
         assert_eq!(PropertyFlags::NONE.bits(), 0);
+    }
+
+    #[test]
+    fn type_flags_are_their_own_set() {
+        // 0x10 names a different concept in each set, which is why the two are
+        // separate types rather than one shared mask.
+        assert_eq!(
+            PropertyTypeFlags::DISABLE_EDITING_INSTANCE_FLAGS.bits(),
+            0x10
+        );
+        assert_eq!(PropertyFlags::HIDDEN_IN_TYPES.bits(), 0x10);
+        assert_eq!(PropertyTypeFlags::IS_MODIFIED_TYPE.bits(), 0x0400_0000);
+        assert_eq!(PropertyTypeFlags::NI_INSTALLED_TYPE.bits(), 0x0200_0000);
+    }
+
+    #[test]
+    fn type_flags_round_trip_including_unknown_bits() {
+        let flags = PropertyTypeFlags::NO_AUTO_CONVERT_VERSIONS
+            | PropertyTypeFlags::PREVENT_EDITING_TYPE
+            | PropertyTypeFlags::from_bits_retain(0x4000_0000);
+        assert_eq!(PropertyTypeFlags::from_bits_retain(flags.bits()), flags);
     }
 
     #[test]

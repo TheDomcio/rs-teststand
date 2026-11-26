@@ -9,8 +9,8 @@
 #![cfg(feature = "live-engine")]
 
 use rs_teststand::{
-    ConflictHandler, Engine, Error, FileWritingFormat, GetSeqFileOptions, PropValType,
-    PropertyFlags, PropertyOptions, WriteFileFormat,
+    AdapterKeyName, ConflictHandler, Engine, Error, FileWritingFormat, GetSeqFileOptions,
+    PropValType, PropertyFlags, PropertyOptions, PropertyTypeFlags, WriteFileFormat,
 };
 
 #[test]
@@ -340,7 +340,13 @@ fn a_property_file_converts_the_fixture_to_ini_and_xml() -> Result<(), Error> {
     Ok(())
 }
 
-/// `GetXML` and `SetXML` carry a property tree through text.
+/// A property tree leaving the engine as text, as a file, and as a report
+/// section.
+///
+/// `GetXML`/`SetXML` carry it through a string, `Write`/`ReadEx` through a
+/// property file, and `CreateReportSection` renders it as something a report
+/// can hold. All three are the same tree in three envelopes, so one test keeps
+/// them together rather than paying for another engine.
 #[test]
 #[ignore = "requires a live engine"]
 fn property_object_xml_round_trips() -> Result<(), Error> {
@@ -355,5 +361,246 @@ fn property_object_xml_round_trips() -> Result<(), Error> {
     let copy = engine.new_property_object(PropValType::Container, false, "", 0)?;
     copy.set_xml(&xml, 0, 0)?;
     assert_eq!(copy.get_val_string("Mode", 0)?, "hello");
+
+    // The file carries several objects under their own names, so the read asks
+    // for the name the write used rather than for the file alone.
+    let path = std::env::temp_dir().join("rs_teststand_property_object.tsw");
+    let path = path.to_string_lossy().into_owned();
+    root.write(&path, "Root", 0)?;
+    let restored = engine.new_property_object(PropValType::Container, false, "", 0)?;
+    let read = restored.read_ex(&path, "Root", 0, ConflictHandler::Error.bits());
+    let mode = restored.get_val_string("Mode", 0);
+    let count = restored.get_num_sub_properties("");
+    let _ = std::fs::remove_file(&path);
+    read?;
+    assert_eq!(mode?, "hello");
+    assert_eq!(count?, 1, "every sub-property should have been restored");
+
+    let section = root.create_report_section(0, 0, "Root", "", "")?;
+    let text = section.get_all_text()?;
+    assert!(
+        text.contains("hello") && text.contains("Mode"),
+        "the report section should hold the same tree as the XML"
+    );
+    Ok(())
+}
+
+/// The members a host needs to walk a tree it did not build, and to read the
+/// type-definition metadata that says where such a tree came from.
+///
+/// Navigation: reading children in one atomic call, finding and changing
+/// positions inside a container, and mapping an index string to the flat offset
+/// the `*ByOffset` members take. The two position changers declare their
+/// arguments in different orders, so each is checked against the value it moved
+/// rather than only against a `Result`.
+///
+/// Types: the metadata a root type definition exposes, and the proof that
+/// writing it does not touch the registered type. The engine hands a registered
+/// type out by reference, so mutating one would leave the station altered. A
+/// clone of it is a detachable root type definition, and every write is aimed at
+/// the clone; the registered type is read back afterwards to show it did not
+/// move.
+///
+/// The two halves share one engine because constructing one costs more than
+/// everything either half does.
+#[test]
+#[ignore = "requires a live engine"]
+fn property_tree_navigation_and_type_metadata() -> Result<(), Error> {
+    let engine = Engine::new()?;
+    let root = engine.new_property_object(PropValType::Container, false, "", 0)?;
+    let insert = PropertyOptions::INSERT_IF_MISSING.bits();
+    let options = PropertyOptions::NONE.bits();
+
+    root.set_val_string("First", insert, "a")?;
+    root.set_val_string("Second", insert, "b")?;
+    root.set_val_number("Resolution", insert, 42.5)?;
+    root.new_sub_property("Flags", PropValType::Boolean, true, "", options)?;
+    root.new_sub_property("Samples", PropValType::Number, true, "", options)?;
+    root.new_sub_property("Items", PropValType::Container, true, "", options)?;
+
+    let flags = root.get_property_object("Flags", options)?;
+    flags.set_num_elements(3, options)?;
+    flags.set_val_boolean_by_offset(2, options, true)?;
+    let samples = root.get_property_object("Samples", options)?;
+    samples.set_num_elements(2, options)?;
+    samples.set_val_number_by_offset(1, options, 7.5)?;
+    let items = root.get_property_object("Items", options)?;
+    items.set_num_elements(2, options)?;
+
+    let children = root.get_sub_properties("", options)?;
+    let names = children
+        .iter()
+        .map(|child| child.name())
+        .collect::<Result<Vec<_>, _>>()?;
+    assert_eq!(
+        names,
+        ["First", "Second", "Resolution", "Flags", "Samples", "Items"],
+        "GetSubProperties should report every child in position order"
+    );
+    assert_eq!(
+        root.get_property_object_elements("Items", options)?.len(),
+        2,
+        "an array of containers should report each element as an object"
+    );
+    assert_eq!(root.get_sub_property_index("", options, "Second")?, 1);
+    assert!(root.can_add_sub_property()?);
+
+    // The number array's setter is the counterpart of its getter, and the offset
+    // pair must invert each other or one of them reads the wrong field.
+    assert!((samples.get_val_number_by_offset(1, options)? - 7.5).abs() < f64::EPSILON);
+    assert_eq!(flags.get_array_offset("", options, "[2]")?, 2);
+    assert_eq!(flags.get_array_index("", options, 2)?, "[2]");
+
+    // Moving a sub-property keeps its value, so the object survives the move
+    // rather than being rebuilt.
+    root.set_sub_property_index("", options, "Resolution", 0)?;
+    assert_eq!(
+        root.get_nth_sub_property_name("", 0, options)?,
+        "Resolution"
+    );
+    assert!((root.get_val_number("Resolution", options)? - 42.5).abs() < f64::EPSILON);
+    root.set_nth_sub_property_name("", 0, options, "Renamed")?;
+    assert_eq!(root.get_nth_sub_property_name("", 0, options)?, "Renamed");
+    root.set_nth_sub_property_name("", 0, options, "Resolution")?;
+
+    let second = root.get_property_object("Second", options)?;
+    assert_eq!(
+        second.get_location(&root)?,
+        "Second",
+        "a child's location should be its path from the object the caller named"
+    );
+    assert!(!root.is_alias_object("Second", options)?);
+    assert!(
+        root.clone_property("", options)?
+            .is_equal_to(&root, options)?
+    );
+
+    assert!(
+        root.parent()?.is_none(),
+        "a freshly created object belongs to no container"
+    );
+    assert!(
+        second.parent()?.is_some(),
+        "a child should report the container that owns it"
+    );
+
+    let names = root.get_display_names("Second", options)?;
+    assert_eq!(names.property_display_name, "Second");
+    assert!(
+        names.value_display_name.contains('b'),
+        "the value display name should render the value: {names:?}"
+    );
+
+    let taken = root.validate_new_sub_property_name("Second", false)?;
+    assert!(!taken.is_valid, "a duplicate name must be refused");
+    assert!(!taken.problem.is_empty(), "a refusal should explain itself");
+    let free = root.validate_new_sub_property_name("Fresh", false)?;
+    assert!(free.is_valid);
+    assert!(free.problem.is_empty());
+
+    // Type-definition metadata, read from a type the engine ships.
+    let registered = engine.get_type_definition("Statement")?;
+    assert_eq!(registered.name()?, "Statement");
+    assert!(registered.is_type_definition()?);
+    assert!(
+        registered.is_root_type_definition()?,
+        "a registered type's root object is a root type definition"
+    );
+    assert_eq!(
+        registered.type_category()?,
+        Some(rs_teststand::TypeCategory::StepTypes)
+    );
+    assert!(!registered.type_last_modified()?.is_empty());
+    assert!(!registered.type_minimum_test_stand_version()?.is_empty());
+    assert!(
+        registered
+            .get_type_flags("", options)?
+            .contains(PropertyTypeFlags::NI_INSTALLED_TYPE),
+        "a type the engine ships should say so"
+    );
+
+    // The attribute containers are only meaningful when they hold something,
+    // which the `Has*` properties answer without reading the container.
+    assert_eq!(
+        registered.type_attributes()?.get_num_sub_properties("")? > 0,
+        registered.has_type_attributes()?
+    );
+    assert_eq!(
+        registered.attributes()?.get_num_sub_properties("")? > 0,
+        registered.has_attributes()?
+    );
+
+    let original_flags = registered.get_type_flags("", options)?;
+    let original_modified = registered.is_modified_type()?;
+    let original_version = registered.type_minimum_test_stand_version()?;
+
+    let copy = registered.clone_property("", options)?;
+    assert!(
+        copy.is_root_type_definition()?,
+        "a clone of a root type definition is one too"
+    );
+    copy.set_type_flags("", options, PropertyTypeFlags::PREVENT_EDITING_TYPE)?;
+    let written = copy.get_type_flags("", options)?;
+    assert!(written.contains(PropertyTypeFlags::PREVENT_EDITING_TYPE));
+    assert!(
+        written.contains(PropertyTypeFlags::IS_MODIFIED_TYPE),
+        "writing the flag set marks the type modified: {written:?}"
+    );
+    copy.set_is_modified_type(false)?;
+    assert!(
+        !copy.is_modified_type()?,
+        "this property, not SetTypeFlags, is how the marker is cleared"
+    );
+    copy.set_type_minimum_test_stand_version("99.0.0.0")?;
+    assert_eq!(copy.type_minimum_test_stand_version()?, "99.0.0.0");
+
+    assert_eq!(registered.get_type_flags("", options)?, original_flags);
+    assert_eq!(registered.is_modified_type()?, original_modified);
+    assert_eq!(
+        registered.type_minimum_test_stand_version()?,
+        original_version
+    );
+
+    // The array-element prototype is what growing an array copies, so setting it
+    // has to be visible in the elements the next resize creates.
+    root.new_sub_property("Prototypes", PropValType::Container, true, "", options)?;
+    let prototypes = root.get_property_object("Prototypes", options)?;
+    prototypes.set_num_elements(2, options)?;
+    assert!(
+        prototypes.array_element_prototype()?.is_none(),
+        "a new array carries no explicit prototype"
+    );
+    let template = engine.new_property_object(PropValType::Container, false, "", 0)?;
+    template.set_val_string("Tag", insert, "stamped")?;
+    prototypes.set_array_element_prototype(&template)?;
+    prototypes.set_num_elements(4, options)?;
+    let created = prototypes.get_property_object_by_offset(2, options)?;
+    assert!(
+        created.exists("Tag", options)?,
+        "the prototype should be copied into the elements a resize creates"
+    );
+    assert_eq!(created.get_val_string("Tag", options)?, "stamped");
+
+    // A step's tree is an instance of its step type, which is what makes a root
+    // type name resolvable from the outside.
+    let step = engine.new_step(AdapterKeyName::NoneAdapter.as_str(), "Statement")?;
+    assert!(
+        step.as_property_object()?
+            .contains_type_instance("", options, "Statement")?
+    );
+    assert!(
+        !root.contains_type_instance("", options, "Statement")?,
+        "a plain container holds no instance of a step type"
+    );
+
+    // Not an enumeration, so the member refuses rather than answering `false`.
+    assert!(
+        matches!(
+            root.enum_is_valid(),
+            Err(Error::Engine { code: -17308, .. })
+        ),
+        "an object that is not an enumeration should be refused: {:?}",
+        root.enum_is_valid()
+    );
     Ok(())
 }

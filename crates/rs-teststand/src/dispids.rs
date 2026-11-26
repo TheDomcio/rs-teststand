@@ -241,6 +241,26 @@ define_dispid_group! {
         INSERT_SUB_PROPERTY = 0x0248;
         EXISTS = 0x023a;
         CLONE = 0x023b;
+        GET_ARRAY_INDEX = 0x0218;
+        GET_ARRAY_OFFSET = 0x0219;
+        GET_DISPLAY_NAMES = 0x027d;
+        GET_LOCATION = 0x0266;
+        GET_PROPERTY_OBJECT_ELEMENTS = 0x02ec;
+        GET_SUB_PROPERTIES = 0x02eb;
+        GET_SUB_PROPERTY_INDEX = 0x0244;
+        GET_TYPE_DEFINITION = 0x0215;
+        CONTAINS_TYPE_INSTANCE = 0x0260;
+        CREATE_REPORT_SECTION = 0x02c1;
+        IS_ALIAS_OBJECT = 0x0265;
+        IS_EQUAL_TO = 0x0262;
+        READ_EX = 0x0269;
+        SET_NTH_SUB_PROPERTY_NAME = 0x022a;
+        SET_SUB_PROPERTY_INDEX = 0x0245;
+        SET_TYPE_FLAGS = 0x026d;
+        VALIDATE_NEW_ELEMENT_NAME = 0x0279;
+        VALIDATE_NEW_NAME = 0x0241;
+        VALIDATE_NEW_SUB_PROPERTY_NAME = 0x0278;
+        WRITE = 0x023d;
     }
 }
 
@@ -318,7 +338,7 @@ pub(crate) mod property_object_file {
     pub(crate) const CHANGE_COUNT: i32 = 0x6b;
     /// `Path`, read/write.
     pub(crate) const PATH: i32 = 0x6c;
-    /// `Data`, read-only, the file's root property object.
+    /// `Data`, read/write, the file's root property object.
     pub(crate) const DATA: i32 = 0x6e;
     /// `SaveFileIfModified`, one `VT_BOOL` param, returns `VT_BOOL`.
     pub(crate) const SAVE_FILE_IF_MODIFIED: i32 = 0x7a;
@@ -332,6 +352,40 @@ pub(crate) mod property_object_file {
     pub(crate) const WRITE_FILE: i32 = 0x69;
     /// `FileWritingFormat`, read/write enum.
     pub(crate) const FILE_WRITING_FORMAT: i32 = 0x97;
+    /// `AsPropertyObject`, no params, returns the file as a property object.
+    pub(crate) const AS_PROPERTY_OBJECT: i32 = 0x6a;
+    /// `HandleTypeConflicts`, one handler parameter, returns `VT_BOOL`.
+    pub(crate) const HANDLE_TYPE_CONFLICTS: i32 = 0x76;
+    /// `Lock`, one optional `VT_VARIANT` password.
+    pub(crate) const LOCK: i32 = 0x83;
+    /// `Unlock`, one required string password.
+    pub(crate) const UNLOCK: i32 = 0x84;
+    /// `Comment`, read/write string.
+    pub(crate) const COMMENT: i32 = 0x7d;
+    /// `ContentType`, read/write string.
+    pub(crate) const CONTENT_TYPE: i32 = 0x6f;
+    /// `DisplayName`, read/write string.
+    pub(crate) const DISPLAY_NAME: i32 = 0x6d;
+    /// `EditPrivilege`, read/write string.
+    pub(crate) const EDIT_PRIVILEGE: i32 = 0x75;
+    /// `FileSection`, read/write string.
+    pub(crate) const FILE_SECTION: i32 = 0x71;
+    /// `FileTypeDescription`, read/write string.
+    pub(crate) const FILE_TYPE_DESCRIPTION: i32 = 0x70;
+    /// `Id`, read-only integer.
+    pub(crate) const ID: i32 = 0x7b;
+    /// `IsModifiedByUser`, read-only boolean.
+    pub(crate) const IS_MODIFIED_BY_USER: i32 = 0x7f;
+    /// `LastSavedChangeCount`, read-only integer.
+    pub(crate) const LAST_SAVED_CHANGE_COUNT: i32 = 0xa0;
+    /// `Locked`, read-only boolean.
+    pub(crate) const LOCKED: i32 = 0x82;
+    /// `OpenStatus`, read/write flags.
+    pub(crate) const OPEN_STATUS: i32 = 0x74;
+    /// `Protection`, read/write enum.
+    pub(crate) const PROTECTION: i32 = 0x81;
+    /// `Requirements`, read-only property object.
+    pub(crate) const REQUIREMENTS: i32 = 0x80;
 }
 
 /// `UsersFile` dispinterface members.
@@ -486,6 +540,30 @@ pub(crate) mod property_object_introspect {
     pub(crate) const GET_NUM_ELEMENTS: i32 = 0x24b;
     /// `Search`, 9 parameters.
     pub(crate) const SEARCH: i32 = 0x27b;
+    /// `Parent`, read-only, yields a `PropertyObject`.
+    pub(crate) const PARENT: i32 = 0x243;
+    /// `ArrayElementPrototype`, read/write, yields a `PropertyObject`.
+    pub(crate) const ARRAY_ELEMENT_PROTOTYPE: i32 = 0x277;
+    /// `CanAddSubProperty`, read-only boolean.
+    pub(crate) const CAN_ADD_SUB_PROPERTY: i32 = 0x247;
+    /// `EnumIsValid`, no params.
+    pub(crate) const ENUM_IS_VALID: i32 = 0x32c;
+    /// `HasAttributes`, read-only boolean.
+    pub(crate) const HAS_ATTRIBUTES: i32 = 0x287;
+    /// `HasTypeAttributes`, read-only boolean.
+    pub(crate) const HAS_TYPE_ATTRIBUTES: i32 = 0x2dc;
+    /// `IsModifiedType`, read/write boolean.
+    pub(crate) const IS_MODIFIED_TYPE: i32 = 0x285;
+    /// `IsRootTypeDefinition`, read-only boolean.
+    pub(crate) const IS_ROOT_TYPE_DEFINITION: i32 = 0x246;
+    /// `TypeAttributes`, read-only.
+    pub(crate) const TYPE_ATTRIBUTES: i32 = 0x2db;
+    /// `TypeCategory`, read-only enum.
+    pub(crate) const TYPE_CATEGORY: i32 = 0x261;
+    /// `TypeLastModified`, read-only.
+    pub(crate) const TYPE_LAST_MODIFIED: i32 = 0x27c;
+    /// `TypeMinimumTestStandVersion`, read/write.
+    pub(crate) const TYPE_MINIMUM_TEST_STAND_VERSION: i32 = 0x27e;
 }
 
 /// Members of `ResultLogger`.
