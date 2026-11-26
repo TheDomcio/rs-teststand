@@ -10,7 +10,8 @@
 
 use rs_teststand::{
     AdapterKeyName, ConflictHandler, Engine, Error, FileWritingFormat, GetSeqFileOptions,
-    PropValType, PropertyFlags, PropertyOptions, PropertyTypeFlags, WriteFileFormat,
+    PropValType, PropertyFlags, PropertyObject, PropertyOptions, PropertyTypeFlags,
+    WriteFileFormat,
 };
 
 #[test]
@@ -388,28 +389,23 @@ fn property_object_xml_round_trips() -> Result<(), Error> {
 /// The members a host needs to walk a tree it did not build, and to read the
 /// type-definition metadata that says where such a tree came from.
 ///
-/// Navigation: reading children in one atomic call, finding and changing
-/// positions inside a container, and mapping an index string to the flat offset
-/// the `*ByOffset` members take. The two position changers declare their
-/// arguments in different orders, so each is checked against the value it moved
-/// rather than only against a `Result`.
-///
-/// Types: the metadata a root type definition exposes, and the proof that
-/// writing it does not touch the registered type. The engine hands a registered
-/// type out by reference, so mutating one would leave the station altered. A
-/// clone of it is a detachable root type definition, and every write is aimed at
-/// the clone; the registered type is read back afterwards to show it did not
-/// move.
-///
-/// The two halves share one engine because constructing one costs more than
-/// everything either half does.
+/// Both halves share one engine because constructing one costs more than
+/// everything either half does, which is also why they are one test rather than
+/// two.
 #[test]
 #[ignore = "requires a live engine"]
 fn property_tree_navigation_and_type_metadata() -> Result<(), Error> {
     let engine = Engine::new()?;
-    let root = engine.new_property_object(PropValType::Container, false, "", 0)?;
+    let root = build_navigation_tree(&engine)?;
+    navigate_the_tree(&engine, &root)?;
+    type_metadata_round_trips_off_a_copy(&engine, &root)
+}
+
+/// A container with three values and three arrays, the shape both halves read.
+fn build_navigation_tree(engine: &Engine) -> Result<PropertyObject, Error> {
     let insert = PropertyOptions::INSERT_IF_MISSING.bits();
     let options = PropertyOptions::NONE.bits();
+    let root = engine.new_property_object(PropValType::Container, false, "", 0)?;
 
     root.set_val_string("First", insert, "a")?;
     root.set_val_string("Second", insert, "b")?;
@@ -426,11 +422,24 @@ fn property_tree_navigation_and_type_metadata() -> Result<(), Error> {
     samples.set_val_number_by_offset(1, options, 7.5)?;
     let items = root.get_property_object("Items", options)?;
     items.set_num_elements(2, options)?;
+    Ok(root)
+}
+
+/// Reading children in one atomic call, finding and changing positions inside a
+/// container, and mapping an index string to the flat offset the `*ByOffset`
+/// members take.
+///
+/// The two position changers declare their arguments in different orders, so
+/// each is checked against the value it moved rather than only against a
+/// `Result`.
+fn navigate_the_tree(engine: &Engine, root: &PropertyObject) -> Result<(), Error> {
+    let insert = PropertyOptions::INSERT_IF_MISSING.bits();
+    let options = PropertyOptions::NONE.bits();
 
     let children = root.get_sub_properties("", options)?;
     let names = children
         .iter()
-        .map(|child| child.name())
+        .map(PropertyObject::name)
         .collect::<Result<Vec<_>, _>>()?;
     assert_eq!(
         names,
@@ -447,7 +456,9 @@ fn property_tree_navigation_and_type_metadata() -> Result<(), Error> {
 
     // The number array's setter is the counterpart of its getter, and the offset
     // pair must invert each other or one of them reads the wrong field.
+    let samples = root.get_property_object("Samples", options)?;
     assert!((samples.get_val_number_by_offset(1, options)? - 7.5).abs() < f64::EPSILON);
+    let flags = root.get_property_object("Flags", options)?;
     assert_eq!(flags.get_array_offset("", options, "[2]")?, 2);
     assert_eq!(flags.get_array_index("", options, 2)?, "[2]");
 
@@ -465,16 +476,15 @@ fn property_tree_navigation_and_type_metadata() -> Result<(), Error> {
 
     let second = root.get_property_object("Second", options)?;
     assert_eq!(
-        second.get_location(&root)?,
+        second.get_location(root)?,
         "Second",
         "a child's location should be its path from the object the caller named"
     );
     assert!(!root.is_alias_object("Second", options)?);
     assert!(
         root.clone_property("", options)?
-            .is_equal_to(&root, options)?
+            .is_equal_to(root, options)?
     );
-
     assert!(
         root.parent()?.is_none(),
         "a freshly created object belongs to no container"
@@ -496,9 +506,48 @@ fn property_tree_navigation_and_type_metadata() -> Result<(), Error> {
     assert!(!taken.problem.is_empty(), "a refusal should explain itself");
     let free = root.validate_new_sub_property_name("Fresh", false)?;
     assert!(free.is_valid);
-    assert!(free.problem.is_empty());
+    assert_eq!(free.problem, "", "an accepted name needs no explanation");
+    Ok(())
+}
 
-    // Type-definition metadata, read from a type the engine ships.
+/// The array-element prototype is what growing an array copies, so setting it
+/// has to be visible in the elements the next resize creates.
+fn array_element_prototype_is_copied(engine: &Engine, root: &PropertyObject) -> Result<(), Error> {
+    let insert = PropertyOptions::INSERT_IF_MISSING.bits();
+    let options = PropertyOptions::NONE.bits();
+
+    root.new_sub_property("Prototypes", PropValType::Container, true, "", options)?;
+    let prototypes = root.get_property_object("Prototypes", options)?;
+    prototypes.set_num_elements(2, options)?;
+    assert!(
+        prototypes.array_element_prototype()?.is_none(),
+        "a new array carries no explicit prototype"
+    );
+    let template = engine.new_property_object(PropValType::Container, false, "", 0)?;
+    template.set_val_string("Tag", insert, "stamped")?;
+    prototypes.set_array_element_prototype(&template)?;
+    prototypes.set_num_elements(4, options)?;
+    let created = prototypes.get_property_object_by_offset(2, options)?;
+    assert!(
+        created.exists("Tag", options)?,
+        "the prototype should be copied into the elements a resize creates"
+    );
+    assert_eq!(created.get_val_string("Tag", options)?, "stamped");
+    Ok(())
+}
+
+/// The metadata a root type definition exposes, and the proof that writing it
+/// does not touch the registered type.
+///
+/// The engine hands a registered type out by reference, so mutating one would
+/// leave the station altered. A clone of it is a detachable root type
+/// definition, and every write is aimed at the clone; the registered type is
+/// read back afterwards to show it did not move.
+fn type_metadata_round_trips_off_a_copy(
+    engine: &Engine,
+    root: &PropertyObject,
+) -> Result<(), Error> {
+    let options = PropertyOptions::NONE.bits();
     let registered = engine.get_type_definition("Statement")?;
     assert_eq!(registered.name()?, "Statement");
     assert!(registered.is_type_definition()?);
@@ -510,8 +559,8 @@ fn property_tree_navigation_and_type_metadata() -> Result<(), Error> {
         registered.type_category()?,
         Some(rs_teststand::TypeCategory::StepTypes)
     );
-    assert!(!registered.type_last_modified()?.is_empty());
-    assert!(!registered.type_minimum_test_stand_version()?.is_empty());
+    assert_ne!(registered.type_last_modified()?, "");
+    assert_ne!(registered.type_minimum_test_stand_version()?, "");
     assert!(
         registered
             .get_type_flags("", options)?
@@ -561,26 +610,6 @@ fn property_tree_navigation_and_type_metadata() -> Result<(), Error> {
         original_version
     );
 
-    // The array-element prototype is what growing an array copies, so setting it
-    // has to be visible in the elements the next resize creates.
-    root.new_sub_property("Prototypes", PropValType::Container, true, "", options)?;
-    let prototypes = root.get_property_object("Prototypes", options)?;
-    prototypes.set_num_elements(2, options)?;
-    assert!(
-        prototypes.array_element_prototype()?.is_none(),
-        "a new array carries no explicit prototype"
-    );
-    let template = engine.new_property_object(PropValType::Container, false, "", 0)?;
-    template.set_val_string("Tag", insert, "stamped")?;
-    prototypes.set_array_element_prototype(&template)?;
-    prototypes.set_num_elements(4, options)?;
-    let created = prototypes.get_property_object_by_offset(2, options)?;
-    assert!(
-        created.exists("Tag", options)?,
-        "the prototype should be copied into the elements a resize creates"
-    );
-    assert_eq!(created.get_val_string("Tag", options)?, "stamped");
-
     // A step's tree is an instance of its step type, which is what makes a root
     // type name resolvable from the outside.
     let step = engine.new_step(AdapterKeyName::NoneAdapter.as_str(), "Statement")?;
@@ -599,8 +628,7 @@ fn property_tree_navigation_and_type_metadata() -> Result<(), Error> {
             root.enum_is_valid(),
             Err(Error::Engine { code: -17308, .. })
         ),
-        "an object that is not an enumeration should be refused: {:?}",
-        root.enum_is_valid()
+        "an object that is not an enumeration should be refused"
     );
     Ok(())
 }

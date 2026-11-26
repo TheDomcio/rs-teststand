@@ -2470,7 +2470,6 @@ mod tests {
                 | property_object::UNSERIALIZE_EX => Ok(Value::Empty),
                 property_object::GET_XML => Ok(Value::Str("<xml/>".to_owned())),
                 property_object::GET_VAL_NUMBER_BY_OFFSET => Ok(Value::F64(2.5)),
-                property_object::GET_VAL_BOOLEAN_BY_OFFSET => Ok(Value::Bool(true)),
                 property_object::GET_VAL_STRING_BY_OFFSET => Ok(Value::Str("value".to_owned())),
                 property_object::GET_VAL_INTEGER64_BY_OFFSET => Ok(Value::I64(9)),
                 property_object::GET_VAL_UNSIGNED_INTEGER64_BY_OFFSET => Ok(Value::U64(10)),
@@ -2484,14 +2483,15 @@ mod tests {
                 property_object::GET_ARRAY_INDEX => Ok(Value::Str("[2]".to_owned())),
                 property_object::GET_LOCATION => Ok(Value::Str("Container.Child".to_owned())),
                 property_object::IS_ALIAS_OBJECT => Ok(Value::Bool(false)),
-                property_object::IS_EQUAL_TO => Ok(Value::Bool(true)),
-                property_object::CONTAINS_TYPE_INSTANCE => Ok(Value::Bool(true)),
-                property_object::GET_TYPE_DEFINITION => Ok(Value::Object(Self::child(&self.calls))),
-                property_object::CREATE_REPORT_SECTION => {
-                    Ok(Value::Object(Self::child(&self.calls)))
-                }
-                introspect::ENUM_IS_VALID => Ok(Value::Bool(true)),
-                introspect::GET_PROPERTY_OBJECT_BY_OFFSET => {
+                // Every other boolean member answers true, which is the answer
+                // each of these tests needs to see pass through unaltered.
+                property_object::GET_VAL_BOOLEAN_BY_OFFSET
+                | property_object::IS_EQUAL_TO
+                | property_object::CONTAINS_TYPE_INSTANCE
+                | introspect::ENUM_IS_VALID => Ok(Value::Bool(true)),
+                property_object::GET_TYPE_DEFINITION
+                | property_object::CREATE_REPORT_SECTION
+                | introspect::GET_PROPERTY_OBJECT_BY_OFFSET => {
                     Ok(Value::Object(Self::child(&self.calls)))
                 }
                 _ => Err(ComError::hresult(-17000, "fake: unscripted call")),
@@ -2836,14 +2836,14 @@ mod tests {
             );
         }
 
-        let logged = calls.lock().map_err(|_| crate::Error::UnexpectedType {
-            expected: "an unpoisoned call log",
-            actual: "a poisoned call log",
-        })?;
-        assert!(
-            logged.is_empty(),
-            "nothing should have reached the engine: {logged:?}"
-        );
+        let dispatched = {
+            let logged = calls.lock().map_err(|_| crate::Error::UnexpectedType {
+                expected: "an unpoisoned call log",
+                actual: "a poisoned call log",
+            })?;
+            logged.len()
+        };
+        assert_eq!(dispatched, 0, "nothing should have reached the engine");
         Ok(())
     }
 

@@ -1,6 +1,6 @@
 //! A file that stores property objects.
 
-use rs_teststand_sys::{Dispatch, Value};
+use rs_teststand_sys::{Dispatch, OutKind, Value};
 
 use crate::Error;
 use crate::dispids::property_object_file;
@@ -51,6 +51,63 @@ impl PropertyObjectFile {
                 &[Value::I32(handler.bits())],
             )?
             .as_bool()?)
+    }
+
+    /// Reports whether any type used by the file still carries the modified
+    /// flag, and optionally acts on it (`PropertyObjectFile.CheckForModifiedTypes`).
+    ///
+    /// The engine writes both answers through output arguments, so they come
+    /// back together in [`ModifiedTypeCheck`].
+    ///
+    /// **Do not pass
+    /// [`CheckForModifiedTypesOption::Prompt`](CheckForModifiedTypesOption::Prompt)
+    /// from an unattended host.** That option puts a warning dialog on screen
+    /// whose title and button text are `dialog_title` and `ok_button_text`;
+    /// [`CheckForModifiedTypesOption::NoAction`] checks and reports without
+    /// asking anyone.
+    ///
+    /// `version_inc_option` matters only for
+    /// [`CheckForModifiedTypesOption::AutoIncrementVersions`]; pass
+    /// [`TypeVersionAutoIncrement::None`] otherwise.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or an output is missing.
+    pub fn check_for_modified_types(
+        &self,
+        dialog_title: &str,
+        ok_button_text: &str,
+        options: CheckForModifiedTypesOption,
+        version_inc_option: TypeVersionAutoIncrement,
+    ) -> Result<ModifiedTypeCheck, Error> {
+        let (_, outputs) = self.dispatch.call_with_outputs(
+            property_object_file::CHECK_FOR_MODIFIED_TYPES,
+            &[
+                Value::Str(dialog_title.to_owned()),
+                Value::Str(ok_button_text.to_owned()),
+                Value::I32(options.bits()),
+                Value::I32(version_inc_option.bits()),
+            ],
+            &[OutKind::Bool, OutKind::Bool],
+        )?;
+        let mut outputs = outputs.into_iter();
+        let operation_canceled = outputs
+            .next()
+            .ok_or(Error::UnexpectedType {
+                expected: "an operation-canceled flag",
+                actual: "the engine returned no output",
+            })?
+            .as_bool()?;
+        let found_modified_types = outputs
+            .next()
+            .ok_or(Error::UnexpectedType {
+                expected: "a modified-types flag",
+                actual: "the engine returned no output",
+            })?
+            .as_bool()?;
+        Ok(ModifiedTypeCheck {
+            operation_canceled,
+            found_modified_types,
+        })
     }
 
     /// Resolves type conflicts in a file the engine loaded without resolving
@@ -788,7 +845,11 @@ mod tests {
                 Some(Value::I32(value)) => Ok(Value::I32(*value)),
                 Some(Value::Bool(value)) => Ok(Value::Bool(*value)),
                 Some(Value::Str(value)) => Ok(Value::Str(value.clone())),
-                _ => Err(ComError::hresult(-2_147_467_259, "fake: unscripted property")),
+                Some(Value::Empty) => Ok(Value::Empty),
+                _ => Err(ComError::hresult(
+                    -2_147_467_259,
+                    "fake: unscripted property",
+                )),
             }
         }
 
@@ -996,7 +1057,7 @@ mod tests {
     }
 
     #[test]
-    fn a_mistyped_read_is_reported_rather_than_coerced() -> Result<(), Error> {
+    fn a_mistyped_read_is_reported_rather_than_coerced() {
         let (unscripted, _) = file(Vec::new(), Vec::new(), Vec::new());
         assert!(
             matches!(unscripted.locked(), Err(Error::Com { .. })),
@@ -1012,7 +1073,6 @@ mod tests {
             mistyped.locked(),
             Err(Error::UnexpectedType { .. })
         ));
-        Ok(())
     }
 
     #[test]
