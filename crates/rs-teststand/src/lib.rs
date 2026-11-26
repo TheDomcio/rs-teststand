@@ -85,9 +85,9 @@ pub use messaging::{
     pump_thread_messages,
 };
 pub use property::{
-    ArrayDimensions, GetTemplatesFileOptions, PropertyFlags, PropertyObject, PropertyObjectFile,
-    PropertyObjectFileType, PropertyObjectType, PropertyOptions, PropertyRepresentation,
-    PropertyType, WriteFileFormat,
+    ArrayDimensions, FileWritingFormat, GetTemplatesFileOptions, PropertyFlags, PropertyObject,
+    PropertyObjectFile, PropertyObjectFileType, PropertyObjectType, PropertyOptions,
+    PropertyRepresentation, PropertyType, WriteFileFormat,
 };
 pub use search::{SearchElements, SearchFilterOptions, SearchMatch, SearchOptions, SearchResults};
 pub use sequence::{

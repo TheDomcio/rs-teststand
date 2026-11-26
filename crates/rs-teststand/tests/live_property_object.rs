@@ -1,13 +1,17 @@
 //! Live-engine coverage for the `PropertyObject` and `PropertyObjectFile` domains.
 //!
-//! Everything is constructed in memory. No station or user file is opened,
-//! saved, or otherwise changed.
+//! Trees are built in memory. The file-writing test reads the committed
+//! `tests/fixtures/TypesPlayground.seq` fixture and writes the conversions to
+//! the temporary directory, so no repository or station file is modified.
 //!
 //! Requires a registered engine: `cargo test --features live-engine -- --ignored`.
 
 #![cfg(feature = "live-engine")]
 
-use rs_teststand::{Engine, Error, PropValType, PropertyFlags, PropertyOptions, WriteFileFormat};
+use rs_teststand::{
+    ConflictHandler, Engine, Error, FileWritingFormat, GetSeqFileOptions, PropValType,
+    PropertyFlags, PropertyOptions, WriteFileFormat,
+};
 
 #[test]
 #[ignore = "requires a live engine"]
@@ -286,5 +290,70 @@ fn a_property_file_writes_in_an_older_format() -> Result<(), Error> {
     })?;
     assert!(written.len() > 0, "the written file is empty");
     let _ = std::fs::remove_file(&path);
+    Ok(())
+}
+
+/// `FileWritingFormat` selects the encoding `WriteFile` writes.
+#[test]
+#[ignore = "requires a live engine"]
+fn a_property_file_converts_the_fixture_to_ini_and_xml() -> Result<(), Error> {
+    let engine = Engine::new()?;
+    let fixture = std::path::Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("tests")
+        .join("fixtures")
+        .join("TypesPlayground.seq");
+    let fixture = fixture.to_string_lossy().into_owned();
+    let sequence_file = engine.get_sequence_file_ex(
+        &fixture,
+        GetSeqFileOptions::DO_NOT_RUN_LOAD_CALLBACK,
+        ConflictHandler::Error,
+    )?;
+    let file = sequence_file.as_property_object_file()?;
+
+    let ini_path = std::env::temp_dir().join("rs_teststand_convert.ini");
+    let ini_path = ini_path.to_string_lossy().into_owned();
+    file.set_path(&ini_path)?;
+    file.set_file_writing_format(FileWritingFormat::Ini)?;
+    assert_eq!(file.file_writing_format()?, Some(FileWritingFormat::Ini));
+    file.write_file(WriteFileFormat::Current)?;
+    let ini = std::fs::read_to_string(&ini_path).map_err(|_| Error::UnexpectedType {
+        expected: "an INI property file",
+        actual: "no file on disk",
+    })?;
+    assert!(ini.contains('['), "INI output has no section header");
+    let _ = std::fs::remove_file(&ini_path);
+
+    let xml_path = std::env::temp_dir().join("rs_teststand_convert.xml");
+    let xml_path = xml_path.to_string_lossy().into_owned();
+    file.set_path(&xml_path)?;
+    file.set_file_writing_format(FileWritingFormat::Xml)?;
+    assert_eq!(file.file_writing_format()?, Some(FileWritingFormat::Xml));
+    file.write_file(WriteFileFormat::Current)?;
+    let xml = std::fs::read_to_string(&xml_path).map_err(|_| Error::UnexpectedType {
+        expected: "an XML property file",
+        actual: "no file on disk",
+    })?;
+    assert!(xml.contains("<?xml"), "XML output has no declaration");
+    let _ = std::fs::remove_file(&xml_path);
+
+    engine.release_sequence_file_ex(sequence_file, 0)?;
+    Ok(())
+}
+
+/// `GetXML` and `SetXML` carry a property tree through text.
+#[test]
+#[ignore = "requires a live engine"]
+fn property_object_xml_round_trips() -> Result<(), Error> {
+    let engine = Engine::new()?;
+    let root = engine.new_property_object(PropValType::Container, false, "", 0)?;
+    let insert = PropertyOptions::INSERT_IF_MISSING.bits();
+    root.set_val_string("Mode", insert, "hello")?;
+
+    let xml = root.get_xml(0, 0, "Root", "")?;
+    assert!(xml.contains("hello"), "XML output lost the property value");
+
+    let copy = engine.new_property_object(PropValType::Container, false, "", 0)?;
+    copy.set_xml(&xml, 0, 0)?;
+    assert_eq!(copy.get_val_string("Mode", 0)?, "hello");
     Ok(())
 }

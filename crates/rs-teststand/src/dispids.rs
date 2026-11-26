@@ -330,6 +330,8 @@ pub(crate) mod property_object_file {
     pub(crate) const VERSION: i32 = 0x7e;
     /// `WriteFile`, one format parameter.
     pub(crate) const WRITE_FILE: i32 = 0x69;
+    /// `FileWritingFormat`, read/write enum.
+    pub(crate) const FILE_WRITING_FORMAT: i32 = 0x97;
 }
 
 /// `UsersFile` dispinterface members.

@@ -16,4 +16,4 @@ pub use property_object::{PropertyObject, PropertyType};
 pub use property_object_file::PropertyObjectFile;
 pub use property_object_file_type::PropertyObjectFileType;
 pub use property_object_type::{PropertyObjectType, PropertyRepresentation};
-pub use write_file_format::WriteFileFormat;
+pub use write_file_format::{FileWritingFormat, WriteFileFormat};

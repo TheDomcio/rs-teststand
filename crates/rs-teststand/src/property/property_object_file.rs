@@ -106,6 +106,32 @@ impl PropertyObjectFile {
         Ok(())
     }
 
+    /// The encoding the file is written in
+    /// (`PropertyObjectFile.FileWritingFormat`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn file_writing_format(&self) -> Result<Option<crate::FileWritingFormat>, Error> {
+        let value = self
+            .dispatch
+            .get(property_object_file::FILE_WRITING_FORMAT)?
+            .as_i32()?;
+        Ok(crate::FileWritingFormat::from_bits(value).ok())
+    }
+
+    /// Sets the encoding used when writing the file
+    /// (`PropertyObjectFile.FileWritingFormat`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_file_writing_format(&self, format: crate::FileWritingFormat) -> Result<(), Error> {
+        self.dispatch.put(
+            property_object_file::FILE_WRITING_FORMAT,
+            Value::I32(format.bits()),
+        )?;
+        Ok(())
+    }
+
     /// The types registered in this file (`TypeUsageList`).
     ///
     /// # Errors
@@ -278,7 +304,17 @@ mod tests {
             }
         }
 
-        fn put(&self, _dispid: i32, _value: Value) -> Result<(), ComError> {
+        fn put(&self, dispid: i32, value: Value) -> Result<(), ComError> {
+            self.calls
+                .lock()
+                .map_err(|_| ComError::hresult(0, "fake: call log was poisoned"))?
+                .push((
+                    dispid,
+                    match value {
+                        Value::I32(number) => vec![number],
+                        _ => Vec::new(),
+                    },
+                ));
             Ok(())
         }
 
@@ -359,6 +395,31 @@ mod tests {
         let subject = file(Vec::new());
         subject.set_change_count(9)?;
         subject.set_version("2.0.0.0")?;
+        Ok(())
+    }
+
+    #[test]
+    fn file_writing_format_reads_and_writes_the_property() -> Result<(), Error> {
+        let calls = Arc::new(Mutex::new(Vec::new()));
+        let subject = PropertyObjectFile::new(Box::new(FakeDispatch {
+            reads: HashMap::from([(property_object_file::FILE_WRITING_FORMAT, Value::I32(3))]),
+            calls: Arc::clone(&calls),
+        }));
+
+        assert_eq!(
+            subject.file_writing_format()?,
+            Some(crate::FileWritingFormat::Xml)
+        );
+        subject.set_file_writing_format(crate::FileWritingFormat::Ini)?;
+
+        let calls = calls.lock().map_err(|_| Error::UnexpectedType {
+            expected: "an unpoisoned call log",
+            actual: "a poisoned call log",
+        })?;
+        assert_eq!(
+            calls.as_slice(),
+            [(property_object_file::FILE_WRITING_FORMAT, vec![1])]
+        );
         Ok(())
     }
 }

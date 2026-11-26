@@ -108,14 +108,56 @@ impl WriteFileFormat {
     }
 }
 
+/// The encoding a property file is written in (`FileWritingFormats`).
+///
+/// Separate from [`WriteFileFormat`], which selects a format version. This one
+/// selects the on-disk encoding that version is written as.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[repr(i32)]
+pub enum FileWritingFormat {
+    /// INI text (`FileWritingFormat_Ini = 1`).
+    Ini = 1,
+    /// Binary (`FileWritingFormat_Binary = 2`).
+    Binary = 2,
+    /// XML text (`FileWritingFormat_Xml = 3`).
+    Xml = 3,
+}
+
+impl FileWritingFormat {
+    /// Every format, in the engine's order.
+    pub const ALL: [Self; 3] = [Self::Ini, Self::Binary, Self::Xml];
+
+    /// The value the COM boundary expects.
+    #[must_use]
+    pub const fn bits(self) -> i32 {
+        self as i32
+    }
+
+    /// Reads a raw value, returning it unchanged when unrecognized.
+    ///
+    /// # Errors
+    /// The raw value, when it matches no known format.
+    pub const fn from_bits(raw: i32) -> Result<Self, i32> {
+        Ok(match raw {
+            1 => Self::Ini,
+            2 => Self::Binary,
+            3 => Self::Xml,
+            other => return Err(other),
+        })
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use super::WriteFileFormat;
+    use super::{FileWritingFormat, WriteFileFormat};
 
     #[test]
     fn documented_values_round_trip() {
         for format in WriteFileFormat::ALL {
             assert_eq!(WriteFileFormat::from_bits(format.bits()), Ok(format));
+        }
+        for format in FileWritingFormat::ALL {
+            assert_eq!(FileWritingFormat::from_bits(format.bits()), Ok(format));
         }
     }
 
@@ -127,5 +169,6 @@ mod tests {
     #[test]
     fn an_unknown_value_is_returned_unchanged() {
         assert_eq!(WriteFileFormat::from_bits(99), Err(99));
+        assert_eq!(FileWritingFormat::from_bits(99), Err(99));
     }
 }
