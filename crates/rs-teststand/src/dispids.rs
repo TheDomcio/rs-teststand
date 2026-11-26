@@ -322,6 +322,24 @@ pub(crate) mod adapter {
     pub(crate) const LARGE_ICON_INDEX: i32 = 0x2b;
 }
 
+/// `CodeTemplate` dispinterface members.
+pub(crate) mod code_template {
+    /// `Type`, read-only enum.
+    pub(crate) const TYPE: i32 = 0x1;
+    /// `Name`, read-only string.
+    pub(crate) const NAME: i32 = 0x2;
+    /// `Description`, read-only string.
+    pub(crate) const DESCRIPTION: i32 = 0x3;
+}
+
+/// `CodeTemplates` dispinterface members.
+pub(crate) mod code_templates {
+    /// `Item`, one zero-based index, returns a code template.
+    pub(crate) const ITEM: i32 = 0x0;
+    /// `Count`, read-only integer.
+    pub(crate) const COUNT: i32 = 0x1;
+}
+
 /// `PropertyObjectFile` dispinterface members.
 pub(crate) mod property_object_file {
     /// `ReadFile`, one optional conflict-handler parameter.
@@ -354,6 +372,8 @@ pub(crate) mod property_object_file {
     pub(crate) const FILE_WRITING_FORMAT: i32 = 0x97;
     /// `AsPropertyObject`, no params, returns the file as a property object.
     pub(crate) const AS_PROPERTY_OBJECT: i32 = 0x6a;
+    /// `CheckForModifiedTypes`, two strings, two integers, two `VT_BOOL` outputs.
+    pub(crate) const CHECK_FOR_MODIFIED_TYPES: i32 = 0x7c;
     /// `HandleTypeConflicts`, one handler parameter, returns `VT_BOOL`.
     pub(crate) const HANDLE_TYPE_CONFLICTS: i32 = 0x76;
     /// `Lock`, one optional `VT_VARIANT` password.
@@ -934,6 +954,8 @@ pub(crate) mod step_type {
     pub(crate) const NUM_SUBSTEPS: i32 = 0x9;
     /// `GetSubstep`, one index parameter.
     pub(crate) const GET_SUBSTEP: i32 = 0xa;
+    /// `CodeTemplates`, read-only collection.
+    pub(crate) const CODE_TEMPLATES: i32 = 0x4c;
 }
 
 /// `Step` dispinterface members.

@@ -45,7 +45,9 @@ pub mod watch;
 pub mod watchdog;
 pub mod workspace;
 
-pub use adapters::{Adapter, AdapterKeyName};
+pub use adapters::{
+    Adapter, AdapterKeyName, CodeTemplate, CodeTemplateType, CodeTemplates, CodeTemplatesIter,
+};
 pub use analyzer::{
     AnalysisMessage, AnalysisMessages, AnalysisStatus, Analyzer, AnalyzerModule,
     DirectoriesToAnalyze, DirectoryToAnalyze, Location, LocationKind, Locations, MessageStatus,

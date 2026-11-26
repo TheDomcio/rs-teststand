@@ -67,6 +67,19 @@ impl StepType {
                 .into_object()?,
         ))
     }
+
+    /// The code templates the type's adapter offers
+    /// (`StepType.CodeTemplates`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn code_templates(&self) -> Result<crate::CodeTemplates, Error> {
+        Ok(crate::CodeTemplates::new(
+            self.dispatch
+                .get(step_type::CODE_TEMPLATES)?
+                .into_object()?,
+        ))
+    }
 }
 
 #[cfg(test)]
@@ -111,6 +124,82 @@ mod tests {
         }));
         assert_eq!(step_type.name()?, "Statement");
         assert_eq!(step_type.num_substeps()?, 2);
+        Ok(())
+    }
+
+    #[test]
+    fn exposes_the_code_templates() -> Result<(), crate::Error> {
+        #[derive(Debug)]
+        struct Template;
+
+        impl Dispatch for Template {
+            fn get(&self, dispid: i32) -> Result<Value, ComError> {
+                if dispid == crate::dispids::code_template::NAME {
+                    Ok(Value::Str("template".to_owned()))
+                } else {
+                    Err(ComError::hresult(0, "fake: unscripted get"))
+                }
+            }
+
+            fn put(&self, _dispid: i32, _value: Value) -> Result<(), ComError> {
+                Err(ComError::hresult(0, "fake: put not scripted"))
+            }
+
+            fn call(&self, _dispid: i32, _args: &[Value]) -> Result<Value, ComError> {
+                Ok(Value::Empty)
+            }
+        }
+
+        #[derive(Debug)]
+        struct Templates;
+
+        impl Dispatch for Templates {
+            fn get(&self, dispid: i32) -> Result<Value, ComError> {
+                if dispid == crate::dispids::code_templates::COUNT {
+                    Ok(Value::I32(1))
+                } else {
+                    Err(ComError::hresult(0, "fake: unscripted get"))
+                }
+            }
+
+            fn put(&self, _dispid: i32, _value: Value) -> Result<(), ComError> {
+                Err(ComError::hresult(0, "fake: put not scripted"))
+            }
+
+            fn call(&self, dispid: i32, _args: &[Value]) -> Result<Value, ComError> {
+                if dispid == crate::dispids::code_templates::ITEM {
+                    Ok(Value::Object(Box::new(Template)))
+                } else {
+                    Err(ComError::hresult(0, "fake: unscripted call"))
+                }
+            }
+        }
+
+        #[derive(Debug)]
+        struct TypeFake;
+
+        impl Dispatch for TypeFake {
+            fn get(&self, dispid: i32) -> Result<Value, ComError> {
+                if dispid == step_type::CODE_TEMPLATES {
+                    Ok(Value::Object(Box::new(Templates)))
+                } else {
+                    Err(ComError::hresult(0, "fake: unscripted get"))
+                }
+            }
+
+            fn put(&self, _dispid: i32, _value: Value) -> Result<(), ComError> {
+                Err(ComError::hresult(0, "fake: put not scripted"))
+            }
+
+            fn call(&self, _dispid: i32, _args: &[Value]) -> Result<Value, ComError> {
+                Err(ComError::hresult(0, "fake: call not scripted"))
+            }
+        }
+
+        let step_type = StepType::new(Box::new(TypeFake));
+        let templates = step_type.code_templates()?;
+        assert_eq!(templates.count()?, 1);
+        assert_eq!(templates.item(0)?.name()?, "template");
         Ok(())
     }
 }
