@@ -20,7 +20,7 @@ use std::path::Path;
 
 use std::time::Instant;
 
-use rs_teststand::{DebugOptions, Engine, Error, StationOptions};
+use rs_teststand::{DebugOptions, Engine, Error, FileWritingFormat, StationOptions};
 
 /// Restores a station option when it goes out of scope.
 ///
@@ -96,6 +96,44 @@ fn integer_option_round_trips_and_restores(engine: &Engine) -> Result<(), Error>
         options.ui_message_delay()?,
         original,
         "ui_message_delay was not restored"
+    );
+    Ok(())
+}
+
+fn file_writing_format_round_trips_and_restores(engine: &Engine) -> Result<(), Error> {
+    let options = engine.station_options()?;
+
+    let original = options
+        .default_file_writing_format()?
+        .ok_or(Error::UnexpectedType {
+            expected: "a known default file writing format",
+            actual: "an unknown value",
+        })?;
+    let probe = match original {
+        FileWritingFormat::Binary => FileWritingFormat::Xml,
+        FileWritingFormat::Xml => FileWritingFormat::Binary,
+        // The station default rejects the deprecated INI value on modern
+        // engines, so there is no safe value to write back.
+        FileWritingFormat::Ini => return Ok(()),
+    };
+    {
+        let _restore = Restore::new(
+            &options,
+            original,
+            StationOptions::set_default_file_writing_format,
+        );
+        options.set_default_file_writing_format(probe)?;
+        assert_eq!(
+            options.default_file_writing_format()?,
+            Some(probe),
+            "set_default_file_writing_format did not take effect"
+        );
+    }
+
+    assert_eq!(
+        options.default_file_writing_format()?,
+        Some(original),
+        "default_file_writing_format was not restored"
     );
     Ok(())
 }
@@ -556,7 +594,7 @@ fn station_options_behave_as_documented() -> Result<(), Error> {
     type Step = (&'static str, fn(&Engine) -> Result<(), Error>);
 
     let engine = Engine::new()?;
-    let steps: [Step; 10] = [
+    let steps: [Step; 11] = [
         (
             "boolean option round trips and restores",
             boolean_option_round_trips_and_restores,
@@ -564,6 +602,10 @@ fn station_options_behave_as_documented() -> Result<(), Error> {
         (
             "integer option round trips and restores",
             integer_option_round_trips_and_restores,
+        ),
+        (
+            "file writing format round trips and restores",
+            file_writing_format_round_trips_and_restores,
         ),
         (
             "string option round trips and restores",

@@ -737,6 +737,39 @@ impl StationOptions {
         Ok(())
     }
 
+    /// The station-wide default encoding for written files
+    /// (`DefaultFileWritingFormat`).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn default_file_writing_format(&self) -> Result<Option<crate::FileWritingFormat>, Error> {
+        let raw = self
+            .dispatch
+            .get(station_options::DEFAULT_FILE_WRITING_FORMAT)?
+            .as_i32()?;
+        Ok(crate::FileWritingFormat::from_bits(raw).ok())
+    }
+
+    /// Sets the station-wide default encoding for written files
+    /// (`DefaultFileWritingFormat`).
+    ///
+    /// The engine rejects the deprecated INI value on TestStand 2019 and
+    /// newer; prefer [`FileWritingFormat::Binary`](crate::FileWritingFormat::Binary)
+    /// or [`FileWritingFormat::Xml`](crate::FileWritingFormat::Xml).
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails.
+    pub fn set_default_file_writing_format(
+        &self,
+        format: crate::FileWritingFormat,
+    ) -> Result<(), Error> {
+        self.dispatch.put(
+            station_options::DEFAULT_FILE_WRITING_FORMAT,
+            Value::I32(format.bits()),
+        )?;
+        Ok(())
+    }
+
     /// Reads `InteractiveExePropagateStatus` (`VT_BOOL`).
     ///
     /// # Errors
@@ -1230,5 +1263,30 @@ mod tests {
             matches!(result, Err(Error::Engine { code: -17000, .. })),
             "expected named engine error, got {result:?}"
         );
+    }
+
+    #[test]
+    fn default_file_writing_format_reads_and_writes_the_enum() -> Result<(), Error> {
+        let subject = options(FakeDispatch {
+            answer: Some(3),
+            ..FakeDispatch::default()
+        });
+        assert_eq!(
+            subject.default_file_writing_format()?,
+            Some(crate::FileWritingFormat::Xml)
+        );
+
+        let writes = Rc::new(RefCell::new(Vec::new()));
+        let subject = options(FakeDispatch {
+            writes: Rc::clone(&writes),
+            ..FakeDispatch::default()
+        });
+        subject.set_default_file_writing_format(crate::FileWritingFormat::Ini)?;
+        let recorded = writes.borrow();
+        assert_eq!(
+            recorded.as_slice(),
+            [(dispid::DEFAULT_FILE_WRITING_FORMAT, "I32(1)".to_owned())]
+        );
+        Ok(())
     }
 }
