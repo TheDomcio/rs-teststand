@@ -326,6 +326,21 @@ impl Engine {
         ))
     }
 
+    /// Metadata for a file the engine recognizes
+    /// (`Engine.GetFileInformation`).
+    ///
+    /// The file is inspected from its header, not loaded.
+    ///
+    /// # Errors
+    /// [`Error`] if the file cannot be inspected or the COM call fails.
+    pub fn get_file_information(&self, path: &str) -> Result<crate::FileInformation, Error> {
+        Ok(crate::FileInformation::new(
+            self.dispatch
+                .call(dispid::GET_FILE_INFORMATION, &[Value::Str(path.to_owned())])?
+                .into_object()?,
+        ))
+    }
+
     /// How many adapters the station knows (`Engine.NumAdapters`).
     ///
     /// # Errors

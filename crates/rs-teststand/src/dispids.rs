@@ -102,6 +102,7 @@ define_dispid_group! {
         UNDO_LIMIT = 0x027a;
         FIND_FILE = 0x0104;
         FIND_PATH = 0x0105;
+        GET_FILE_INFORMATION = 0x0268;
         NEW_STEP_TYPE = 0x01a6;
         SERIALIZE_OBJECTS = 0x01d0;
         NEW_RESULT_LOG = 0x02bd;
@@ -338,6 +339,32 @@ pub(crate) mod code_templates {
     pub(crate) const ITEM: i32 = 0x0;
     /// `Count`, read-only integer.
     pub(crate) const COUNT: i32 = 0x1;
+}
+
+/// `FileInformation` dispinterface members.
+pub(crate) mod file_information {
+    /// `FileExists`, read-only boolean.
+    pub(crate) const FILE_EXISTS: i32 = 0x1;
+    /// `IsCustomFile`, read-only boolean.
+    pub(crate) const IS_CUSTOM_FILE: i32 = 0x2;
+    /// `IsSequenceFile`, read-only boolean.
+    pub(crate) const IS_SEQUENCE_FILE: i32 = 0x3;
+    /// `IsPropertyObjectFile`, read-only boolean.
+    pub(crate) const IS_PROPERTY_OBJECT_FILE: i32 = 0x4;
+    /// `FileWritingFormat`, read-only enum.
+    pub(crate) const FILE_WRITING_FORMAT: i32 = 0x5;
+    /// `GetFileFormatVersion`, no parameters.
+    pub(crate) const GET_FILE_FORMAT_VERSION: i32 = 0x6;
+    /// `GetFileVersion`, one string output.
+    pub(crate) const GET_FILE_VERSION: i32 = 0x7;
+    /// `PropertyObjectFileType`, read-only enum.
+    pub(crate) const PROPERTY_OBJECT_FILE_TYPE: i32 = 0x8;
+    /// `IsDotNetAssembly`, read-only boolean.
+    pub(crate) const IS_DOT_NET_ASSEMBLY: i32 = 0x9;
+    /// `IsCVIDll`, read-only boolean (the vendor term, kept as the API spells it).
+    pub(crate) const IS_CVI_DLL: i32 = 0xa;
+    /// `GetFileFormatDisplayVersion`, no parameters.
+    pub(crate) const GET_FILE_FORMAT_DISPLAY_VERSION: i32 = 0xb;
 }
 
 /// `PropertyObjectFile` dispinterface members.

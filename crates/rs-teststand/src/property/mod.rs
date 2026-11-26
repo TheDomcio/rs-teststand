@@ -1,6 +1,7 @@
 //! `PropertyObject` domain wrappers and options.
 
 pub mod array_dimensions;
+pub mod file_information;
 pub mod flags;
 pub mod options;
 pub mod property_object;
@@ -10,6 +11,7 @@ pub mod property_object_type;
 pub mod write_file_format;
 
 pub use array_dimensions::ArrayDimensions;
+pub use file_information::FileInformation;
 pub use flags::{PropertyFlags, PropertyTypeFlags};
 pub use options::{GetTemplatesFileOptions, PropertyOptions};
 pub use property_object::{DisplayNames, NameCheck, PropertyObject, PropertyType};
