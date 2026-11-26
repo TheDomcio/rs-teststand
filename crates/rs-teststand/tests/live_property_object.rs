@@ -397,7 +397,8 @@ fn property_object_xml_round_trips() -> Result<(), Error> {
 fn property_tree_navigation_and_type_metadata() -> Result<(), Error> {
     let engine = Engine::new()?;
     let root = build_navigation_tree(&engine)?;
-    navigate_the_tree(&engine, &root)?;
+    navigate_the_tree(&root)?;
+    array_element_prototype_is_copied(&engine, &root)?;
     type_metadata_round_trips_off_a_copy(&engine, &root)
 }
 
@@ -432,8 +433,7 @@ fn build_navigation_tree(engine: &Engine) -> Result<PropertyObject, Error> {
 /// The two position changers declare their arguments in different orders, so
 /// each is checked against the value it moved rather than only against a
 /// `Result`.
-fn navigate_the_tree(engine: &Engine, root: &PropertyObject) -> Result<(), Error> {
-    let insert = PropertyOptions::INSERT_IF_MISSING.bits();
+fn navigate_the_tree(root: &PropertyObject) -> Result<(), Error> {
     let options = PropertyOptions::NONE.bits();
 
     let children = root.get_sub_properties("", options)?;

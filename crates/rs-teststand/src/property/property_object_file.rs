@@ -59,9 +59,8 @@ impl PropertyObjectFile {
     /// The engine writes both answers through output arguments, so they come
     /// back together in [`ModifiedTypeCheck`].
     ///
-    /// **Do not pass
-    /// [`CheckForModifiedTypesOption::Prompt`](CheckForModifiedTypesOption::Prompt)
-    /// from an unattended host.** That option puts a warning dialog on screen
+    /// **Do not pass [`CheckForModifiedTypesOption::Prompt`] from an
+    /// unattended host.** That option puts a warning dialog on screen
     /// whose title and button text are `dialog_title` and `ok_button_text`;
     /// [`CheckForModifiedTypesOption::NoAction`] checks and reports without
     /// asking anyone.
@@ -768,12 +767,142 @@ bitflags::bitflags! {
     }
 }
 
+/// What a modified-type check should do (`CheckForModifiedTypesOptions`).
+///
+/// Passed to [`PropertyObjectFile::check_for_modified_types`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[repr(i32)]
+pub enum CheckForModifiedTypesOption {
+    /// Defer to the station's "before saving modified types" setting
+    /// (`CheckForModifiedTypes_UseStationOptions = 0`).
+    ///
+    /// That setting can prompt, so a headless host should name an option
+    /// instead of relying on it.
+    UseStationOptions = 0,
+    /// Clear the flag and increment each modified type's version
+    /// (`CheckForModifiedTypes_AutoIncrementVersions = 1`).
+    AutoIncrementVersions = 1,
+    /// Put a warning dialog on screen
+    /// (`CheckForModifiedTypes_Prompt = 2`).
+    ///
+    /// Unsuitable for an unattended host.
+    Prompt = 2,
+    /// Clear the flag without incrementing anything
+    /// (`CheckForModifiedTypes_NoAction = 4`).
+    NoAction = 4,
+    /// Clear the flag and remove the modified mark
+    /// (`CheckForModifiedTypes_RemoveTypesModifiedMark = 12`).
+    RemoveTypesModifiedMark = 12,
+}
+
+impl CheckForModifiedTypesOption {
+    /// Every option, in the engine's order.
+    pub const ALL: [Self; 5] = [
+        Self::UseStationOptions,
+        Self::AutoIncrementVersions,
+        Self::Prompt,
+        Self::NoAction,
+        Self::RemoveTypesModifiedMark,
+    ];
+
+    /// The value the COM boundary expects.
+    #[must_use]
+    pub const fn bits(self) -> i32 {
+        self as i32
+    }
+
+    /// Reads a raw value, returning it unchanged when unrecognized.
+    ///
+    /// # Errors
+    /// The raw value, when it matches no known option.
+    pub const fn from_bits(raw: i32) -> Result<Self, i32> {
+        Ok(match raw {
+            0 => Self::UseStationOptions,
+            1 => Self::AutoIncrementVersions,
+            2 => Self::Prompt,
+            4 => Self::NoAction,
+            12 => Self::RemoveTypesModifiedMark,
+            other => return Err(other),
+        })
+    }
+}
+
+/// Which version component to increment (`TypeVersionAutoIncrement`).
+///
+/// Used by [`PropertyObjectFile::check_for_modified_types`] together with
+/// [`CheckForModifiedTypesOption::AutoIncrementVersions`].
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[repr(i32)]
+pub enum TypeVersionAutoIncrement {
+    /// Leave the version alone (`TypeVersionInc_None = 0`).
+    None = 0,
+    /// Increment the major component (`TypeVersionInc_Major = 1`).
+    Major = 1,
+    /// Increment the minor component (`TypeVersionInc_Minor = 2`).
+    Minor = 2,
+    /// Increment the revision component (`TypeVersionInc_Revision = 3`).
+    Revision = 3,
+    /// Increment the build component (`TypeVersionInc_Build = 4`).
+    Build = 4,
+}
+
+impl TypeVersionAutoIncrement {
+    /// Every component, in the engine's order.
+    pub const ALL: [Self; 5] = [
+        Self::None,
+        Self::Major,
+        Self::Minor,
+        Self::Revision,
+        Self::Build,
+    ];
+
+    /// The value the COM boundary expects.
+    #[must_use]
+    pub const fn bits(self) -> i32 {
+        self as i32
+    }
+
+    /// Reads a raw value, returning it unchanged when unrecognized.
+    ///
+    /// # Errors
+    /// The raw value, when it matches no known component.
+    pub const fn from_bits(raw: i32) -> Result<Self, i32> {
+        Ok(match raw {
+            0 => Self::None,
+            1 => Self::Major,
+            2 => Self::Minor,
+            3 => Self::Revision,
+            4 => Self::Build,
+            other => return Err(other),
+        })
+    }
+}
+
+/// The two answers a modified-type check reports.
+///
+/// Not an engine type: `CheckForModifiedTypes` has no return value, it writes
+/// both answers through output arguments.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct ModifiedTypeCheck {
+    /// Someone pressed Cancel at the warning dialog (`operationCanceled`).
+    ///
+    /// Always false when no dialog was shown, so a headless host using
+    /// [`CheckForModifiedTypesOption::NoAction`] should see false.
+    pub operation_canceled: bool,
+    /// At least one type in the file carried the modified flag
+    /// (`foundModifiedTypes`).
+    pub found_modified_types: bool,
+}
+
 #[cfg(test)]
 mod tests {
-    use super::{FileOpenStatusFlags, PropertyObjectFile, ProtectedObjectOption};
+    use super::{
+        CheckForModifiedTypesOption, FileOpenStatusFlags, PropertyObjectFile,
+        ProtectedObjectOption, TypeVersionAutoIncrement,
+    };
     use crate::Error;
     use crate::dispids::property_object_file;
-    use rs_teststand_sys::{ComError, Dispatch, Value};
+    use rs_teststand_sys::{ComError, Dispatch, OutKind, Value};
     use std::collections::HashMap;
     use std::sync::{Arc, Mutex};
 
@@ -868,6 +997,18 @@ mod tests {
                 Some(Value::Str(text)) => Ok(Value::Str(text.clone())),
                 _ => Ok(Value::Empty),
             }
+        }
+
+        fn call_with_outputs(
+            &self,
+            dispid: i32,
+            args: &[Value],
+            _outputs: &[OutKind],
+        ) -> Result<(Value, Vec<Value>), ComError> {
+            self.record(dispid, args)?;
+            // Both answers the engine writes for CheckForModifiedTypes: no
+            // cancellation, and at least one modified type found.
+            Ok((Value::Empty, vec![Value::Bool(false), Value::Bool(true)]))
         }
     }
 
@@ -1053,6 +1194,34 @@ mod tests {
             Vec::new(),
         );
         assert_eq!(unknown_bits.open_status()?.bits(), 3);
+        Ok(())
+    }
+
+    #[test]
+    fn check_for_modified_types_sends_its_arguments_and_reads_both_outputs() -> Result<(), Error> {
+        let (subject, calls) = file(Vec::new(), Vec::new(), Vec::new());
+
+        let checked = subject.check_for_modified_types(
+            "dialog title",
+            "ok",
+            CheckForModifiedTypesOption::NoAction,
+            TypeVersionAutoIncrement::None,
+        )?;
+
+        assert!(!checked.operation_canceled);
+        assert!(checked.found_modified_types);
+        assert_eq!(
+            logged(&calls)?,
+            vec![(
+                property_object_file::CHECK_FOR_MODIFIED_TYPES,
+                vec![
+                    Argument::Str("dialog title".to_owned()),
+                    Argument::Str("ok".to_owned()),
+                    Argument::I32(4),
+                    Argument::I32(0),
+                ]
+            )]
+        );
         Ok(())
     }
 

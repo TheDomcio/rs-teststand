@@ -9,7 +9,10 @@
 
 #![cfg(feature = "live-engine")]
 
-use rs_teststand::property::property_object_file::{FileOpenStatusFlags, ProtectedObjectOption};
+use rs_teststand::property::property_object_file::{
+    CheckForModifiedTypesOption, FileOpenStatusFlags, ProtectedObjectOption,
+    TypeVersionAutoIncrement,
+};
 use rs_teststand::{
     ConflictHandler, Engine, Error, GetSeqFileOptions, PropertyObjectFileType, PropertyOptions,
     WriteFileFormat,
@@ -126,6 +129,20 @@ fn a_sequence_file_locks_and_unlocks_under_protection() -> Result<(), Error> {
     // A file read with the error handler has already resolved its type
     // conflicts, so the answer is true rather than a prompt or a failure.
     assert!(file.handle_type_conflicts(ConflictHandler::Error)?);
+
+    // `NoAction` checks and reports without asking anyone, which is the only
+    // mode this host can use.
+    let checked = file.check_for_modified_types(
+        "",
+        "",
+        CheckForModifiedTypesOption::NoAction,
+        TypeVersionAutoIncrement::None,
+    )?;
+    assert!(
+        !checked.operation_canceled,
+        "no dialog was shown, so nothing could be cancelled"
+    );
+    println!("modified types found: {}", checked.found_modified_types);
 
     // Requirements are valid for a sequence file; Links is the array the
     // reference names.
