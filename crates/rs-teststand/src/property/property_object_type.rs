@@ -43,6 +43,11 @@ impl PropertyObjectType {
         Self { dispatch }
     }
 
+    /// An owned handle to the same type, for passing it back to the engine.
+    pub(crate) fn duplicate_dispatch(&self) -> Option<Box<dyn Dispatch>> {
+        self.dispatch.duplicate()
+    }
+
     /// The value type (`PropertyObjectType.ValueType`).
     ///
     /// Returns the raw ordinal when it is one this build does not name, so a

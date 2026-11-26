@@ -1,5 +1,6 @@
 //! Running sequences.
 
+pub mod additional_result;
 #[allow(
     clippy::module_inception,
     reason = "file is named after the type it holds"
@@ -20,6 +21,10 @@ pub mod sequence_context;
 mod termination_option;
 pub(crate) mod thread;
 
+pub use additional_result::{
+    AdditionalResult, AdditionalResultKind, AdditionalResults, AdditionalResultsIter,
+    StepAdditionalResults,
+};
 pub use execution::Execution;
 pub use execution::ExecutionStates;
 pub use execution_output_record_stream::ExecutionOutputRecordStream;

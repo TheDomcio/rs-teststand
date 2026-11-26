@@ -889,6 +889,19 @@ impl Step {
         ))
     }
 
+    /// The step's additional results (`Step.AdditionalResults`).
+    ///
+    /// Returns the two collections the engine keeps for the step: parameter
+    /// results and custom results.
+    ///
+    /// # Errors
+    /// [`Error`] if the COM call fails or returns an unexpected type.
+    pub fn additional_results(&self) -> Result<crate::StepAdditionalResults, Error> {
+        Ok(crate::StepAdditionalResults::new(
+            self.dispatch.get(step::ADDITIONAL_RESULTS)?.into_object()?,
+        ))
+    }
+
     /// An owned handle to the same step, for passing it back to the engine.
     pub(crate) fn duplicate_dispatch(&self) -> Option<Box<dyn Dispatch>> {
         self.dispatch.duplicate()
@@ -1202,6 +1215,77 @@ mod tests {
             [(dispid::SET_BREAK_SETTINGS, 5)],
             "the engine declares five input parameters"
         );
+        Ok(())
+    }
+
+    #[test]
+    fn exposes_the_step_additional_results() -> Result<(), Error> {
+        #[derive(Debug)]
+        struct Collection;
+
+        impl Dispatch for Collection {
+            fn get(&self, dispid: i32) -> Result<Value, ComError> {
+                if dispid == crate::dispids::additional_results::COUNT {
+                    Ok(Value::I32(0))
+                } else {
+                    Err(ComError::hresult(0, "fake: unscripted get"))
+                }
+            }
+
+            fn put(&self, _dispid: i32, _value: Value) -> Result<(), ComError> {
+                Err(ComError::hresult(0, "fake: put not scripted"))
+            }
+
+            fn call(&self, _dispid: i32, _args: &[Value]) -> Result<Value, ComError> {
+                Err(ComError::hresult(0, "fake: call not scripted"))
+            }
+        }
+
+        #[derive(Debug)]
+        struct Results;
+
+        impl Dispatch for Results {
+            fn get(&self, dispid: i32) -> Result<Value, ComError> {
+                if dispid == crate::dispids::step_additional_results::CUSTOM_RESULTS {
+                    Ok(Value::Object(Box::new(Collection)))
+                } else {
+                    Err(ComError::hresult(0, "fake: unscripted get"))
+                }
+            }
+
+            fn put(&self, _dispid: i32, _value: Value) -> Result<(), ComError> {
+                Err(ComError::hresult(0, "fake: put not scripted"))
+            }
+
+            fn call(&self, _dispid: i32, _args: &[Value]) -> Result<Value, ComError> {
+                Err(ComError::hresult(0, "fake: call not scripted"))
+            }
+        }
+
+        #[derive(Debug)]
+        struct StepFake;
+
+        impl Dispatch for StepFake {
+            fn get(&self, dispid: i32) -> Result<Value, ComError> {
+                if dispid == crate::dispids::step::ADDITIONAL_RESULTS {
+                    Ok(Value::Object(Box::new(Results)))
+                } else {
+                    Err(ComError::hresult(0, "fake: unscripted get"))
+                }
+            }
+
+            fn put(&self, _dispid: i32, _value: Value) -> Result<(), ComError> {
+                Err(ComError::hresult(0, "fake: put not scripted"))
+            }
+
+            fn call(&self, _dispid: i32, _args: &[Value]) -> Result<Value, ComError> {
+                Err(ComError::hresult(0, "fake: call not scripted"))
+            }
+        }
+
+        let step = Step::new(Box::new(StepFake));
+        let custom = step.additional_results()?.custom_results()?;
+        assert_eq!(custom.count()?, 0);
         Ok(())
     }
 }

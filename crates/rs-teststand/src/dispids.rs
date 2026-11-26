@@ -341,6 +341,62 @@ pub(crate) mod code_templates {
     pub(crate) const COUNT: i32 = 0x1;
 }
 
+/// `StepAdditionalResults` dispinterface members.
+pub(crate) mod step_additional_results {
+    /// `ParameterResults`, read-only collection.
+    pub(crate) const PARAMETER_RESULTS: i32 = 0x1;
+    /// `CustomResults`, read-only collection.
+    pub(crate) const CUSTOM_RESULTS: i32 = 0x2;
+}
+
+/// `AdditionalResults` dispinterface members.
+pub(crate) mod additional_results {
+    /// `Item`, one zero-based index.
+    pub(crate) const ITEM: i32 = 0x0;
+    /// `Count`, read-only integer.
+    pub(crate) const COUNT: i32 = 0x1;
+    /// `CheckedItemCount`, read-only integer.
+    pub(crate) const CHECKED_ITEM_COUNT: i32 = 0x2;
+    /// `Insert`, name, value, condition, flags, and index.
+    pub(crate) const INSERT: i32 = 0xa;
+    /// `Remove`, one index.
+    pub(crate) const REMOVE: i32 = 0xb;
+    /// `Clear`, no parameters.
+    pub(crate) const CLEAR: i32 = 0xc;
+    /// `Move`, index and new index.
+    pub(crate) const MOVE: i32 = 0xd;
+}
+
+/// `AdditionalResult` dispinterface members.
+pub(crate) mod additional_result {
+    /// `Name`, read/write string.
+    pub(crate) const NAME: i32 = 0x1;
+    /// `CheckedState`, read/write integer.
+    pub(crate) const CHECKED_STATE: i32 = 0x2;
+    /// `ValueToLog`, read/write string.
+    pub(crate) const VALUE_TO_LOG: i32 = 0x3;
+    /// `Condition`, read/write string.
+    pub(crate) const CONDITION: i32 = 0x4;
+    /// `Flags`, read/write property flags.
+    pub(crate) const FLAGS: i32 = 0x5;
+    /// `IsAnyType`, read/write boolean.
+    pub(crate) const IS_ANY_TYPE: i32 = 0x6;
+    /// `Elements`, read-only collection.
+    pub(crate) const ELEMENTS: i32 = 0x7;
+    /// `Type`, read/write object.
+    pub(crate) const TYPE: i32 = 0x8;
+    /// `ParentAdditionalResult`, read-only object.
+    pub(crate) const PARENT_ADDITIONAL_RESULT: i32 = 0x9;
+    /// `AreElementsIncompatibleWithType`, read-only boolean.
+    pub(crate) const ARE_ELEMENTS_INCOMPATIBLE_WITH_TYPE: i32 = 0xa;
+    /// `UnmappedAdditionalResults`, read-only collection.
+    pub(crate) const UNMAPPED_ADDITIONAL_RESULTS: i32 = 0xb;
+    /// `Kind`, read-only enum.
+    pub(crate) const KIND: i32 = 0xc;
+    /// `ParameterObject`, read-only object.
+    pub(crate) const PARAMETER_OBJECT: i32 = 0xd;
+}
+
 /// `FileInformation` dispinterface members.
 pub(crate) mod file_information {
     /// `FileExists`, read-only boolean.
@@ -1047,6 +1103,8 @@ pub(crate) mod step {
     pub(crate) const CREATE_NEW_UNIQUE_STEP_ID: i32 = 0x9c;
     /// `StepType`, read-only.
     pub(crate) const STEP_TYPE: i32 = 0x22;
+    /// `AdditionalResults`, read-only.
+    pub(crate) const ADDITIONAL_RESULTS: i32 = 0xc8;
     /// `Module`, read-only property object.
     pub(crate) const MODULE: i32 = 0x9e;
     /// `IsSequenceCall`, read-only boolean.
