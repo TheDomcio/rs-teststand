@@ -5,6 +5,25 @@ use rs_teststand_sys::{Dispatch, Value};
 use crate::Error;
 use crate::dispids::module;
 
+bitflags::bitflags! {
+    /// Options for [`Module::load_prototype`] (`LoadPrototypeOptions`).
+    ///
+    /// ```ignore
+    /// use rs_teststand::LoadPrototypeOptions;
+    ///
+    /// module.load_prototype(LoadPrototypeOptions::MAP_EXISTING_PARAMETERS)?;
+    /// ```
+    #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+    pub struct LoadPrototypeOptions: i32 {
+        /// No options (`LoadPrototypeOption_NoOptions`; not an engine
+        /// constant under this name).
+        const NONE = 0;
+        /// Maps the existing argument value expressions onto the new
+        /// prototype's parameters (`LoadPrototypeOption_MapExistingParameters`).
+        const MAP_EXISTING_PARAMETERS = 0x1;
+    }
+}
+
 /// A step's code module (`Module`).
 ///
 /// Returned by [`Step::module`](crate::Step::module). The adapter-specific
@@ -137,12 +156,14 @@ impl Module {
     /// Loads the prototype and maps module parameters
     /// (`Module.LoadPrototype`).
     ///
+    /// The options are [`LoadPrototypeOptions`].
+    ///
     /// # Errors
     /// [`Error`] if the COM call fails or returns an unexpected type.
-    pub fn load_prototype(&self, options: i32) -> Result<bool, Error> {
+    pub fn load_prototype(&self, options: LoadPrototypeOptions) -> Result<bool, Error> {
         Ok(self
             .dispatch
-            .call(module::LOAD_PROTOTYPE, &[Value::I32(options)])?
+            .call(module::LOAD_PROTOTYPE, &[Value::I32(options.bits())])?
             .as_bool()?)
     }
 

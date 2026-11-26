@@ -47,7 +47,9 @@ pub mod workspace;
 
 pub use adapters::{
     Adapter, AdapterKeyName, CodeTemplate, CodeTemplateType, CodeTemplates, CodeTemplatesIter,
-    LabViewCallType, LabViewModuleOverrideOption, LabViewNodeOperationMode, LabViewViType,
+    LabViewCallType, LabViewModuleOverrideOption, LabViewNodeOperationMode, LabViewParameter,
+    LabViewParameterCategory, LabViewParameterDirection, LabViewParameterWireRequirement,
+    LabViewViType,
 };
 pub use analyzer::{
     AnalysisMessage, AnalysisMessages, AnalysisStatus, Analyzer, AnalyzerModule,
@@ -97,9 +99,9 @@ pub use property::{
 };
 pub use search::{SearchElements, SearchFilterOptions, SearchMatch, SearchOptions, SearchResults};
 pub use sequence::{
-    BreakpointScope, ConflictHandler, FailureAction, GetSeqFileOptions, InteractiveArgs, Module,
-    ResultRecordingOption, RunMode, Sequence, SequenceFile, SequenceFileType, SequenceType, Step,
-    StepType,
+    BreakpointScope, ConflictHandler, FailureAction, GetSeqFileOptions, InteractiveArgs,
+    LoadPrototypeOptions, Module, ResultRecordingOption, RunMode, Sequence, SequenceFile,
+    SequenceFileType, SequenceType, Step, StepType,
 };
 pub use station::{
     DebugOptions, ExecutionMask, RunTimeErrorOption, SearchDirectories, SearchDirectory,

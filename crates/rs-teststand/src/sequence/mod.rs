@@ -21,7 +21,7 @@ pub mod step_type;
 
 pub use breakpoint::BreakpointScope;
 pub use interactive_args::InteractiveArgs;
-pub use module::Module;
+pub use module::{LoadPrototypeOptions, Module};
 pub use options::{ConflictHandler, GetSeqFileOptions};
 pub use result_recording_option::ResultRecordingOption;
 pub use run_mode::RunMode;

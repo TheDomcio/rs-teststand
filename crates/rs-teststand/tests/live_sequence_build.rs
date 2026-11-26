@@ -8,8 +8,9 @@
 
 use rs_teststand::{
     AdapterKeyName, ConflictHandler, Engine, Error, FailureAction, GetSeqFileOptions,
-    LabViewCallType, LabViewModuleOverrideOption, LabViewNodeOperationMode, LabViewViType,
-    SequenceType, StepGroup,
+    LabViewCallType, LabViewModuleOverrideOption, LabViewNodeOperationMode,
+    LabViewParameterCategory, LabViewParameterDirection, LabViewParameterWireRequirement,
+    LabViewViType, SequenceType, Step, StepGroup,
 };
 
 const INSERT_IF_MISSING: i32 = 1;
@@ -349,6 +350,31 @@ fn adapter_module_helpers_read_back_their_fields() -> Result<(), Error> {
     let engine = Engine::new()?;
 
     let labview = engine.new_step(AdapterKeyName::LabView.as_str(), "Action")?;
+    check_labview_call_fields(&labview)?;
+    check_labview_override_fields(&labview)?;
+    check_labview_node_and_parameter_fields(&labview)?;
+
+    let cvi = engine.new_step(AdapterKeyName::Cvi.as_str(), "Action")?;
+    let cvi_module = cvi.module()?;
+    let _tree = cvi_module.as_property_object()?;
+    assert!(!cvi_module.is_prototype_incompatible()?);
+    let _can_specify = cvi_module.can_specify()?;
+    cvi.set_cvi_library_path("example-module")?;
+    assert_eq!(cvi.cvi_library_path()?, "example-module");
+    cvi.set_cvi_function("main")?;
+    assert_eq!(cvi.cvi_function()?, "main");
+
+    let dotnet = engine.new_step(AdapterKeyName::DotNet.as_str(), "Action")?;
+    dotnet.set_dotnet_assembly_path("example-assembly")?;
+    assert_eq!(dotnet.dotnet_assembly_path()?, "example-assembly");
+    dotnet.set_dotnet_class_name("Example")?;
+    assert_eq!(dotnet.dotnet_class_name()?, "Example");
+    dotnet.set_dotnet_member_name("Main")?;
+    assert_eq!(dotnet.dotnet_member_name()?, "Main");
+    Ok(())
+}
+
+fn check_labview_call_fields(labview: &Step) -> Result<(), Error> {
     labview.set_labview_vi_path("main.vi")?;
     assert_eq!(labview.labview_vi_path()?, "main.vi");
     labview.set_labview_remote_vi_path("remote.vi")?;
@@ -388,6 +414,16 @@ fn adapter_module_helpers_read_back_their_fields() -> Result<(), Error> {
         labview.labview_node_operation_mode()?,
         Some(LabViewNodeOperationMode::Restricted)
     );
+    Ok(())
+}
+
+fn check_labview_override_fields(labview: &Step) -> Result<(), Error> {
+    // The override fields are absent from the TestStand 2016 SP1 module type.
+    // Probing the field itself keeps this honest without guessing the release
+    // that introduced them.
+    if labview.labview_override_binary_vi_checksum().is_err() {
+        return Ok(());
+    }
     labview.set_labview_override_binary_vi_checksum(4321)?;
     assert_eq!(labview.labview_override_binary_vi_checksum()?, 4321);
     labview.set_labview_override_module_options(LabViewModuleOverrideOption::Ppl)?;
@@ -395,24 +431,45 @@ fn adapter_module_helpers_read_back_their_fields() -> Result<(), Error> {
         labview.labview_override_module_options()?,
         Some(LabViewModuleOverrideOption::Ppl)
     );
+    Ok(())
+}
 
-    let cvi = engine.new_step(AdapterKeyName::Cvi.as_str(), "Action")?;
-    let cvi_module = cvi.module()?;
-    let _tree = cvi_module.as_property_object()?;
-    assert!(!cvi_module.is_prototype_incompatible()?);
-    let _can_specify = cvi_module.can_specify()?;
-    cvi.set_cvi_library_path("example-module")?;
-    assert_eq!(cvi.cvi_library_path()?, "example-module");
-    cvi.set_cvi_function("main")?;
-    assert_eq!(cvi.cvi_function()?, "main");
+fn check_labview_node_and_parameter_fields(labview: &Step) -> Result<(), Error> {
+    labview.set_labview_node_library_name("library")?;
+    assert_eq!(labview.labview_node_library_name()?, "library");
+    labview.set_labview_node_library_generic_type_name("generic")?;
+    assert_eq!(labview.labview_node_library_generic_type_name()?, "generic");
+    labview.set_labview_node_class_data_name("class data")?;
+    assert_eq!(labview.labview_node_class_data_name()?, "class data");
+    labview.set_labview_node_uses_data_value_reference(true)?;
+    assert!(labview.labview_node_uses_data_value_reference()?);
+    labview.set_labview_node_ignores_internal_errors(true)?;
+    assert!(labview.labview_node_ignores_internal_errors()?);
+    labview.set_labview_vi("vi")?;
+    assert_eq!(labview.labview_vi()?, "vi");
 
-    let dotnet = engine.new_step(AdapterKeyName::DotNet.as_str(), "Action")?;
-    dotnet.set_dotnet_assembly_path("example-assembly")?;
-    assert_eq!(dotnet.dotnet_assembly_path()?, "example-assembly");
-    dotnet.set_dotnet_class_name("Example")?;
-    assert_eq!(dotnet.dotnet_class_name()?, "Example");
-    dotnet.set_dotnet_member_name("Main")?;
-    assert_eq!(dotnet.dotnet_member_name()?, "Main");
+    let parms = labview
+        .module()?
+        .as_property_object()?
+        .get_property_object("ViCall.Parms", 0)?;
+    parms.set_num_elements(2, 0)?;
+    assert_eq!(labview.labview_parameter_count()?, 2);
+
+    let parameter = labview.labview_parameter(0)?;
+    assert_eq!(
+        parameter.category()?,
+        Some(LabViewParameterCategory::Unknown)
+    );
+    assert_eq!(parameter.direction()?, Some(LabViewParameterDirection::In));
+    assert_eq!(
+        parameter.wire_requirement()?,
+        Some(LabViewParameterWireRequirement::Optional)
+    );
+    assert!(!parameter.use_default_value()?);
+    parameter.set_value_expr("Locals.x")?;
+    assert_eq!(parameter.value_expr()?, "Locals.x");
+    parameter.set_use_default_value(true)?;
+    assert!(parameter.use_default_value()?);
     Ok(())
 }
 

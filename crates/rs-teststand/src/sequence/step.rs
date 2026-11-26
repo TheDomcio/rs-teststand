@@ -777,6 +777,38 @@ impl Step {
             .set_val_boolean("ViCall.ShowFrnPnl", 0, show)
     }
 
+    /// The number of parameters in the step's LabVIEW module
+    /// (`Step.Module` field `ViCall.Parms`).
+    ///
+    /// A step whose module has no loaded prototype reports zero. Call
+    /// [`Module::load_prototype`](crate::Module::load_prototype) to load the
+    /// VI's parameters.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn labview_parameter_count(&self) -> Result<i32, Error> {
+        self.labview_parameters()?.get_num_elements()
+    }
+
+    /// One parameter of the step's LabVIEW module
+    /// (`Step.Module` field `ViCall.Parms[index]`).
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module, the index is outside the
+    /// array, or the COM call fails.
+    pub fn labview_parameter(&self, index: i32) -> Result<crate::LabViewParameter, Error> {
+        let object = self
+            .labview_parameters()?
+            .get_property_object_by_offset(index, 0)?;
+        Ok(crate::LabViewParameter::new(object))
+    }
+
+    fn labview_parameters(&self) -> Result<PropertyObject, Error> {
+        self.module()?
+            .as_property_object()?
+            .get_property_object("ViCall.Parms", 0)
+    }
+
     /// The VI description (`Step.Module` field `ViCall.VIDescription`).
     ///
     /// The adapter persists the description when a module is specified. For a
@@ -1104,6 +1136,139 @@ impl Step {
             0,
             f64::from(mode.bits()),
         )
+    }
+
+    /// The node library name
+    /// (`Step.Module` field `ViCall.NodeLibraryName`).
+    ///
+    /// Applies to LabVIEW property-node and class-member calls.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn labview_node_library_name(&self) -> Result<String, Error> {
+        self.module()?
+            .as_property_object()?
+            .get_val_string("ViCall.NodeLibraryName", 0)
+    }
+
+    /// Sets the node library name.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn set_labview_node_library_name(&self, name: &str) -> Result<(), Error> {
+        self.module()?
+            .as_property_object()?
+            .set_val_string("ViCall.NodeLibraryName", 0, name)
+    }
+
+    /// The node library generic type name
+    /// (`Step.Module` field `ViCall.NodeLibraryGenericTypeName`).
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn labview_node_library_generic_type_name(&self) -> Result<String, Error> {
+        self.module()?
+            .as_property_object()?
+            .get_val_string("ViCall.NodeLibraryGenericTypeName", 0)
+    }
+
+    /// Sets the node library generic type name.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn set_labview_node_library_generic_type_name(&self, name: &str) -> Result<(), Error> {
+        self.module()?.as_property_object()?.set_val_string(
+            "ViCall.NodeLibraryGenericTypeName",
+            0,
+            name,
+        )
+    }
+
+    /// The node class data name
+    /// (`Step.Module` field `ViCall.NodeClassDataName`).
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn labview_node_class_data_name(&self) -> Result<String, Error> {
+        self.module()?
+            .as_property_object()?
+            .get_val_string("ViCall.NodeClassDataName", 0)
+    }
+
+    /// Sets the node class data name.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn set_labview_node_class_data_name(&self, name: &str) -> Result<(), Error> {
+        self.module()?
+            .as_property_object()?
+            .set_val_string("ViCall.NodeClassDataName", 0, name)
+    }
+
+    /// Whether the node uses a data value reference
+    /// (`Step.Module` field `ViCall.NodeUsesDataValueReference`).
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn labview_node_uses_data_value_reference(&self) -> Result<bool, Error> {
+        self.module()?
+            .as_property_object()?
+            .get_val_boolean("ViCall.NodeUsesDataValueReference", 0)
+    }
+
+    /// Sets whether the node uses a data value reference.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn set_labview_node_uses_data_value_reference(&self, uses: bool) -> Result<(), Error> {
+        self.module()?.as_property_object()?.set_val_boolean(
+            "ViCall.NodeUsesDataValueReference",
+            0,
+            uses,
+        )
+    }
+
+    /// Whether the node ignores internal errors
+    /// (`Step.Module` field `ViCall.NodeIgnoresInternalErrors`).
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn labview_node_ignores_internal_errors(&self) -> Result<bool, Error> {
+        self.module()?
+            .as_property_object()?
+            .get_val_boolean("ViCall.NodeIgnoresInternalErrors", 0)
+    }
+
+    /// Sets whether the node ignores internal errors.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn set_labview_node_ignores_internal_errors(&self, ignores: bool) -> Result<(), Error> {
+        self.module()?.as_property_object()?.set_val_boolean(
+            "ViCall.NodeIgnoresInternalErrors",
+            0,
+            ignores,
+        )
+    }
+
+    /// The embedded VI text (`Step.Module` field `ViCall.VI`).
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn labview_vi(&self) -> Result<String, Error> {
+        self.module()?
+            .as_property_object()?
+            .get_val_string("ViCall.VI", 0)
+    }
+
+    /// Sets the embedded VI text.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn set_labview_vi(&self, vi: &str) -> Result<(), Error> {
+        self.module()?
+            .as_property_object()?
+            .set_val_string("ViCall.VI", 0, vi)
     }
 
     /// The C/CVI library path (`Step.Module` field `Call.LibPath`).
@@ -1668,6 +1833,13 @@ mod tests {
         fn call(&self, dispid: i32, args: &[Value]) -> Result<Value, ComError> {
             if let Some(Value::Str(path)) = args.first() {
                 self.paths.borrow_mut().push(path.clone());
+                if path == "ViCall.Parms"
+                    && dispid == crate::dispids::property_object::GET_PROPERTY_OBJECT
+                {
+                    return Ok(Value::Object(Box::new(LabViewParmsFake {
+                        paths: Rc::clone(&self.paths),
+                    })));
+                }
             }
             match dispid {
                 crate::dispids::property_object::GET_VAL_STRING => {
@@ -1675,6 +1847,34 @@ mod tests {
                 }
                 crate::dispids::property_object::GET_VAL_NUMBER => Ok(Value::F64(1.0)),
                 crate::dispids::property_object::GET_VAL_BOOLEAN => Ok(Value::Bool(true)),
+                _ => Ok(Value::Empty),
+            }
+        }
+    }
+
+    /// Stands in for the `ViCall.Parms` array.
+    #[derive(Debug)]
+    struct LabViewParmsFake {
+        paths: LabViewPaths,
+    }
+
+    impl Dispatch for LabViewParmsFake {
+        fn get(&self, _dispid: i32) -> Result<Value, ComError> {
+            Err(ComError::hresult(0, "fake: unscripted get"))
+        }
+
+        fn put(&self, _dispid: i32, _value: Value) -> Result<(), ComError> {
+            Ok(())
+        }
+
+        fn call(&self, dispid: i32, _args: &[Value]) -> Result<Value, ComError> {
+            match dispid {
+                crate::dispids::property_object_introspect::GET_NUM_ELEMENTS => Ok(Value::I32(1)),
+                crate::dispids::property_object_introspect::GET_PROPERTY_OBJECT_BY_OFFSET => {
+                    Ok(Value::Object(Box::new(LabViewPropertyFake {
+                        paths: Rc::clone(&self.paths),
+                    })))
+                }
                 _ => Ok(Value::Empty),
             }
         }
@@ -1768,6 +1968,12 @@ mod tests {
             step.labview_node_operation_mode()?,
             Some(crate::LabViewNodeOperationMode::Restricted)
         );
+        assert_eq!(step.labview_node_library_name()?, "value");
+        assert_eq!(step.labview_node_library_generic_type_name()?, "value");
+        assert_eq!(step.labview_node_class_data_name()?, "value");
+        assert!(step.labview_node_uses_data_value_reference()?);
+        assert!(step.labview_node_ignores_internal_errors()?);
+        assert_eq!(step.labview_vi()?, "value");
 
         let paths = paths.borrow();
         for expected in [
@@ -1785,6 +1991,12 @@ mod tests {
             "ViCall.RemoteHost",
             "ViCall.RemoteHostByExpr",
             "ViCall.NodeOperationMode",
+            "ViCall.NodeLibraryName",
+            "ViCall.NodeLibraryGenericTypeName",
+            "ViCall.NodeClassDataName",
+            "ViCall.NodeUsesDataValueReference",
+            "ViCall.NodeIgnoresInternalErrors",
+            "ViCall.VI",
         ] {
             assert!(
                 paths.iter().any(|path| path == expected),
@@ -1811,6 +2023,12 @@ mod tests {
         step.set_labview_remote_host("host")?;
         step.set_labview_remote_host_by_expression(false)?;
         step.set_labview_node_operation_mode(crate::LabViewNodeOperationMode::Default)?;
+        step.set_labview_node_library_name("library")?;
+        step.set_labview_node_library_generic_type_name("generic")?;
+        step.set_labview_node_class_data_name("class data")?;
+        step.set_labview_node_uses_data_value_reference(false)?;
+        step.set_labview_node_ignores_internal_errors(false)?;
+        step.set_labview_vi("vi")?;
 
         let paths = paths.borrow();
         for expected in [
@@ -1827,12 +2045,36 @@ mod tests {
             "ViCall.RemoteHost",
             "ViCall.RemoteHostByExpr",
             "ViCall.NodeOperationMode",
+            "ViCall.NodeLibraryName",
+            "ViCall.NodeLibraryGenericTypeName",
+            "ViCall.NodeClassDataName",
+            "ViCall.NodeUsesDataValueReference",
+            "ViCall.NodeIgnoresInternalErrors",
+            "ViCall.VI",
         ] {
             assert!(
                 paths.iter().any(|path| path == expected),
                 "missing write path {expected}"
             );
         }
+        Ok(())
+    }
+
+    #[test]
+    fn labview_parameters_are_reachable_by_index() -> Result<(), Error> {
+        let (step, paths) = labview_step();
+
+        assert_eq!(step.labview_parameter_count()?, 1);
+        let parameter = step.labview_parameter(0)?;
+        assert_eq!(parameter.parameter_name()?, "value");
+        assert_eq!(parameter.value_expr()?, "value");
+        assert_eq!(
+            parameter.category()?,
+            Some(crate::LabViewParameterCategory::String)
+        );
+
+        let paths = paths.borrow();
+        assert!(paths.iter().any(|path| path == "ViCall.Parms"));
         Ok(())
     }
 }
