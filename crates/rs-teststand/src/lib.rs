@@ -47,6 +47,7 @@ pub mod workspace;
 
 pub use adapters::{
     Adapter, AdapterKeyName, CodeTemplate, CodeTemplateType, CodeTemplates, CodeTemplatesIter,
+    LabViewCallType, LabViewModuleOverrideOption, LabViewNodeOperationMode, LabViewViType,
 };
 pub use analyzer::{
     AnalysisMessage, AnalysisMessages, AnalysisStatus, Analyzer, AnalyzerModule,

@@ -47,6 +47,7 @@ pub enum AdapterKeyName {
     LabViewStdPrototype,
     /// `LabVIEW` NXG (`LabVIEWNXGAdapterKeyName`), its own key for the
     /// discontinued second-generation product, not a spelling of the above.
+    /// This key is not present on a TestStand 2016 SP1 engine.
     LabViewNxg,
     /// A C/CVI function with any prototype (`FlexCVIAdapterKeyName`).
     Cvi,
@@ -62,7 +63,8 @@ pub enum AdapterKeyName {
     Automation,
     /// A .NET assembly member (`DotNetAdapterKeyname`).
     DotNet,
-    /// A Python module (`PythonAdapterKeyName`).
+    /// A Python module (`PythonAdapterKeyName`). This key is not present on a
+    /// TestStand 2016 SP1 engine.
     Python,
     /// `HTBasic` (`HTBasicAdapterKeyName`).
     HtBasic,

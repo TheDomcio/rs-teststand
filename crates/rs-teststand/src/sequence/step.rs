@@ -158,7 +158,7 @@ impl Step {
     /// module after this call, not before.
     ///
     /// `adapter_key_name` is a key such as
-    /// [`AdapterKeyName::LabViewFlex`](crate::AdapterKeyName::LabView);
+    /// [`AdapterKeyName::LabView`](crate::AdapterKeyName::LabView);
     /// third-party adapters can supply their own.
     ///
     /// # Errors
@@ -777,6 +777,335 @@ impl Step {
             .set_val_boolean("ViCall.ShowFrnPnl", 0, show)
     }
 
+    /// The VI description (`Step.Module` field `ViCall.VIDescription`).
+    ///
+    /// The adapter persists the description when a module is specified. For a
+    /// step with no module yet, call
+    /// [`Module::load_prototype`](crate::Module::load_prototype) first.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn labview_vi_description(&self) -> Result<String, Error> {
+        self.module()?
+            .as_property_object()?
+            .get_val_string("ViCall.VIDescription", 0)
+    }
+
+    /// The `TDChecksum` value the adapter persists for the VI
+    /// (`Step.Module` field `ViCall.TDChecksum`).
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn labview_td_checksum(&self) -> Result<i32, Error> {
+        let value = self
+            .module()?
+            .as_property_object()?
+            .get_val_number("ViCall.TDChecksum", 0)?;
+        Ok(number_to_i32(value))
+    }
+
+    /// Sets the `TDChecksum` value.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn set_labview_td_checksum(&self, checksum: i32) -> Result<(), Error> {
+        self.module()?.as_property_object()?.set_val_number(
+            "ViCall.TDChecksum",
+            0,
+            f64::from(checksum),
+        )
+    }
+
+    /// The override binary VI checksum
+    /// (`Step.Module` field `ViCall.OverrideBinaryVIChecksum`).
+    ///
+    /// The TestStand 2016 SP1 module type has no such field, so this needs a
+    /// newer engine.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn labview_override_binary_vi_checksum(&self) -> Result<i32, Error> {
+        let value = self
+            .module()?
+            .as_property_object()?
+            .get_val_number("ViCall.OverrideBinaryVIChecksum", 0)?;
+        Ok(number_to_i32(value))
+    }
+
+    /// Sets the override binary VI checksum.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn set_labview_override_binary_vi_checksum(&self, checksum: i32) -> Result<(), Error> {
+        self.module()?.as_property_object()?.set_val_number(
+            "ViCall.OverrideBinaryVIChecksum",
+            0,
+            f64::from(checksum),
+        )
+    }
+
+    /// The prototype flags (`Step.Module` field `ViCall.PrototypeFlags`).
+    ///
+    /// The engine does not document individual bit values, so this is the raw
+    /// mask. Prototype loading itself is
+    /// [`Module::load_prototype`](crate::Module::load_prototype).
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn labview_prototype_flags(&self) -> Result<i32, Error> {
+        let value = self
+            .module()?
+            .as_property_object()?
+            .get_val_number("ViCall.PrototypeFlags", 0)?;
+        Ok(number_to_i32(value))
+    }
+
+    /// Sets the prototype flags.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn set_labview_prototype_flags(&self, flags: i32) -> Result<(), Error> {
+        self.module()?.as_property_object()?.set_val_number(
+            "ViCall.PrototypeFlags",
+            0,
+            f64::from(flags),
+        )
+    }
+
+    /// The module override option
+    /// (`Step.Module` field `ViCall.OverrideModuleOptions`).
+    ///
+    /// The TestStand 2016 SP1 module type has no such field, so this needs a
+    /// newer engine.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn labview_override_module_options(
+        &self,
+    ) -> Result<Option<crate::LabViewModuleOverrideOption>, Error> {
+        let value = self
+            .module()?
+            .as_property_object()?
+            .get_val_number("ViCall.OverrideModuleOptions", 0)?;
+        Ok(crate::LabViewModuleOverrideOption::from_bits(number_to_i32(value)).ok())
+    }
+
+    /// Sets the module override option.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn set_labview_override_module_options(
+        &self,
+        option: crate::LabViewModuleOverrideOption,
+    ) -> Result<(), Error> {
+        self.module()?.as_property_object()?.set_val_number(
+            "ViCall.OverrideModuleOptions",
+            0,
+            f64::from(option.bits()),
+        )
+    }
+
+    /// The call type (`Step.Module` field `ViCall.CallType`).
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn labview_call_type(&self) -> Result<Option<crate::LabViewCallType>, Error> {
+        let value = self
+            .module()?
+            .as_property_object()?
+            .get_val_number("ViCall.CallType", 0)?;
+        Ok(crate::LabViewCallType::from_bits(number_to_i32(value)).ok())
+    }
+
+    /// Sets the call type.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn set_labview_call_type(&self, call_type: crate::LabViewCallType) -> Result<(), Error> {
+        self.module()?.as_property_object()?.set_val_number(
+            "ViCall.CallType",
+            0,
+            f64::from(call_type.bits()),
+        )
+    }
+
+    /// The VI type (`Step.Module` field `ViCall.VIType`).
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn labview_vi_type(&self) -> Result<Option<crate::LabViewViType>, Error> {
+        let value = self
+            .module()?
+            .as_property_object()?
+            .get_val_number("ViCall.VIType", 0)?;
+        Ok(crate::LabViewViType::from_bits(number_to_i32(value)).ok())
+    }
+
+    /// Sets the VI type.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn set_labview_vi_type(&self, vi_type: crate::LabViewViType) -> Result<(), Error> {
+        self.module()?.as_property_object()?.set_val_number(
+            "ViCall.VIType",
+            0,
+            f64::from(vi_type.bits()),
+        )
+    }
+
+    /// Whether the adapter detects the LabVIEW run-time version
+    /// (`Step.Module` field `ViCall.AutoDetectLVRT`).
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn labview_auto_detect_lvrt(&self) -> Result<bool, Error> {
+        self.module()?
+            .as_property_object()?
+            .get_val_boolean("ViCall.AutoDetectLVRT", 0)
+    }
+
+    /// Sets whether the adapter detects the LabVIEW run-time version.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn set_labview_auto_detect_lvrt(&self, detect: bool) -> Result<(), Error> {
+        self.module()?
+            .as_property_object()?
+            .set_val_boolean("ViCall.AutoDetectLVRT", 0, detect)
+    }
+
+    /// The class path (`Step.Module` field `ViCall.ClassPath`).
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn labview_class_path(&self) -> Result<String, Error> {
+        self.module()?
+            .as_property_object()?
+            .get_val_string("ViCall.ClassPath", 0)
+    }
+
+    /// Sets the class path.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn set_labview_class_path(&self, path: &str) -> Result<(), Error> {
+        self.module()?
+            .as_property_object()?
+            .set_val_string("ViCall.ClassPath", 0, path)
+    }
+
+    /// The project path (`Step.Module` field `ViCall.ProjectPath`).
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn labview_project_path(&self) -> Result<String, Error> {
+        self.module()?
+            .as_property_object()?
+            .get_val_string("ViCall.ProjectPath", 0)
+    }
+
+    /// Sets the project path.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn set_labview_project_path(&self, path: &str) -> Result<(), Error> {
+        self.module()?
+            .as_property_object()?
+            .set_val_string("ViCall.ProjectPath", 0, path)
+    }
+
+    /// The remote project path (`Step.Module` field `ViCall.RemoteProjectPath`).
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn labview_remote_project_path(&self) -> Result<String, Error> {
+        self.module()?
+            .as_property_object()?
+            .get_val_string("ViCall.RemoteProjectPath", 0)
+    }
+
+    /// Sets the remote project path.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn set_labview_remote_project_path(&self, path: &str) -> Result<(), Error> {
+        self.module()?
+            .as_property_object()?
+            .set_val_string("ViCall.RemoteProjectPath", 0, path)
+    }
+
+    /// The remote host expression (`Step.Module` field `ViCall.RemoteHost`).
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn labview_remote_host(&self) -> Result<String, Error> {
+        self.module()?
+            .as_property_object()?
+            .get_val_string("ViCall.RemoteHost", 0)
+    }
+
+    /// Sets the remote host expression.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn set_labview_remote_host(&self, host: &str) -> Result<(), Error> {
+        self.module()?
+            .as_property_object()?
+            .set_val_string("ViCall.RemoteHost", 0, host)
+    }
+
+    /// Whether the remote host is an expression
+    /// (`Step.Module` field `ViCall.RemoteHostByExpr`).
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn labview_remote_host_by_expression(&self) -> Result<bool, Error> {
+        self.module()?
+            .as_property_object()?
+            .get_val_boolean("ViCall.RemoteHostByExpr", 0)
+    }
+
+    /// Sets whether the remote host is an expression.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn set_labview_remote_host_by_expression(&self, by_expression: bool) -> Result<(), Error> {
+        self.module()?.as_property_object()?.set_val_boolean(
+            "ViCall.RemoteHostByExpr",
+            0,
+            by_expression,
+        )
+    }
+
+    /// The node operation mode (`Step.Module` field `ViCall.NodeOperationMode`).
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn labview_node_operation_mode(
+        &self,
+    ) -> Result<Option<crate::LabViewNodeOperationMode>, Error> {
+        let value = self
+            .module()?
+            .as_property_object()?
+            .get_val_number("ViCall.NodeOperationMode", 0)?;
+        Ok(crate::LabViewNodeOperationMode::from_bits(number_to_i32(value)).ok())
+    }
+
+    /// Sets the node operation mode.
+    ///
+    /// # Errors
+    /// [`Error`] if the step has no LabVIEW module or the COM call fails.
+    pub fn set_labview_node_operation_mode(
+        &self,
+        mode: crate::LabViewNodeOperationMode,
+    ) -> Result<(), Error> {
+        self.module()?.as_property_object()?.set_val_number(
+            "ViCall.NodeOperationMode",
+            0,
+            f64::from(mode.bits()),
+        )
+    }
+
     /// The C/CVI library path (`Step.Module` field `Call.LibPath`).
     ///
     /// # Errors
@@ -1025,6 +1354,14 @@ impl Step {
             .put(dispid, Value::Str(expression.to_owned()))?;
         Ok(())
     }
+}
+
+#[allow(
+    clippy::cast_possible_truncation,
+    reason = "module enum and checksum fields are small integers stored as doubles"
+)]
+const fn number_to_i32(value: f64) -> i32 {
+    value as i32
 }
 
 #[cfg(test)]
@@ -1307,6 +1644,195 @@ mod tests {
         let custom = step.additional_results()?.custom_results()?;
         assert_eq!(custom.count()?, 0);
         assert_eq!(step.additional_results_hints()?.count()?, 0);
+        Ok(())
+    }
+
+    /// The property paths a LabVIEW module helper touched.
+    type LabViewPaths = Rc<RefCell<Vec<String>>>;
+
+    /// Serves the `PropertyObject` calls the LabVIEW helpers make.
+    #[derive(Debug)]
+    struct LabViewPropertyFake {
+        paths: LabViewPaths,
+    }
+
+    impl Dispatch for LabViewPropertyFake {
+        fn get(&self, _dispid: i32) -> Result<Value, ComError> {
+            Err(ComError::hresult(0, "fake: unscripted get"))
+        }
+
+        fn put(&self, _dispid: i32, _value: Value) -> Result<(), ComError> {
+            Ok(())
+        }
+
+        fn call(&self, dispid: i32, args: &[Value]) -> Result<Value, ComError> {
+            if let Some(Value::Str(path)) = args.first() {
+                self.paths.borrow_mut().push(path.clone());
+            }
+            match dispid {
+                crate::dispids::property_object::GET_VAL_STRING => {
+                    Ok(Value::Str("value".to_owned()))
+                }
+                crate::dispids::property_object::GET_VAL_NUMBER => Ok(Value::F64(1.0)),
+                crate::dispids::property_object::GET_VAL_BOOLEAN => Ok(Value::Bool(true)),
+                _ => Ok(Value::Empty),
+            }
+        }
+    }
+
+    /// Exposes the property tree behind `Module.AsPropertyObject`.
+    #[derive(Debug)]
+    struct LabViewModuleFake {
+        paths: LabViewPaths,
+    }
+
+    impl Dispatch for LabViewModuleFake {
+        fn get(&self, _dispid: i32) -> Result<Value, ComError> {
+            Err(ComError::hresult(0, "fake: unscripted get"))
+        }
+
+        fn put(&self, _dispid: i32, _value: Value) -> Result<(), ComError> {
+            Ok(())
+        }
+
+        fn call(&self, dispid: i32, _args: &[Value]) -> Result<Value, ComError> {
+            if dispid == crate::dispids::module::AS_PROPERTY_OBJECT {
+                Ok(Value::Object(Box::new(LabViewPropertyFake {
+                    paths: Rc::clone(&self.paths),
+                })))
+            } else {
+                Ok(Value::Empty)
+            }
+        }
+    }
+
+    /// Answers `Step.Module` and nothing else.
+    #[derive(Debug)]
+    struct LabViewStepFake {
+        paths: LabViewPaths,
+    }
+
+    impl Dispatch for LabViewStepFake {
+        fn get(&self, dispid: i32) -> Result<Value, ComError> {
+            if dispid == dispid::MODULE {
+                Ok(Value::Object(Box::new(LabViewModuleFake {
+                    paths: Rc::clone(&self.paths),
+                })))
+            } else {
+                Err(ComError::hresult(0, "fake: unscripted get"))
+            }
+        }
+
+        fn put(&self, _dispid: i32, _value: Value) -> Result<(), ComError> {
+            Ok(())
+        }
+
+        fn call(&self, _dispid: i32, _args: &[Value]) -> Result<Value, ComError> {
+            Ok(Value::Empty)
+        }
+    }
+
+    /// A step whose LabVIEW module records the paths it is asked for.
+    fn labview_step() -> (Step, LabViewPaths) {
+        let paths = Rc::default();
+        let step = Step::new(Box::new(LabViewStepFake {
+            paths: Rc::clone(&paths),
+        }));
+        (step, paths)
+    }
+
+    #[test]
+    fn labview_module_metadata_reads_the_documented_paths() -> Result<(), Error> {
+        let (step, paths) = labview_step();
+
+        assert_eq!(step.labview_vi_description()?, "value");
+        assert_eq!(step.labview_td_checksum()?, 1);
+        assert_eq!(step.labview_override_binary_vi_checksum()?, 1);
+        assert_eq!(step.labview_prototype_flags()?, 1);
+        assert_eq!(
+            step.labview_override_module_options()?,
+            Some(crate::LabViewModuleOverrideOption::Ppl)
+        );
+        assert_eq!(
+            step.labview_call_type()?,
+            Some(crate::LabViewCallType::ClassMemberCall)
+        );
+        assert_eq!(step.labview_vi_type()?, Some(crate::LabViewViType::Express));
+        assert!(step.labview_auto_detect_lvrt()?);
+        assert_eq!(step.labview_class_path()?, "value");
+        assert_eq!(step.labview_project_path()?, "value");
+        assert_eq!(step.labview_remote_project_path()?, "value");
+        assert_eq!(step.labview_remote_host()?, "value");
+        assert!(step.labview_remote_host_by_expression()?);
+        assert_eq!(
+            step.labview_node_operation_mode()?,
+            Some(crate::LabViewNodeOperationMode::Restricted)
+        );
+
+        let paths = paths.borrow();
+        for expected in [
+            "ViCall.VIDescription",
+            "ViCall.TDChecksum",
+            "ViCall.OverrideBinaryVIChecksum",
+            "ViCall.PrototypeFlags",
+            "ViCall.OverrideModuleOptions",
+            "ViCall.CallType",
+            "ViCall.VIType",
+            "ViCall.AutoDetectLVRT",
+            "ViCall.ClassPath",
+            "ViCall.ProjectPath",
+            "ViCall.RemoteProjectPath",
+            "ViCall.RemoteHost",
+            "ViCall.RemoteHostByExpr",
+            "ViCall.NodeOperationMode",
+        ] {
+            assert!(
+                paths.iter().any(|path| path == expected),
+                "missing path {expected}"
+            );
+        }
+        Ok(())
+    }
+
+    #[test]
+    fn labview_module_metadata_writes_the_documented_paths() -> Result<(), Error> {
+        let (step, paths) = labview_step();
+
+        step.set_labview_td_checksum(2)?;
+        step.set_labview_override_binary_vi_checksum(2)?;
+        step.set_labview_prototype_flags(2)?;
+        step.set_labview_override_module_options(crate::LabViewModuleOverrideOption::Default)?;
+        step.set_labview_call_type(crate::LabViewCallType::ViCall)?;
+        step.set_labview_vi_type(crate::LabViewViType::Standard)?;
+        step.set_labview_auto_detect_lvrt(false)?;
+        step.set_labview_class_path("class")?;
+        step.set_labview_project_path("project")?;
+        step.set_labview_remote_project_path("remote")?;
+        step.set_labview_remote_host("host")?;
+        step.set_labview_remote_host_by_expression(false)?;
+        step.set_labview_node_operation_mode(crate::LabViewNodeOperationMode::Default)?;
+
+        let paths = paths.borrow();
+        for expected in [
+            "ViCall.TDChecksum",
+            "ViCall.OverrideBinaryVIChecksum",
+            "ViCall.PrototypeFlags",
+            "ViCall.OverrideModuleOptions",
+            "ViCall.CallType",
+            "ViCall.VIType",
+            "ViCall.AutoDetectLVRT",
+            "ViCall.ClassPath",
+            "ViCall.ProjectPath",
+            "ViCall.RemoteProjectPath",
+            "ViCall.RemoteHost",
+            "ViCall.RemoteHostByExpr",
+            "ViCall.NodeOperationMode",
+        ] {
+            assert!(
+                paths.iter().any(|path| path == expected),
+                "missing write path {expected}"
+            );
+        }
         Ok(())
     }
 }

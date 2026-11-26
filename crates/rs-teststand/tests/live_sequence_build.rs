@@ -7,8 +7,9 @@
 #![cfg(feature = "live-engine")]
 
 use rs_teststand::{
-    AdapterKeyName, ConflictHandler, Engine, Error, FailureAction, GetSeqFileOptions, SequenceType,
-    StepGroup,
+    AdapterKeyName, ConflictHandler, Engine, Error, FailureAction, GetSeqFileOptions,
+    LabViewCallType, LabViewModuleOverrideOption, LabViewNodeOperationMode, LabViewViType,
+    SequenceType, StepGroup,
 };
 
 const INSERT_IF_MISSING: i32 = 1;
@@ -358,6 +359,42 @@ fn adapter_module_helpers_read_back_their_fields() -> Result<(), Error> {
     assert_eq!(labview.labview_namespace()?, "Lib");
     labview.set_labview_show_front_panel(true)?;
     assert!(labview.labview_show_front_panel()?);
+    assert_eq!(labview.labview_vi_description()?, "");
+    labview.set_labview_td_checksum(1234)?;
+    assert_eq!(labview.labview_td_checksum()?, 1234);
+    labview.set_labview_prototype_flags(3)?;
+    assert_eq!(labview.labview_prototype_flags()?, 3);
+    labview.set_labview_call_type(LabViewCallType::ClassMemberCall)?;
+    assert_eq!(
+        labview.labview_call_type()?,
+        Some(LabViewCallType::ClassMemberCall)
+    );
+    labview.set_labview_vi_type(LabViewViType::Express)?;
+    assert_eq!(labview.labview_vi_type()?, Some(LabViewViType::Express));
+    labview.set_labview_auto_detect_lvrt(true)?;
+    assert!(labview.labview_auto_detect_lvrt()?);
+    labview.set_labview_class_path("Class.lvclass")?;
+    assert_eq!(labview.labview_class_path()?, "Class.lvclass");
+    labview.set_labview_project_path("Project.lvproj")?;
+    assert_eq!(labview.labview_project_path()?, "Project.lvproj");
+    labview.set_labview_remote_project_path("Remote.lvproj")?;
+    assert_eq!(labview.labview_remote_project_path()?, "Remote.lvproj");
+    labview.set_labview_remote_host("localhost")?;
+    assert_eq!(labview.labview_remote_host()?, "localhost");
+    labview.set_labview_remote_host_by_expression(true)?;
+    assert!(labview.labview_remote_host_by_expression()?);
+    labview.set_labview_node_operation_mode(LabViewNodeOperationMode::Restricted)?;
+    assert_eq!(
+        labview.labview_node_operation_mode()?,
+        Some(LabViewNodeOperationMode::Restricted)
+    );
+    labview.set_labview_override_binary_vi_checksum(4321)?;
+    assert_eq!(labview.labview_override_binary_vi_checksum()?, 4321);
+    labview.set_labview_override_module_options(LabViewModuleOverrideOption::Ppl)?;
+    assert_eq!(
+        labview.labview_override_module_options()?,
+        Some(LabViewModuleOverrideOption::Ppl)
+    );
 
     let cvi = engine.new_step(AdapterKeyName::Cvi.as_str(), "Action")?;
     let cvi_module = cvi.module()?;
